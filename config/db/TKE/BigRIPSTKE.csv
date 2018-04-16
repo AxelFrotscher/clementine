@@ -1,0 +1,5 @@
+NAME	FPL	e_fpl	e_det	e_ch2mev	e_ped	e_geo	e_ch	t_fpl	t_det	t_ch2nsec	t_offset	t_geo	t_ch
+TKE_B3F_CH0	11	11	11	1	0	0	0	30	3	1	0	6	26
+TKE_B3F_CH1	11	11	11	1	0	0	1	30	3	1	0	6	26
+TKE_B3F_CH2	11	11	11	1	0	0	2	30	3	1	0	6	26
+TKE_F11	63	63	2	1	0	3	10	63	3	1	0	6	26

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataroot>
+<BigRIPSTKE>
+<ID>1</ID>
+<NAME>TKE</NAME>
+<FPL>63</FPL>
+<e_fpl>63</e_fpl>
+<e_det>2</e_det>
+<e_ch2mev>1</e_ch2mev>
+<e_ped>0</e_ped>
+<e_geo>3</e_geo>
+<e_ch>10</e_ch>
+<t_fpl>63</t_fpl>
+<t_det>3</t_det>
+<t_ch2nsec>1</t_ch2nsec>
+<t_offset>0</t_offset>
+<t_geo>6</t_geo>
+<t_ch>26</t_ch>
+</BigRIPSTKE>
+</dataroot>
