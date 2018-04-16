@@ -1,5 +1,5 @@
 #include "MakeAllTree_78Ni.hh"
-R__LOAD_LIBRARY(libanacore.so)
+//R__LOAD_LIBRARY(libanacore.so)
 
 using namespace std;
 

@@ -15,15 +15,15 @@ const bool closeness(const vector<double> &d, double sigma = 0.1){
     return sigma * mean > sqrt(sq_sum / d.size());
 }
 
-void addmean(vector<vector<double>> &v){
-    // This function takes a 2dim Vector, calculates the mean for each row
-    // and pushes back the mean values in a new row
-    vector<double> tempmean;
-    for (auto &el: v)
-        tempmean.push_back(accumulate(el.begin(), el.end(), 0.0)/el.size());
-
-    if(!v.empty()) v.push_back(tempmean);
-}
+//void addmean(vector<vector<double>> &v){
+//    // This function takes a 2dim Vector, calculates the mean for each row
+//    // and pushes back the mean values in a new row
+//    vector<double> tempmean;
+//    for (auto &el: v)
+//        tempmean.push_back(accumulate(el.begin(), el.end(), 0.0)/el.size());
+//
+//    if(!v.empty()) v.push_back(tempmean);
+//}
 
 void makepid(TTreeReader &datree, TFile &output){
     datree.Restart();
@@ -31,15 +31,24 @@ void makepid(TTreeReader &datree, TFile &output){
     TTreeReaderArray<double> aoqevt (datree, "BigRIPSBeam.aoq");
     TTreeReaderArray<double> zetevt (datree, "BigRIPSBeam.zet");
 
-    TH2D PIDincoming("pidinc", "PID Incoming F3-F7", 300,2.45,2.9, 200,25,45);
-    TH2D PIDoutgoing("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,25,45);
+    vector<TH2D> PID {
+        TH2D("pidinc", "PID Incoming F3-F7",  300,2.45,2.9, 200,25,45),
+        TH2D("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,25,45),
+        TH2D("pidincut","PID Inc cut  F8-F11",300,2.45,2.9,200,25,45),
+        TH2D("pidincutout", "PID Out w/ in cut", 300,2.45,2.9,200,25,45)};
 
-    PIDincoming.SetOption("colz");
-    PIDoutgoing.SetOption("colz");
-    PIDincoming.GetXaxis()->SetTitle("A/Q");
-    PIDincoming.GetYaxis()->SetTitle("Z");
-    PIDoutgoing.GetXaxis()->SetTitle("A/Q");
-    PIDoutgoing.GetYaxis()->SetTitle("Z");
+    for(auto &elem: PID){
+        elem.SetOption("colz");
+        elem.GetXaxis()->SetTitle("A/Q");
+        elem.GetYaxis()->SetTitle("Z");
+    }
+
+    vector<double> cutval{
+        2.575, // center x
+        32.5,  // center y
+        0.008, // radius x
+        0.6    // radius y
+    };
 
     vector<vector<double>> valinc;     // Store temporary beam values
     while(datree.Next()){
@@ -48,23 +57,25 @@ void makepid(TTreeReader &datree, TFile &output){
         valinc.push_back({zetevt[0],zetevt[1],zetevt[2]});
         if(closeness(valinc.at(0)) && closeness(valinc.at(1))){
             // Cut Particles that have variating aoq or zet
-            //addmean(valinc);
-            PIDincoming.Fill(valinc.at(0).at(0),valinc.at(1).at(0));
-
+            PID.at(0).Fill(aoqevt[0],zetevt[0]);
         }
-        valinc.clear();
+
         valinc.push_back({aoqevt[3],aoqevt[4]});
         valinc.push_back({zetevt[3], zetevt[4]});
-        if(closeness(valinc.at(0)) && closeness(valinc.at(1))){
-            //addmean(valinc);
-            PIDoutgoing.Fill(valinc.at(0).at(1),valinc.at(1).at(1));
+        if(closeness(valinc.at(2)) && closeness(valinc.at(3))){
+            PID.at(1).Fill(aoqevt[4],zetevt[4]);
         }
         valinc.clear();
+
+        if((pow(1./cutval.at(2)*(aoqevt[0]-cutval.at(0)),2) +
+           pow(1/cutval.at(3)*(zetevt[0]- cutval.at(1)),2)) <1){
+            PID.at(2).Fill(aoqevt[0],zetevt[0]);
+            PID.at(3).Fill(aoqevt[4],zetevt[4]);
+        }
     }
     output.mkdir("PID");
     output.cd("PID");
-    PIDincoming.Write();
-    PIDoutgoing.Write();
+    for(auto &elem: PID) elem.Write();
     output.cd("");
 }
 
@@ -160,15 +171,16 @@ void plastics(TTreeReader &datree, TFile &output){
 void ppacs(TTreeReader &datree, TFile &output){
     printf("Now beginning with reconstruction of the ppac's ...\n");
     const int numplane = 36;
+    const int pl11position = 3; //Plastic at F11 is fourth in array
     datree.Restart();
 
-    TTreeReaderArray<double> trigger7(datree,  "F7X");
-    TTreeReaderArray<bool>   bigripsx(datree,  "BigRIPSPPAC.fFiredX");
-    TTreeReaderArray<bool>   bigripsy(datree,  "BigRIPSPPAC.fFiredY");
-    TTreeReaderArray<double> bigxsum  (datree,  "BigRIPSPPAC.fTSumX");
-    TTreeReaderArray<double> bigxdiff (datree,  "BigRIPSPPAC.fTDiffX");
-    TTreeReaderArray<double> bigysum  (datree,  "BigRIPSPPAC.fTSumY");
-    TTreeReaderArray<double> bigydiff (datree,  "BigRIPSPPAC.fTDiffY");
+    TTreeReaderArray<double> triggerpl11(datree,  "BigRIPSPlastic.fTime");
+    TTreeReaderArray<bool>   bigripsx   (datree,  "BigRIPSPPAC.fFiredX");
+    TTreeReaderArray<bool>   bigripsy   (datree,  "BigRIPSPPAC.fFiredY");
+    TTreeReaderArray<double> bigxsum    (datree,  "BigRIPSPPAC.fTSumX");
+    TTreeReaderArray<double> bigxdiff   (datree,  "BigRIPSPPAC.fTDiffX");
+    TTreeReaderArray<double> bigysum    (datree,  "BigRIPSPPAC.fTSumY");
+    TTreeReaderArray<double> bigydiff   (datree,  "BigRIPSPPAC.fTDiffY");
     
     //TTreeReaderArray<TString> bripsname(datree, "BigRIPSPPAC.name");
     //36 Values per Array (Event)
@@ -203,9 +215,9 @@ void ppacs(TTreeReader &datree, TFile &output){
     sumdiffppac.at(1).at(1).GetYaxis()->SetTitle("diff [ns]");
     
     effPPACX.GetXaxis()->SetTitle("PPAC [ch]");
-    effPPACX.GetYaxis()->SetTitle("PPACX(x)/PPACX(34)");
+    effPPACX.GetYaxis()->SetTitle("PPACX(x)/Plastic(F11)");
     effPPACY.GetXaxis()->SetTitle("PPAC [ch]");
-    effPPACY.GetYaxis()->SetTitle("PPACY(x)/PPACX(34)");
+    effPPACY.GetYaxis()->SetTitle("PPACY(x)/Pplastic(F11)");
 
 
     //Fill names with first event
@@ -217,10 +229,10 @@ void ppacs(TTreeReader &datree, TFile &output){
     
     // 0=X, 1=Y  || 0...35 Plane No.
     int total = 0;
-    
+    printf("Filling in Plastics ... \n");
     while(datree.Next()){
-        // Get Efficiency relative to the last PPAC
-        if (bigripsx[33]){
+        // Get Efficiency relative to the last Plastic
+        if (triggerpl11[pl11position] >0){
             for(int i=1; i<=numplane; i++){
                 //ripsvec.at(0).at(i) 
                 if(bigripsx[i-1]) 
@@ -318,7 +330,7 @@ void makehistograms(const string input){
         true,  // Plastics
         true,  // ppacs
         true,  // makepid
-        true    // highordercorrection
+        true   // highordercorrection
     };
     
     // Then we read in the tree (lazy)
