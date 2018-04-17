@@ -219,7 +219,6 @@ void ppacs(TTreeReader &datree, TFile &output, vector<bool> &goodevents){
     effPPACY.GetXaxis()->SetTitle("PPAC [ch]");
     effPPACY.GetYaxis()->SetTitle("PPACY(x)/Pplastic(F11)");
 
-
     //Fill names with first event
     //datree.Next();
     //for(int i=1; i<=numplane; i++){
@@ -228,7 +227,24 @@ void ppacs(TTreeReader &datree, TFile &output, vector<bool> &goodevents){
     //}
     
     // 0=X, 1=Y  || 0...35 Plane No.
-    int total = 0;
+    uint total = 0;
+    uint fulltotal =0;
+
+    // Define Planes of Importance corresponding to fpl 3,5,7,8,9,11
+    const vector<vector<int>> ppacplane{{4,5,6,7},{9,10,11,12},{14,15,16,17},
+                                   {18,19,20,21},{22,23,24,25},{30,31,32,33}};
+
+    const vector<vector<vector<int>>> ppacrange{ //{xlow,xup,ylow,yup}
+        {{85,105,85,100},{85,100,85,100},{165,180,85,105},{170,185,90,105}},  //Fpl 3
+        {{165,185,85,105},{165,185,90,105},{165,175,90,105},{165,180,95,110}},//Fpl 5
+        {{160,175,95,110},{165,180,85,100},{75,90,90,100},{85,105,95,110}},   //Fpl 7
+        {{170,185,99,110},{165,185,95,110},{165,185,95,110},{165,185,90,105}},//Fpl 8
+        {{130,145,60,75},{135,150,60,75},{140,155,70,80},{130,145,50,65}},//Fpl 9
+        {{145,160,65,80},{135,150,55,70},{145,160,75,90},{135,150,60,75}} //Fpl11
+    };
+
+    vector<bool> temptruth(4, true);
+
     printf("Filling in Plastics ... \n");
     while(datree.Next()){
         // Get Efficiency relative to the last Plastic
@@ -248,6 +264,23 @@ void ppacs(TTreeReader &datree, TFile &output, vector<bool> &goodevents){
             sumdiffppac.at(1).at(0).Fill(i,bigysum[i]);
             sumdiffppac.at(1).at(1).Fill(i,bigydiff[i]);
         }
+
+        // Make Cut conditions: each focal Plane needs to have one valid entry
+        // := Sum for x and y is in range
+        for(uint i =0; i<ppacplane.size();i++){
+            for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
+            temptruth.at(j) =
+                (bigxsum[ppacplane.at(i).at(j)] > ppacrange.at(i).at(j).at(0) &&
+                 bigxsum[ppacplane.at(i).at(j)] < ppacrange.at(i).at(j).at(1) &&
+                 bigysum[ppacplane.at(i).at(j)] > ppacrange.at(i).at(j).at(2) &&
+                 bigysum[ppacplane.at(i).at(j)] < ppacrange.at(i).at(j).at(3));
+            }
+            // Recursively check each focal plane for at least 1 good Signal
+            goodevents.at(fulltotal) = goodevents.at(fulltotal)*
+                                       accumulate(temptruth.begin(),
+                                                  temptruth.end(),0);
+        }
+        fulltotal++;
     }
 
     effPPACX.Scale(1/(double)total);
