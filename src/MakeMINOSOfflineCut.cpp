@@ -5,7 +5,7 @@
 
 // > make
 // > ./MakeMINOSOfflineCut ../ridf/FileName.ridf              -> Creates a root 
-file: ../rootfiles/FileName.root
+//file: ../rootfiles/FileName.root
 // > ./MakeMINOSOfflineCut ../ridf/FileName.ridf test.root
 #include <fstream>
 #include <string>

@@ -15,17 +15,7 @@ const bool closeness(const vector<double> &d, double sigma = 0.1){
     return sigma * mean > sqrt(sq_sum / d.size());
 }
 
-//void addmean(vector<vector<double>> &v){
-//    // This function takes a 2dim Vector, calculates the mean for each row
-//    // and pushes back the mean values in a new row
-//    vector<double> tempmean;
-//    for (auto &el: v)
-//        tempmean.push_back(accumulate(el.begin(), el.end(), 0.0)/el.size());
-//
-//    if(!v.empty()) v.push_back(tempmean);
-//}
-
-void makepid(TTreeReader &datree, TFile &output){
+void makepid(TTreeReader &datree, TFile &output, const vector<bool> &goodevents){
     datree.Restart();
     // 5 beams, 2incoming, 3outgoing
     TTreeReaderArray<double> aoqevt (datree, "BigRIPSBeam.aoq");
@@ -50,8 +40,10 @@ void makepid(TTreeReader &datree, TFile &output){
         0.6    // radius y
     };
 
+    int eventcounter =0;
     vector<vector<double>> valinc;     // Store temporary beam values
     while(datree.Next()){
+        if(goodevents.at(eventcounter)){
         //Loop over all elements in the tree
         valinc.push_back({aoqevt[0],aoqevt[1],aoqevt[2]});
         valinc.push_back({zetevt[0],zetevt[1],zetevt[2]});
@@ -71,7 +63,8 @@ void makepid(TTreeReader &datree, TFile &output){
            pow(1/cutval.at(3)*(zetevt[0]- cutval.at(1)),2)) <1){
             PID.at(2).Fill(aoqevt[0],zetevt[0]);
             PID.at(3).Fill(aoqevt[4],zetevt[4]);
-        }
+        }}
+        eventcounter++;
     }
     output.mkdir("PID");
     output.cd("PID");
@@ -79,7 +72,7 @@ void makepid(TTreeReader &datree, TFile &output){
     output.cd("");
 }
 
-void plastics(TTreeReader &datree, TFile &output){
+void plastics(TTreeReader &datree, TFile &output, vector<bool> &goodevents){
     // This function aims to rebuild the trigger from Q1*Q2 F7plastic
     // therefore we set a limit on sqrt(Q1*Q2) to suppress random noise
     printf("Now beginning with reconstruction of plastic scintillators ...\n");
@@ -134,6 +127,10 @@ void plastics(TTreeReader &datree, TFile &output){
         qcorr2D.back().SetOption("colz");
     }
 
+    // To avoid multihit-triggers we define a range of acceptance
+    vector<vector<int>> range{{400,500},{450,750},{213,350},{260,1310}};
+    int i=0; // counting variable
+
     while(datree.Next()){
         if(sqrt(plasticQleft[F7pos]*plasticQright[F7pos])> threshhold)
         for(uint i=0; i<numplastic; i++){
@@ -146,10 +143,13 @@ void plastics(TTreeReader &datree, TFile &output){
                 }
             }
         }
+        for(int j=0;j<numplastic;j++){
+            goodevents[i] =goodevents[i]*
+                       (sqrt(plasticQleft[j]*plasticQright[j]) > range[j][0])*
+                       (sqrt(plasticQleft[j]*plasticQright[j]) < range[j][1]);
+        }
+        i++;
     }
-    
-    // To avoid multihit-triggers we define a range of acceptance
-    vector<vector<int>> range{{400,500},{450,750},{213,350}};
     
     printf("Writing Plastic 'Histograms to disk ... \n");
     
@@ -157,18 +157,18 @@ void plastics(TTreeReader &datree, TFile &output){
     output.mkdir("Plastics/Q1Q2");
     output.mkdir("Plastics/TQCorr");
     output.cd("Plastics/2D");
-    for(auto i: qcorr2D) i.Write();
+    for(auto histo: qcorr2D) histo.Write();
     output.cd("Plastics/Q1Q2");
-    for(auto i: qcorr) i.Write();
+    for(auto histo: qcorr) histo.Write();
     output.cd("Plastics/TQCorr");
-    for(auto i: tqcorr2D) i.Write();
+    for(auto histo: tqcorr2D) histo.Write();
     output.cd("");
 
     // A careful analysis yields a threshhold of sqrt(Q1*Q2)>160
     printf("Finished Writing plastic histograms! \n");
 }
 
-void ppacs(TTreeReader &datree, TFile &output){
+void ppacs(TTreeReader &datree, TFile &output, vector<bool> &goodevents){
     printf("Now beginning with reconstruction of the ppac's ...\n");
     const int numplane = 36;
     const int pl11position = 3; //Plastic at F11 is fourth in array
@@ -289,7 +289,7 @@ void highordercorrection(TTreeReader &datree, TFile &output){
 
     TTreeReaderArray<double> aoqevt (datree, "BigRIPSBeam.aoq");
     
-    const int beam = 0; // Evaluate Beam F8-11 (5th element)
+    const int beam = 0; // Evaluate Beam F3-7 (1st element)
     const vector<string> arrname = { "DepF3X","DepF3A","DepF5X", "DepF5A"};
     const vector<string> arrtitle = {
         "Dependence of F3X vs AoQ", "Dependence of F3A vs AoQ", 
@@ -332,22 +332,28 @@ void makehistograms(const string input){
         true,  // makepid
         true   // highordercorrection
     };
-    
+
+    // Store events that cannot be used
+    vector<bool> goodevents(1000000, true);
+
     // Then we read in the tree (lazy)
     TTreeReader mytreereader("tree", &inputfile);
 
     // Rebuild F7 Trigger combined charge threshhold
-    if(options.at(0)) plastics(mytreereader, outputfile);
+    if(options.at(0)) plastics(mytreereader, outputfile, goodevents);
     
-    // Understand Triggers
-    if(options.at(1)) ppacs(mytreereader, outputfile);
+    // Cut the PPAC's
+    if(options.at(1)) ppacs(mytreereader, outputfile, goodevents);
 
-    // Get Z vs. A/Q
-    if(options.at(2)) makepid(mytreereader, outputfile);
-    printf("Made PID histograms in %s\n", output.c_str());
-    
     // Get Corrections
     if(options.at(3)) highordercorrection(mytreereader, outputfile);
+
+    // Get Z vs. A/Q
+    if(options.at(2)) makepid(mytreereader, outputfile, goodevents);
+    printf("Made PID histograms in %s\n", output.c_str());
+
+    cout << "Runs has " <<accumulate(goodevents.begin(),goodevents.end(),0)
+         << " good Elements" << endl;
 
     outputfile.Close();
 }
