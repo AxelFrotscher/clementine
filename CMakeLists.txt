@@ -12,7 +12,7 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 
 #Define useful functions
 include(${ROOT_USE_FILE})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include  /opt/anaroot/anarootv4.5.36/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include /opt/anaroot/anarootv4.5.36/include)
 
 add_executable(${PROJECT_NAME} main.cpp ./src/MakeAllTree_78Ni.cpp 
 ./src/histograms.cpp)

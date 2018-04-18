@@ -105,7 +105,6 @@ void generatetree(const string infile, const string output){
     cout << output << endl;
     //Making new branches
 
-    //%%%%%%%%%%%%%%%%%%%%%%
     //BigRIPS
     const double magnum = -999; // Magic Number for unset events
     const int planesperppac = 4;

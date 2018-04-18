@@ -182,7 +182,7 @@ void ppacs(TTreeReader &datree, TFile &output, vector<bool> &goodevents){
     TTreeReaderArray<double> bigysum    (datree,  "BigRIPSPPAC.fTSumY");
     TTreeReaderArray<double> bigydiff   (datree,  "BigRIPSPPAC.fTDiffY");
     
-    //TTreeReaderArray<TString> bripsname(datree, "BigRIPSPPAC.name");
+    TTreeReaderArray<TString> bripsname(datree, "BigRIPSPPAC.name");
     //36 Values per Array (Event)
     TH1D effPPACX("effPPACX", "Efficiency of PPAC X", numplane, 0, numplane);
     TH1D effPPACY("effPPACY", "Efficiency of PPAC Y", numplane, 0, numplane);
@@ -221,14 +221,15 @@ void ppacs(TTreeReader &datree, TFile &output, vector<bool> &goodevents){
 
     //Fill names with first event
     //datree.Next();
-    //for(int i=1; i<=numplane; i++){
-    //    effPPACX.GetXaxis()->SetBinLabel(i, bripsname[i-1].);
-    //    effPPACY.GetXaxis()->SetBinLabel(i, bripsname[i-1].c_str());
-    //}
+    //cout << "T STRING: " << bripsname.operator[](0).Data() << endl;
+/*    for(int i=1; i<=numplane; i++){
+        effPPACX.GetXaxis()->SetBinLabel(i, bripsname[i-1].Data());
+        effPPACY.GetXaxis()->SetBinLabel(i, bripsname[i-1].Data());
+    }*/
     
     // 0=X, 1=Y  || 0...35 Plane No.
     uint total = 0;
-    uint fulltotal =0;
+    uint fulltotal =0;  //Skipping first event for name generation
 
     // Define Planes of Importance corresponding to fpl 3,5,7,8,9,11
     const vector<vector<int>> ppacplane{{4,5,6,7},{9,10,11,12},{14,15,16,17},
@@ -309,6 +310,64 @@ void ppacs(TTreeReader &datree, TFile &output, vector<bool> &goodevents){
     printf("Finished Writing PPAC histogram!\n");
 }
 
+void ionisationchamber(TTreeReader &datree, TFile &output,
+                       vector<bool> &goodevents) {
+    // This method aims to control the Ionisation Chamber values
+    // therefore only certain events are accepted
+
+    printf("Now beginning analysis of the IC's (Fpl 7 & 11)\n");
+    datree.Restart();
+
+    vector<TTreeReaderArray<int>> icvals{
+            TTreeReaderArray<int>(datree, "BigRIPSIC.nhitchannel"),
+            TTreeReaderArray<int>(datree, "BigRIPSIC.fADC[32]")};
+
+    TTreeReaderArray<int[32]> testval(datree, "BigRIPSIC.fADC[32]");
+    const int numchannel = 6; // There are 6 channel per IC
+    const int numic = 2; // Number of Ionisation Chambers
+    vector<vector<TH2D>> comparediag;
+
+    for(int i=1; i<numchannel; i++){
+        vector<string> arrname = {"ICratio" + to_string(i) + "to0fpl7",
+                                  "ICratio" + to_string(i) + "to0fpl11"};
+        string arrtitle = "Peak ADC Ratio " + to_string(i) + " to 0";
+        comparediag.push_back({TH2D(arrname.at(0).c_str(),arrtitle.c_str(),
+                                    2048,0,16384,2048,0,16384),
+                               TH2D(arrname.at(1).c_str(),(arrtitle+ "BS").c_str(),
+                                    2048,0,16384,2048,0,16384)});
+        for(auto &elem: comparediag.back()){
+            elem.SetOption("colz");
+            elem.GetXaxis()->SetTitle("ADC0 [ch]");
+            elem.GetYaxis()->SetTitle(("ADC"+to_string(i)+ "[ch]").c_str());
+        }
+    }
+    uint totalcounter =0;
+
+    while(datree.Next()){
+        printf("Getting first nhits %i, %i", testval[1],
+               icvals.at(1).At(1));
+        if(icvals.at(0).At(0)*icvals.at(0).At(1) <16) //Require 4 hits in each IC
+            goodevents.at(totalcounter) = false;
+        if((icvals.at(1).At(0) <0) || (icvals.at(1).At(32) <0)) continue;
+        for(int i=1; i<numchannel;i++){
+            if(icvals.at(1).At(numchannel) >0)
+                comparediag.at(0).at(numchannel-1).Fill(icvals.at(1).At(0),
+                                                   icvals.at(1).At(numchannel));
+            if(icvals.at(1).At(numchannel+32) >0)
+                comparediag.at(1).at(numchannel-1).Fill(icvals.at(1).At(32),
+                                                icvals.at(1).At(32+numchannel));
+        }
+        totalcounter++;
+    }
+
+    output.mkdir("IC/IC7");
+    output.mkdir("IC/IC11");
+    output.cd("IC/IC7");
+    for(auto &elem: comparediag.at(0)) elem.Write();
+    output.cd("IC/IC11");
+    for(auto &elem: comparediag.at(1)) elem.Write();
+    output.cd("");
+}
 void highordercorrection(TTreeReader &datree, TFile &output){
     // This method aims to determine the higher-order corrections
     // for the matrix elements
@@ -355,15 +414,16 @@ void highordercorrection(TTreeReader &datree, TFile &output){
 void makehistograms(const string input){
     TFile inputfile(input.c_str());
     if(!inputfile.IsOpen()) __throw_invalid_argument("Input file not valid.");
-    const string output = "output/histout.root";
+    const string output = "build/output/histout.root";
     TFile outputfile(output.c_str(), "RECREATE");
     if(!outputfile.IsOpen()) __throw_invalid_argument("Output file not valid");
 
     vector<bool> options{
-        true,  // Plastics
-        true,  // ppacs
-        true,  // makepid
-        true   // highordercorrection
+        false,  // Plastics
+        false,  // ppac
+        true,  // Ionisationchamber
+        true,  // highordercorrection
+        true   // makepid
     };
 
     // Store events that cannot be used
@@ -378,11 +438,13 @@ void makehistograms(const string input){
     // Cut the PPAC's
     if(options.at(1)) ppacs(mytreereader, outputfile, goodevents);
 
+    if(options.at(2)) ionisationchamber(mytreereader, outputfile, goodevents);
+
     // Get Corrections
     if(options.at(3)) highordercorrection(mytreereader, outputfile);
 
     // Get Z vs. A/Q
-    if(options.at(2)) makepid(mytreereader, outputfile, goodevents);
+    if(options.at(4)) makepid(mytreereader, outputfile, goodevents);
     printf("Made PID histograms in %s\n", output.c_str());
 
     cout << "Runs has " <<accumulate(goodevents.begin(),goodevents.end(),0)

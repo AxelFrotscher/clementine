@@ -31,7 +31,7 @@ int main(int argc, char**argv){
 
     // Step 1: analyse the raw data
     vector<string> input = getlist();
-    string output = "output/out.root";
+    string output = "build/output/out.root";
 
     if(analyse_raw == 1){
         generatetree(input.at(34), output);
