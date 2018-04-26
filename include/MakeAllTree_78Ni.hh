@@ -24,7 +24,6 @@
 #include "TArtCalibFocalPlane.hh"
 #include "TArtBeam.hh"
 #include "TH2D.h"
-#include "TArtIC.hh"
 
 #include "TSystem.h"
 #include "TTree.h"

@@ -14,8 +14,10 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 include(${ROOT_USE_FILE})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include /opt/anaroot/anarootv4.5.36/include)
 
-add_executable(${PROJECT_NAME} main.cpp ./src/MakeAllTree_78Ni.cpp 
-./src/histograms.cpp)
+add_executable(${PROJECT_NAME} main.cpp
+                               ./src/MakeAllTree_78Ni.cpp
+                               ./src/histograms.cpp
+                               ./src/treereader.cpp)
 target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread
 -L/opt/anaroot/anarootv4.5.36/lib
 -lanacore -lanabrips -lanadali -lanaroot -lanaminos -lXMLParser

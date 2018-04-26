@@ -316,13 +316,14 @@ void ionisationchamber(TTreeReader &datree, TFile &output,
     // therefore only certain events are accepted
 
     printf("Now beginning analysis of the IC's (Fpl 7 & 11)\n");
-    datree.Restart();
+    //datree.Restart();
 
-    vector<TTreeReaderArray<int>> icvals{
-            TTreeReaderArray<int>(datree, "BigRIPSIC.nhitchannel"),
-            TTreeReaderArray<int>(datree, "BigRIPSIC.fADC[32]")};
+    // Explicit Method for 2D arrays
+    // Create new reader class
 
-    TTreeReaderArray<int[32]> testval(datree, "BigRIPSIC.fADC[32]");
+    vector <string> readoutkeys{"BigRIPSIC.nhitchannel", "BigRIPSIC.fADC[32]"};
+    alt2dtree.setloopkeys(readoutkeys);
+
     const int numchannel = 6; // There are 6 channel per IC
     const int numic = 2; // Number of Ionisation Chambers
     vector<vector<TH2D>> comparediag;
@@ -333,7 +334,7 @@ void ionisationchamber(TTreeReader &datree, TFile &output,
         string arrtitle = "Peak ADC Ratio " + to_string(i) + " to 0";
         comparediag.push_back({TH2D(arrname.at(0).c_str(),arrtitle.c_str(),
                                     2048,0,16384,2048,0,16384),
-                               TH2D(arrname.at(1).c_str(),(arrtitle+ "BS").c_str(),
+                               TH2D(arrname.at(1).c_str(),arrtitle.c_str(),
                                     2048,0,16384,2048,0,16384)});
         for(auto &elem: comparediag.back()){
             elem.SetOption("colz");
@@ -343,19 +344,21 @@ void ionisationchamber(TTreeReader &datree, TFile &output,
     }
     uint totalcounter =0;
 
-    while(datree.Next()){
-        printf("Getting first nhits %i, %i", testval[1],
-               icvals.at(1).At(1));
-        if(icvals.at(0).At(0)*icvals.at(0).At(1) <16) //Require 4 hits in each IC
+    while(alt2dtree.singleloop()){
+        if(alt2dtree.BigRIPSIC_nhitchannel[0]*
+           alt2dtree.BigRIPSIC_nhitchannel[1] <16) //Require 4 hits in each IC
             goodevents.at(totalcounter) = false;
-        if((icvals.at(1).At(0) <0) || (icvals.at(1).At(32) <0)) continue;
-        for(int i=1; i<numchannel;i++){
-            if(icvals.at(1).At(numchannel) >0)
-                comparediag.at(0).at(numchannel-1).Fill(icvals.at(1).At(0),
-                                                   icvals.at(1).At(numchannel));
-            if(icvals.at(1).At(numchannel+32) >0)
-                comparediag.at(1).at(numchannel-1).Fill(icvals.at(1).At(32),
-                                                icvals.at(1).At(32+numchannel));
+        if((alt2dtree.BigRIPSIC_fADC[0][0] <0) ||
+           (alt2dtree.BigRIPSIC_fADC[1][0] <0)) continue;
+        for(int i=0; i<(numchannel-1);i++){
+            if(alt2dtree.BigRIPSIC_fADC[0][i] >0)
+                comparediag.at(i).at(0).Fill(
+                        alt2dtree.BigRIPSIC_fADC[0][0],
+                        alt2dtree.BigRIPSIC_fADC[0][i+1]);
+            if(alt2dtree.BigRIPSIC_fADC[1][i] >0)
+                comparediag.at(i).at(1).Fill(
+                        alt2dtree.BigRIPSIC_fADC[1][0],
+                        alt2dtree.BigRIPSIC_fADC[1][i+1]);
         }
         totalcounter++;
     }
@@ -363,16 +366,18 @@ void ionisationchamber(TTreeReader &datree, TFile &output,
     output.mkdir("IC/IC7");
     output.mkdir("IC/IC11");
     output.cd("IC/IC7");
-    for(auto &elem: comparediag.at(0)) elem.Write();
+    for(auto &elem: comparediag) elem.at(0).Write();
     output.cd("IC/IC11");
-    for(auto &elem: comparediag.at(1)) elem.Write();
+    for(auto &elem: comparediag) elem.at(1).Write();
     output.cd("");
 }
+
 void highordercorrection(TTreeReader &datree, TFile &output){
     // This method aims to determine the higher-order corrections
     // for the matrix elements
     printf("Now beginning with higher order corrections ...\n");
     datree.Restart();
+
     vector<TTreeReaderValue<double>> culprit{
         TTreeReaderValue<double> (datree,  "F3X"),
         TTreeReaderValue<double> (datree,  "F3A"),
@@ -396,9 +401,10 @@ void highordercorrection(TTreeReader &datree, TFile &output){
       culpritdiag.back().GetXaxis()->SetTitle("A/Q");
       culpritdiag.back().GetYaxis()->SetTitle(arrname.at(i).c_str());
     }
-    
+
     while(datree.Next()){
         for(uint i=0; i<arrname.size();i++){
+            printf("Starting Higherorder Loop...%f\n", aoqevt[0]);
             culpritdiag.at(i).Fill(aoqevt[beam], *culprit.at(i));
         }
     }
@@ -412,8 +418,11 @@ void highordercorrection(TTreeReader &datree, TFile &output){
 }
 
 void makehistograms(const string input){
-    TFile inputfile(input.c_str());
-    if(!inputfile.IsOpen()) __throw_invalid_argument("Input file not valid.");
+    //TFile inputfile(input.c_str());
+    //if(!inputfile.IsOpen()) __throw_invalid_argument("Input file not valid.");
+
+    treereader alt2dtree; // Opens the input file...
+
     const string output = "build/output/histout.root";
     TFile outputfile(output.c_str(), "RECREATE");
     if(!outputfile.IsOpen()) __throw_invalid_argument("Output file not valid");
@@ -439,7 +448,7 @@ void makehistograms(const string input){
     if(options.at(1)) ppacs(mytreereader, outputfile, goodevents);
 
     if(options.at(2)) ionisationchamber(mytreereader, outputfile, goodevents);
-
+    printf("Finished with PPAC Consistency checks\n");
     // Get Corrections
     if(options.at(3)) highordercorrection(mytreereader, outputfile);
 
@@ -450,5 +459,5 @@ void makehistograms(const string input){
     cout << "Runs has " <<accumulate(goodevents.begin(),goodevents.end(),0)
          << " good Elements" << endl;
 
-    outputfile.Close();
+    //outputfile.Close();
 }
