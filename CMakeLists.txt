@@ -17,7 +17,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include /opt/anaroot/anarootv4.5
 add_executable(${PROJECT_NAME} main.cpp
                                ./src/MakeAllTree_78Ni.cpp
                                ./src/histograms.cpp
-                               ./src/treereader.cpp)
+                               ./src/treereader.cpp
+                               ./src/DALIcalibration.cpp)
 target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread
 -L/opt/anaroot/anarootv4.5.36/lib
 -lanacore -lanabrips -lanadali -lanaroot -lanaminos -lXMLParser

@@ -1,5 +1,6 @@
 #include "histograms.hh"
 #include "MakeAllTree_78Ni.hh"
+#include "DALIcalibration.hh"
 #include <iostream>
 #include <thread>
 
@@ -7,9 +8,9 @@ R__LOAD_LIBRARY(libanacore.so)
 
 using namespace std;
 
-vector<string> getlist(){
+vector<string> getlist(const char *instring){
     // read in the file list for all .rdif's
-    ifstream infile("config/minosrdif.txt");
+    ifstream infile(instring);
     if(!infile) cerr << "File list not found " << endl;
     
     vector<string> file_list;
@@ -30,15 +31,34 @@ int main(int argc, char**argv){
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
     // Step 1: analyse the raw data
-    vector<string> input = getlist();
     string output = "build/output/out.root";
-
-    if(analyse_raw == 1){
-        generatetree(input.at(34), output);
+    vector<string> dalioutput;
+    const int analysedfile = 1; // Index of analysed file
+    switch(analyse_raw){
+        case 2:{
+            vector<string> input = getlist("config/daliridf.txt");
+            cout << "Analyzing DALI: " << input.at(analysedfile) << endl;
+            //Generating output matching to input
+            for(int i=0; i<input.size(); i++){
+                string number = input.at(i).substr(21,21); //Start, length
+                dalioutput.push_back("build/output/dali/" + number + ".root");
+                generatetree(input.at(i), dalioutput.back(), true);
+            }
+            makehistograms(output, true);
+            break;
+        }
+        case 1:{ // Analyse SEASTAR-DATA
+            vector<string> input = getlist("config/minosridf.txt");
+            cout << "Analyzing SEASTAR:" << input.at(34) << endl;
+            generatetree(input.at(34), output, false);
+        }
+        case 0:{
+            printf("Now proceeding to make histograms");
+            makehistograms(output, false);
+            break;
+        }
+        default:
+            __throw_invalid_argument("Option not available");
     }
-    else if (analyse_raw !=0) throw invalid_argument("Neither 0 nor 1");
-    // Step 2: generate the histograms
-    printf("\nNow proceeding to histogram creation ...\n");
-    makehistograms(output);
     return 0;
 }

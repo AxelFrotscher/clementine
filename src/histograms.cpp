@@ -415,13 +415,47 @@ void highordercorrection(treereader &alt2dtree, TFile &output){
     printf("Finished with higher order corrections!\n");
 }
 
-void makehistograms(const string input){
-    TFile inputfile(input.c_str());
-    if(!inputfile.IsOpen()) __throw_invalid_argument("Input file not valid.");
+void dalicalib(treereader &tree, TFile &output){
+    // This Method aims to calibrate the 187 detectors of DALI
+    printf("Now beginning the Calibration of the NaI crystals... \n");
 
-    treereader alt2dtree; // Opens the input file...
+    vector<string> keys{"DALINaI", "DALINaI.fADC", "DALINaI.id"};
+    tree.setloopkeys(keys);
 
-    const string output = "build/output/histout.root";
+    TH2D gammadetectors("dalispectra", "Spectrum of each Gamma Detector",
+                        186,0,186,4096,0,4096);
+    gammadetectors.SetOption("colz");
+    gammadetectors.GetXaxis()->SetTitle("Detector Number");
+    gammadetectors.GetYaxis()->SetTitle("ADC Channel");
+
+    int numdet =0;
+    while(tree.singleloop()){
+        numdet = tree.DALINaI_;
+        for(int i=0; i<numdet;i++){
+            if(tree.DALINaI_fADC[i]) gammadetectors.Fill(tree.DALINaI_id[i],
+                tree.DALINaI_fADC[i]);
+        }
+    }
+
+    output.mkdir("DALI");
+    output.cd("DALI");
+    gammadetectors.Write();
+    output.cd("");
+    printf("Finished DALI Calibration");
+}
+
+void makehistograms(const string input, bool calib){
+    TTree* inputtree;
+    TFile f(input.c_str());
+    f.GetObject("tree", inputtree);
+
+    treereader alt2dtree(inputtree); // Opens the input file...
+
+    // Generating an outputfile that matches names with the input file
+    string output;
+    if(calib) output = "build/output/" + input.substr(21,21) + "hist.root";
+    else      output = "build/output/" + input.substr(16,9) + "hist.root";
+
     TFile outputfile(output.c_str(), "RECREATE");
     if(!outputfile.IsOpen()) __throw_invalid_argument("Output file not valid");
 
@@ -430,29 +464,34 @@ void makehistograms(const string input){
         true,  // ppac
         true,  // Ionisationchamber
         true,  // highordercorrection
-        true   // makepid
+        true,  // makepid
+        true   // DALIcalib
     };
 
     // Store events that cannot be used
     vector<bool> goodevents(1000000, true);
 
     // Then we read in the tree (lazy)
-    TTreeReader mytreereader("tree", &inputfile);
+    //TTreeReader mytreereader("tree", &inputfile);
 
     // Rebuild F7 Trigger combined charge threshhold
-    if(options.at(0)) plastics(alt2dtree, outputfile, goodevents);
-    
-    // Cut the PPAC's
-    if(options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
+    if(!calib) {
+        if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
 
-    if(options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
-    printf("Finished with PPAC Consistency checks\n");
-    // Get Corrections
-    if(options.at(3)) highordercorrection(alt2dtree, outputfile);
+        // Cut the PPAC's
+        if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
 
-    // Get Z vs. A/Q
-    if(options.at(4)) makepid(alt2dtree, outputfile, goodevents);
-    printf("Made PID histograms in %s\n", output.c_str());
+        if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
+        printf("Finished with PPAC Consistency checks\n");
+        // Get Corrections
+        if (options.at(3)) highordercorrection(alt2dtree, outputfile);
+
+        // Get Z vs. A/Q
+        if (options.at(4)) makepid(alt2dtree, outputfile, goodevents);
+        printf("Made PID histograms in %s\n", output.c_str());
+    }
+    //Get ADC Spectra for DALI
+    if(options.at(5)) dalicalib(alt2dtree, outputfile);
 
     cout << "Runs has " <<accumulate(goodevents.begin(),goodevents.end(),0)
          << " good Elements" << endl;

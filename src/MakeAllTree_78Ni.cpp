@@ -10,7 +10,7 @@ void stop_interrupt(){
     stoploop = true;
 }
 
-void generatetree(const string infile, const string output){
+void generatetree(const string infile, const string output, bool calib){
     //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
     cout << "Now in Estore -> " << infile << endl;
 
@@ -45,39 +45,42 @@ void generatetree(const string infile, const string output){
     TArtRecoPID recopid;
 
     // Definition of observables we want to reconstruct
+
     printf("Defining BigRIPS parameters\n");
-    const vector<int> focalplanes{3,5,7,8,9,11};
+    const vector<int> focalplanes{3, 5, 7, 8, 9, 11};
+    if(!calib) {
+        vector<vector<string>> mfil{  // matrixfiles
+                {"config/matrix/mat1.mat",               "D3"},                // F3 - F5 => D3
+                {"config/matrix/mat2.mat",               "D5"},                // F5 - F7 => D5
+                {"config/matrix/F8F9_LargeAccAchr.mat",  "D7"},    // F8 - F9 => D7
+                {"config/matrix/F9F11_LargeAccAchr.mat", "D8"}}; // F9 - F11  => D8
 
-    vector<vector<string>> mfil{  // matrixfiles
-         {"config/matrix/mat1.mat", "D3"},                // F3 - F5 => D3
-         {"config/matrix/mat2.mat", "D5"},                // F5 - F7 => D5
-         {"config/matrix/F8F9_LargeAccAchr.mat","D7"},    // F8 - F9 => D7
-         {"config/matrix/F9F11_LargeAccAchr.mat", "D8"}}; // F9 - F11  => D8
+        vector<TArtRIPS *> rips{
+                recopid.DefineNewRIPS(3, 5, &mfil[0][0][0], &mfil[0][1][0]),
+                recopid.DefineNewRIPS(5, 7, &mfil[1][0][0], &mfil[1][1][0]),
+                recopid.DefineNewRIPS(8, 9, &mfil[2][0][0], &mfil[2][1][0]),
+                recopid.DefineNewRIPS(9, 11, &mfil[3][0][0], &mfil[3][1][0])};
 
-    vector<TArtRIPS*> rips{
-        recopid.DefineNewRIPS(3,5 ,&mfil[0][0][0],&mfil[0][1][0]),
-        recopid.DefineNewRIPS(5,7 ,&mfil[1][0][0],&mfil[1][1][0]),
-        recopid.DefineNewRIPS(8,9 ,&mfil[2][0][0],&mfil[2][1][0]),
-        recopid.DefineNewRIPS(9,11,&mfil[3][0][0],&mfil[3][1][0])};
+        // Reconstruction of TOF DefineNewTOF(first plane,second plane, time offset)
+        vector<vector<string>> fplname{{"F3pl", "F7pl"},
+                                       {"F8pl", "F11pl-1"}};
 
-    // Reconstruction of TOF DefineNewTOF(first plane,second plane, time offset)
-    vector<vector<string>> fplname{{"F3pl", "F7pl"}, {"F8pl","F11pl-1"}}; 
+        vector<double> tofoff{
+                300.25,   // good Offset Value for F3-F7,  empty-target run  300.85
+                -159.45}; // good Offset Value for F8-F11, empty-target run -160.45
 
-    vector<double> tofoff{
-        300.25,   // good Offset Value for F3-F7,  empty-target run  300.85
-        -159.45}; // good Offset Value for F8-F11, empty-target run -160.45
+        vector<TArtTOF *> tof{
+                recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0], tofoff[0], 5),
+                recopid.DefineNewTOF(&fplname[1][0][0], &fplname[1][1][0], tofoff[1], 9)};
 
-    vector<TArtTOF*> tof{
-        recopid.DefineNewTOF(&fplname[0][0][0],&fplname[0][1][0],tofoff[0],5),
-        recopid.DefineNewTOF(&fplname[1][0][0],&fplname[1][1][0],tofoff[1],9)};
-
-    // Reconstruction of IC observables for ID
-    vector<TArtBeam*> beam{  // br = BigRIPS, zd = ZeroDegree
-        recopid.DefineNewBeam(rips[0],rips[1],tof[0],(char *)"F7IC"),   //br_35
-        recopid.DefineNewBeam(rips[1],        tof[0],(char *)"F7IC"),   //br_57
-        recopid.DefineNewBeam(rips[2],        tof[1],(char *)"F11IC"),  //zd_89
-        recopid.DefineNewBeam(rips[3],        tof[1],(char *)"F11IC"),  //zd_911
-        recopid.DefineNewBeam(rips[2],rips[3],tof[1],(char *)"F11IC")}; //zd_811
+        // Reconstruction of IC observables for ID
+        vector<TArtBeam *> beam{  // br = BigRIPS, zd = ZeroDegree
+                recopid.DefineNewBeam(rips[0], rips[1], tof[0], (char *) "F7IC"),   //br_35
+                recopid.DefineNewBeam(rips[1], tof[0], (char *) "F7IC"),   //br_57
+                recopid.DefineNewBeam(rips[2], tof[1], (char *) "F11IC"),  //zd_89
+                recopid.DefineNewBeam(rips[3], tof[1], (char *) "F11IC"),  //zd_911
+                recopid.DefineNewBeam(rips[2], rips[3], tof[1], (char *) "F11IC")}; //zd_811
+    }
     // To my knowledge, only [0] and [4] usable (tof-Focalplane mismatch)
 
     // Create DALIParameters to get ".xml"
@@ -88,14 +91,15 @@ void generatetree(const string infile, const string output){
     auto dalicalib = new TArtCalibDALI();
 
     // Create TTree and output file for it
-    TFile fout(output.c_str(), "UPDATE");
+    TFile fout(output.c_str(), "RECREATE");
     auto tree = new TTree("tree","tree");
 
     // Define data nodes which are supposed to be dumped to tree 
     // EventInfo is important for the fBit information to know the trigger!
-    const vector<string> datanodes{"EventInfo", "BigRIPSPPAC", "BigRIPSPlastic",
+    vector<string> datanodes{"EventInfo", "BigRIPSPPAC", "BigRIPSPlastic",
                                   "BigRIPSIC","BigRIPSFocalPlane","BigRIPSRIPS",
                                   "BigRIPSTOF", "BigRIPSBeam", "DALINaI"};
+    if(calib) datanodes.clear(); datanodes.emplace_back("DALINaI");
 
     for(auto i : datanodes){
         auto *array = (TClonesArray *)sman->FindDataContainer(&i[0]);

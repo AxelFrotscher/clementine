@@ -11,6 +11,6 @@
 #include "TROOT.h"
 #include "treereader.hh"
 
-void makehistograms(const std::__cxx11::string input);
+void makehistograms(const std::__cxx11::string input, bool calib);
 bool closeness(std::vector< double >& d, double sigma);
 void makepid(const TTreeReader& datree, TFile& output);
