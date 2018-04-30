@@ -1,6 +1,5 @@
 #include "histograms.hh"
 #include "MakeAllTree_78Ni.hh"
-#include "DALIcalibration.hh"
 #include <iostream>
 #include <thread>
 
@@ -35,26 +34,14 @@ int main(int argc, char**argv){
     vector<string> dalioutput;
     const int analysedfile = 1; // Index of analysed file
     switch(analyse_raw){
-        case 2:{
-            vector<string> input = getlist("config/daliridf.txt");
-            cout << "Analyzing DALI: " << input.at(analysedfile) << endl;
-            //Generating output matching to input
-            for(int i=0; i<input.size(); i++){
-                string number = input.at(i).substr(21,21); //Start, length
-                dalioutput.push_back("build/output/dali/" + number + ".root");
-                generatetree(input.at(i), dalioutput.back(), true);
-            }
-            makehistograms(output, true);
-            break;
-        }
         case 1:{ // Analyse SEASTAR-DATA
             vector<string> input = getlist("config/minosridf.txt");
             cout << "Analyzing SEASTAR:" << input.at(34) << endl;
-            generatetree(input.at(34), output, false);
+            generatetree(input.at(34), output);
         }
         case 0:{
             printf("Now proceeding to make histograms");
-            makehistograms(output, false);
+            makehistograms(output);
             break;
         }
         default:

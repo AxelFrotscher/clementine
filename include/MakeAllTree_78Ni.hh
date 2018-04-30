@@ -38,5 +38,4 @@
 #include <thread>
 
 void stop_interrupt();
-void generatetree(std::__cxx11::string infile, std::__cxx11::string output,
-                  bool calib);
+void generatetree(std::__cxx11::string infile, std::__cxx11::string output);

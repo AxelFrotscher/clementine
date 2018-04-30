@@ -444,7 +444,7 @@ void dalicalib(treereader &tree, TFile &output){
     printf("Finished DALI Calibration");
 }
 
-void makehistograms(const string input, bool calib){
+void makehistograms(const string input){
     TTree* inputtree;
     TFile f(input.c_str());
     f.GetObject("tree", inputtree);
@@ -452,9 +452,7 @@ void makehistograms(const string input, bool calib){
     treereader alt2dtree(inputtree); // Opens the input file...
 
     // Generating an outputfile that matches names with the input file
-    string output;
-    if(calib) output = "build/output/" + input.substr(21,21) + "hist.root";
-    else      output = "build/output/" + input.substr(16,9) + "hist.root";
+    string output = "build/output/" + input.substr(16,9) + "hist.root";
 
     TFile outputfile(output.c_str(), "RECREATE");
     if(!outputfile.IsOpen()) __throw_invalid_argument("Output file not valid");
@@ -475,21 +473,19 @@ void makehistograms(const string input, bool calib){
     //TTreeReader mytreereader("tree", &inputfile);
 
     // Rebuild F7 Trigger combined charge threshhold
-    if(!calib) {
-        if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
+    if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
 
-        // Cut the PPAC's
-        if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
+    // Cut the PPAC's
+    if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
 
-        if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
-        printf("Finished with PPAC Consistency checks\n");
-        // Get Corrections
-        if (options.at(3)) highordercorrection(alt2dtree, outputfile);
+    if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
+    printf("Finished with PPAC Consistency checks\n");
+    // Get Corrections
+    if (options.at(3)) highordercorrection(alt2dtree, outputfile);
 
-        // Get Z vs. A/Q
-        if (options.at(4)) makepid(alt2dtree, outputfile, goodevents);
-        printf("Made PID histograms in %s\n", output.c_str());
-    }
+    // Get Z vs. A/Q
+    if (options.at(4)) makepid(alt2dtree, outputfile, goodevents);
+    printf("Made PID histograms in %s\n", output.c_str());
     //Get ADC Spectra for DALI
     if(options.at(5)) dalicalib(alt2dtree, outputfile);
 
