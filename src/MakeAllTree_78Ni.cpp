@@ -166,7 +166,7 @@ void generatetree(const string infile, const string output){
         "F9PPAC-1A", "F9PPAC-1B", "F9PPAC-2A", "F9PPAC-2B", 
         "F11PPAC-1A","F11PPAC-1B","F11PPAC-2A","F11PPAC-2B"};
 
-    while(estore.GetNextEvent()){ //&& (neve < 1000000)){ //&& neve < 100000
+    while(estore.GetNextEvent() && (neve < 1000000)){ //&& neve < 100000
         if(!(neve%10000)) printf("Event %i\n", neve);
 
         //Making the BigRIPS tree calibration

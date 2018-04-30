@@ -30,17 +30,17 @@ int main(int argc, char**argv){
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
     // Step 1: analyse the raw data
-    string output = "build/output/out.root";
-    vector<string> dalioutput;
-    const int analysedfile = 1; // Index of analysed file
+    const int analysedfile = 34; // Index of analysed file
+    const vector<string> input = getlist("config/minosridf.txt");
+    string output = "build/output/" + input.at(analysedfile).substr(16,9)+".root";
+
     switch(analyse_raw){
         case 1:{ // Analyse SEASTAR-DATA
-            vector<string> input = getlist("config/minosridf.txt");
-            cout << "Analyzing SEASTAR:" << input.at(34) << endl;
-            generatetree(input.at(34), output);
+            cout << "Analyzing SEASTAR:" << input.at(analysedfile) << endl;
+            generatetree(input.at(analysedfile), output);
         }
         case 0:{
-            printf("Now proceeding to make histograms");
+            printf("Now proceeding to make histograms\n");
             makehistograms(output);
             break;
         }

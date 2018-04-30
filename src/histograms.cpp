@@ -377,34 +377,43 @@ void ionisationchamber(treereader &alt2dtree, TFile &output,
     output.cd("");
 }
 
-void highordercorrection(treereader &alt2dtree, TFile &output){
+void highordercorrection(treereader &tree, TFile &output){
     // This method aims to determine the higher-order corrections
     // for the matrix elements
     printf("Now beginning with higher order corrections ...\n");
-    vector<string> keys{"F3X","F3A", "F5X", "F5A", "BigRIPSBeam.aoq"};
-    alt2dtree.setloopkeys(keys);
+    vector<string> keys{"F3X","F3A", "F5X", "F5A", "BigRIPSBeam.aoq",
+                        "BigRIPSBeam.beta"};
+    tree.setloopkeys(keys);
     
     const int beam = 0; // Evaluate Beam F3-7 (1st element)
-    const vector<string> arrname = { "DepF3X","DepF3A","DepF5X", "DepF5A"};
+    const vector<string> arrname = { "DepF3X","DepF3A","DepF5X", "DepF5A",
+                                     "DepBetaF3-7"};
     const vector<string> arrtitle = {
         "Dependence of F3X vs AoQ", "Dependence of F3A vs AoQ", 
-        "Dependence of F5X vs AoQ", "Dependence of F5A vs AoQ"};
+        "Dependence of F5X vs AoQ", "Dependence of F5A vs AoQ",
+        "Dependence of #beta vs AoQ"};
     
     vector<TH2D> culpritdiag;
 
     for(uint i=0; i<arrname.size(); i++){
-      culpritdiag.emplace_back(TH2D(arrname.at(i).c_str(),arrtitle.at(i).c_str(),
+        // Adjustments for beta measurement:
+        if (i<4)
+        culpritdiag.emplace_back(TH2D(arrname.at(i).c_str(),arrtitle.at(i).c_str(),
                                     2000,2.2,3.2,500,-100,150));
-      culpritdiag.back().SetOption("colz");
-      culpritdiag.back().GetXaxis()->SetTitle("A/Q");
-      culpritdiag.back().GetYaxis()->SetTitle(arrname.at(i).c_str());
+        else
+        culpritdiag.emplace_back(TH2D(arrname.at(i).c_str(),arrtitle.at(i).c_str(),
+                                    2000,2.2,3.2,500,0.6,0.7));
+        culpritdiag.back().SetOption("colz");
+        culpritdiag.back().GetXaxis()->SetTitle("A/Q");
+        culpritdiag.back().GetYaxis()->SetTitle(arrname.at(i).c_str());
     }
 
-    while(alt2dtree.singleloop()){
-        culpritdiag.at(0).Fill(alt2dtree.BigRIPSBeam_aoq[beam], alt2dtree.F3X);
-        culpritdiag.at(1).Fill(alt2dtree.BigRIPSBeam_aoq[beam], alt2dtree.F3A);
-        culpritdiag.at(2).Fill(alt2dtree.BigRIPSBeam_aoq[beam], alt2dtree.F5X);
-        culpritdiag.at(3).Fill(alt2dtree.BigRIPSBeam_aoq[beam], alt2dtree.F5A);
+    while(tree.singleloop()){
+        culpritdiag.at(0).Fill(tree.BigRIPSBeam_aoq[beam], tree.F3X);
+        culpritdiag.at(1).Fill(tree.BigRIPSBeam_aoq[beam], tree.F3A);
+        culpritdiag.at(2).Fill(tree.BigRIPSBeam_aoq[beam], tree.F5X);
+        culpritdiag.at(3).Fill(tree.BigRIPSBeam_aoq[beam], tree.F5A);
+        culpritdiag.at(4).Fill(tree.BigRIPSBeam_aoq[beam], tree.BigRIPSBeam_beta[beam]);
     }
     //gDirec
     output.Delete("Corrections");
@@ -452,7 +461,7 @@ void makehistograms(const string input){
     treereader alt2dtree(inputtree); // Opens the input file...
 
     // Generating an outputfile that matches names with the input file
-    string output = "build/output/" + input.substr(16,9) + "hist.root";
+    string output = input.substr(0,22) + "hist.root";
 
     TFile outputfile(output.c_str(), "RECREATE");
     if(!outputfile.IsOpen()) __throw_invalid_argument("Output file not valid");
