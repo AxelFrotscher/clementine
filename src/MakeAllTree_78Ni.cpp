@@ -64,8 +64,8 @@ void generatetree(const string infile, const string output){
     // Reconstruction of TOF DefineNewTOF(first plane,second plane, time offset)
     vector<vector<string>> fplname{{"F3pl", "F7pl"},
                                    {"F8pl", "F11pl-1"}};
-    vector<double> tofoff{
-            300.25,   // good Offset Value for F3-F7,  empty-target run  300.85
+    vector<double> tofoff{ //300.25 F3-F7 init
+            304.50,   // good Offset Value for F3-F7,  empty-target run  300.85
             -159.45}; // good Offset Value for F8-F11, empty-target run -160.45
 
     vector<TArtTOF *> tof{
@@ -74,7 +74,7 @@ void generatetree(const string infile, const string output){
 
     // Reconstruction of IC observables for ID
     vector<TArtBeam *> beam{  // br = BigRIPS, zd = ZeroDegree
-            recopid.DefineNewBeam(rips[0], rips[1], tof[0], (char *) "F7IC"),   //br_35
+            recopid.DefineNewBeam(rips[0], rips[1], tof[0], (char *) "F7IC"),   //br_37
             recopid.DefineNewBeam(rips[1], tof[0], (char *) "F7IC"),   //br_57
             recopid.DefineNewBeam(rips[2], tof[1], (char *) "F11IC"),  //zd_89
             recopid.DefineNewBeam(rips[3], tof[1], (char *) "F11IC"),  //zd_911
@@ -166,7 +166,7 @@ void generatetree(const string infile, const string output){
         "F9PPAC-1A", "F9PPAC-1B", "F9PPAC-2A", "F9PPAC-2B", 
         "F11PPAC-1A","F11PPAC-1B","F11PPAC-2A","F11PPAC-2B"};
 
-    while(estore.GetNextEvent() && (neve < 1000000)){ //&& neve < 100000
+    while(estore.GetNextEvent() && (neve < 2000000)){ //&& neve < 100000
         if(!(neve%10000)) printf("Event %i\n", neve);
 
         //Making the BigRIPS tree calibration

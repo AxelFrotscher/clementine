@@ -33,9 +33,9 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
     }
 
     vector<double> cutval{
-        2.575, // center x
-        32.5,  // center y
-        0.008, // radius x
+        2.742, // center x
+        31.0,  // center y
+        0.009, // radius x
         0.6    // radius y
     };
 
@@ -382,7 +382,7 @@ void highordercorrection(treereader &tree, TFile &output){
     // for the matrix elements
     printf("Now beginning with higher order corrections ...\n");
     vector<string> keys{"F3X","F3A", "F5X", "F5A", "BigRIPSBeam.aoq",
-                        "BigRIPSBeam.beta"};
+                        "BigRIPSBeam.beta", "BigRIPSBeam.zet"};
     tree.setloopkeys(keys);
     
     const int beam = 0; // Evaluate Beam F3-7 (1st element)
@@ -394,6 +394,12 @@ void highordercorrection(treereader &tree, TFile &output){
         "Dependence of #beta vs AoQ"};
     
     vector<TH2D> culpritdiag;
+    vector<double> cutval{
+            2.742, // center x
+            31.0,  // center y
+            0.009, // radius x
+            0.6    // radius y
+    };
 
     for(uint i=0; i<arrname.size(); i++){
         // Adjustments for beta measurement:
@@ -409,11 +415,14 @@ void highordercorrection(treereader &tree, TFile &output){
     }
 
     while(tree.singleloop()){
+        if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[0]-cutval.at(0)),2) +
+            pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[0]- cutval.at(1)),2)) <1){
         culpritdiag.at(0).Fill(tree.BigRIPSBeam_aoq[beam], tree.F3X);
         culpritdiag.at(1).Fill(tree.BigRIPSBeam_aoq[beam], tree.F3A);
         culpritdiag.at(2).Fill(tree.BigRIPSBeam_aoq[beam], tree.F5X);
         culpritdiag.at(3).Fill(tree.BigRIPSBeam_aoq[beam], tree.F5A);
         culpritdiag.at(4).Fill(tree.BigRIPSBeam_aoq[beam], tree.BigRIPSBeam_beta[beam]);
+        }
     }
     //gDirec
     output.Delete("Corrections");
@@ -476,7 +485,7 @@ void makehistograms(const string input){
     };
 
     // Store events that cannot be used
-    vector<bool> goodevents(1000000, true);
+    vector<bool> goodevents(2000000, true);
 
     // Then we read in the tree (lazy)
     //TTreeReader mytreereader("tree", &inputfile);
