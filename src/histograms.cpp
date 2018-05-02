@@ -15,6 +15,11 @@ const bool closeness(const vector<double> &d, double sigma = 0.1){
     return sigma * mean > sqrt(sq_sum / d.size());
 }
 
+double linfit(double *x, double *par){
+    // Linear fit function
+    return par[0] + par[1]*x[0];
+}
+
 void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
     // 5 beams, 2incoming, 3outgoing
     vector <string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet"};
@@ -394,10 +399,10 @@ void highordercorrection(treereader &tree, TFile &output){
         "Dependence of #beta vs AoQ"};
     
     vector<TH2D> culpritdiag;
-    vector<double> cutval{
-            2.742, // center x
-            31.0,  // center y
-            0.009, // radius x
+    vector<double> cutval{ // for corrections we use 85Ge
+            2.65625, // center x
+            32.0,  // center y
+            0.008, // radius x
             0.6    // radius y
     };
 
@@ -414,21 +419,47 @@ void highordercorrection(treereader &tree, TFile &output){
         culpritdiag.back().GetYaxis()->SetTitle(arrname.at(i).c_str());
     }
 
+    //Attempting first real correction with F5 x-position
+    const double lin = -3706;
+    //const double abs = 9854;
+    //const double x0 = -abs/lin;
+    double BigRIPSBeamF5corr = 0;
+
+
     while(tree.singleloop()){
         if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[0]-cutval.at(0)),2) +
             pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[0]- cutval.at(1)),2)) <1){
-        culpritdiag.at(0).Fill(tree.BigRIPSBeam_aoq[beam], tree.F3X);
-        culpritdiag.at(1).Fill(tree.BigRIPSBeam_aoq[beam], tree.F3A);
-        culpritdiag.at(2).Fill(tree.BigRIPSBeam_aoq[beam], tree.F5X);
-        culpritdiag.at(3).Fill(tree.BigRIPSBeam_aoq[beam], tree.F5A);
-        culpritdiag.at(4).Fill(tree.BigRIPSBeam_aoq[beam], tree.BigRIPSBeam_beta[beam]);
+            BigRIPSBeamF5corr = tree.BigRIPSBeam_aoq[beam] + cutval[0] -
+                                (2.658 -tree.F5X*3.673E-5);
+            culpritdiag.at(0).Fill(BigRIPSBeamF5corr, tree.F3X);
+            culpritdiag.at(1).Fill(BigRIPSBeamF5corr, tree.F3A);
+            culpritdiag.at(2).Fill(BigRIPSBeamF5corr, tree.F5X);
+            culpritdiag.at(3).Fill(BigRIPSBeamF5corr, tree.F5A);
+            culpritdiag.at(4).Fill(BigRIPSBeamF5corr,
+                                   tree.BigRIPSBeam_beta[beam]);
         }
     }
-    //gDirec
-    output.Delete("Corrections");
+
+    // Get linear fits of the projected means
+    vector<TProfile *> projections;
+    const double cutfrac = 0.8; // fraction to consider for fit
+    TF1 * corrlinfit = new TF1("Linear Fit", linfit, cutval[1]-cutfrac*cutval[3],
+                               cutval[1]+cutfrac*cutval[3], 2);
+    corrlinfit->SetParNames("absolute", "linear");
+    for (auto &elem : culpritdiag) {
+        projections.push_back(elem.ProfileY());
+        projections.back()->Fit("Linear Fit");
+    }
+
     output.mkdir("Corrections");
+    output.mkdir("Corrections/Profiles");
     output.cd("Corrections");
     for(auto &elem: culpritdiag) elem.Write();
+    output.cd("Corrections/Profiles");
+    for(auto &elem: projections) {
+        elem->Write();
+        //elem->Delete();
+    }
     output.cd("");
     printf("Finished with higher order corrections!\n");
 }

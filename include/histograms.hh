@@ -10,6 +10,8 @@
 #include "TMath.h"
 #include "TROOT.h"
 #include "treereader.hh"
+#include "TProfile.h"
+#include "TF1.h"
 
 void makehistograms(const std::__cxx11::string input);
 bool closeness(std::vector< double >& d, double sigma);

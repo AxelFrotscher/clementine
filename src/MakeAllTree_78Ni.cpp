@@ -64,9 +64,9 @@ void generatetree(const string infile, const string output){
     // Reconstruction of TOF DefineNewTOF(first plane,second plane, time offset)
     vector<vector<string>> fplname{{"F3pl", "F7pl"},
                                    {"F8pl", "F11pl-1"}};
-    vector<double> tofoff{ //300.25 F3-F7 init
+    vector<double> tofoff{ //300.25 F3-F7 init -159.45 F8-F11 init
             304.50,   // good Offset Value for F3-F7,  empty-target run  300.85
-            -159.45}; // good Offset Value for F8-F11, empty-target run -160.45
+            -162.49}; // good Offset Value for F8-F11, empty-target run -160.45
 
     vector<TArtTOF *> tof{
             recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0], tofoff[0], 5),
