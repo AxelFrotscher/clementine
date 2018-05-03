@@ -398,7 +398,7 @@ void highordercorrection(treereader &tree, TFile &output){
         "Dependence of F5X vs AoQ", "Dependence of F5A vs AoQ",
         "Dependence of #beta vs AoQ"};
     
-    vector<TH2D> culpritdiag;
+    vector<vector<TH2D>> culpritdiag;
     vector<double> cutval{ // for corrections we use 85Ge
             2.65625, // center x
             32.0,  // center y
@@ -406,60 +406,89 @@ void highordercorrection(treereader &tree, TFile &output){
             0.6    // radius y
     };
 
+    // Initialize all the diagrams
     for(uint i=0; i<arrname.size(); i++){
         // Adjustments for beta measurement:
-        if (i<4)
-        culpritdiag.emplace_back(TH2D(arrname.at(i).c_str(),arrtitle.at(i).c_str(),
-                                    2000,2.2,3.2,500,-100,150));
+        string corrarr = arrname.at(i) + "c";
+        string corrarrn = arrtitle.at(i) + "cF5X";
+        if (i<4){
+            culpritdiag.push_back({
+                TH2D(arrname[i].c_str(),arrtitle[i].c_str(), 200, 2.6, 2.7,
+                                                              500,-100, 150),
+                TH2D(corrarr.c_str(),corrarrn.c_str(),       200, 2.6, 2.7,
+                                                              500,-100, 150)});
+        }
         else
-        culpritdiag.emplace_back(TH2D(arrname.at(i).c_str(),arrtitle.at(i).c_str(),
-                                    2000,2.2,3.2,500,0.6,0.7));
-        culpritdiag.back().SetOption("colz");
-        culpritdiag.back().GetXaxis()->SetTitle("A/Q");
-        culpritdiag.back().GetYaxis()->SetTitle(arrname.at(i).c_str());
+        culpritdiag.push_back({
+            TH2D(arrname[i].c_str(),arrtitle[i].c_str(),     200, 2.6, 2.7,
+                                                              500, 0.6, 0.7),
+            TH2D(corrarr.c_str(), corrarrn.c_str(),          200, 2.6, 2.7,
+                                                              500, 0.6, 0.7)});
+        for (auto &elem: culpritdiag.back()){
+            elem.SetOption("colz");
+            elem.GetXaxis()->SetTitle("A/Q");
+            elem.GetYaxis()->SetTitle(arrname.at(i).c_str());
+        }
     }
 
     //Attempting first real correction with F5 x-position
-    const double lin = -3706;
-    //const double abs = 9854;
+    const double lin = -3.673E-5;
+    const double abs = 2.658;
     //const double x0 = -abs/lin;
+    vector <double> fillvals(7,0); // Fill dependent variable and corrected values
     double BigRIPSBeamF5corr = 0;
 
 
     while(tree.singleloop()){
         if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[0]-cutval.at(0)),2) +
             pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[0]- cutval.at(1)),2)) <1){
-            BigRIPSBeamF5corr = tree.BigRIPSBeam_aoq[beam] + cutval[0] -
-                                (2.658 -tree.F5X*3.673E-5);
-            culpritdiag.at(0).Fill(BigRIPSBeamF5corr, tree.F3X);
-            culpritdiag.at(1).Fill(BigRIPSBeamF5corr, tree.F3A);
-            culpritdiag.at(2).Fill(BigRIPSBeamF5corr, tree.F5X);
-            culpritdiag.at(3).Fill(BigRIPSBeamF5corr, tree.F5A);
-            culpritdiag.at(4).Fill(BigRIPSBeamF5corr,
-                                   tree.BigRIPSBeam_beta[beam]);
+            // Applying the elliptic cut for 85Ge
+            fillvals.at(0) = tree.F3X;
+            fillvals.at(1) = tree.F3A;
+            fillvals.at(2) = tree.F5X;
+            fillvals.at(3) = tree.F5A;
+            fillvals.at(4) = tree.BigRIPSBeam_beta[beam];
+            fillvals.at(5) = tree.BigRIPSBeam_aoq[beam];
+            fillvals.at(6) = tree.BigRIPSBeam_aoq[beam] + cutval[0] -
+                              (abs +tree.F5X*lin);
+
+            for(int i=0; i<culpritdiag.size(); i++){
+                culpritdiag.at(i).at(0).Fill(fillvals.at(5),fillvals.at(i));
+                culpritdiag.at(i).at(1).Fill(fillvals.at(6),fillvals.at(i));
+            }
         }
     }
 
     // Get linear fits of the projected means
-    vector<TProfile *> projections;
+    vector<vector<TProfile *>> projections;
     const double cutfrac = 0.8; // fraction to consider for fit
     TF1 * corrlinfit = new TF1("Linear Fit", linfit, cutval[1]-cutfrac*cutval[3],
                                cutval[1]+cutfrac*cutval[3], 2);
     corrlinfit->SetParNames("absolute", "linear");
     for (auto &elem : culpritdiag) {
-        projections.push_back(elem.ProfileY());
-        projections.back()->Fit("Linear Fit");
+        projections.push_back({elem.at(0).ProfileY(), elem.at(1).ProfileY()});
+
+        for(auto &back : projections.back()) back->Fit("Linear Fit");
     }
 
-    output.mkdir("Corrections");
-    output.mkdir("Corrections/Profiles");
-    output.cd("Corrections");
-    for(auto &elem: culpritdiag) elem.Write();
-    output.cd("Corrections/Profiles");
+    const vector<string> folders{"Corrections/Raw/Profiles",
+                                 "Corrections/F5Xcorr/Profiles"};
+    for (auto &i: folders) output.mkdir(i.c_str());
+
     for(auto &elem: projections) {
-        elem->Write();
-        //elem->Delete();
+        output.cd("Corrections/Raw/Profiles");
+        elem.at(0)->Write();
+        output.cd("Corrections/F5Xcorr/Profiles");
+        elem.at(1)->Write();
     }
+
+    for(auto &elem : culpritdiag){
+        output.cd("Corrections/Raw");
+        elem.at(0).Write();
+        output.cd("Corrections/F5Xcorr");
+        elem.at(1).Write();
+    }
+
     output.cd("");
     printf("Finished with higher order corrections!\n");
 }
