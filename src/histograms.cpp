@@ -20,63 +20,17 @@ double linfit(double *x, double *par){
     return par[0] + par[1]*x[0];
 }
 
-void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
-    // 5 beams, 2incoming, 3outgoing
-    vector <string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet"};
-    tree.setloopkeys(keys);
+struct calibpar{
+    // Nice encapsulation of variables for the correction
+    double F7absF5X = 0;
+    double F7linF5X = 0;
+    double F7linF5A = 0;
+    double F7linF3X = 0;
+    double F7absF5X0 = 0;
+};
 
-    vector<TH2D> PID {
-        TH2D("pidinc", "PID Incoming F3-F7",  300,2.45,2.9, 200,25,45),
-        TH2D("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,25,45),
-        TH2D("pidincut","PID Inc cut  F8-F11",300,2.45,2.9,200,25,45),
-        TH2D("pidincutout", "PID Out w/ in cut", 300,2.45,2.9,200,25,45)};
-
-    for(auto &elem: PID){
-        elem.SetOption("colz");
-        elem.GetXaxis()->SetTitle("A/Q");
-        elem.GetYaxis()->SetTitle("Z");
-    }
-
-    vector<double> cutval{
-        2.742, // center x
-        31.0,  // center y
-        0.009, // radius x
-        0.6    // radius y
-    };
-
-    int eventcounter =0;
-    vector<vector<double>> valinc;     // Store temporary beam values
-    while(tree.singleloop()){
-        if(goodevents.at(eventcounter)){
-        //Loop over all elements in the tree
-        valinc.push_back({tree.BigRIPSBeam_aoq[0],tree.BigRIPSBeam_aoq[1],
-                          tree.BigRIPSBeam_aoq[2]});
-        valinc.push_back({tree.BigRIPSBeam_zet[0],tree.BigRIPSBeam_zet[1],
-                          tree.BigRIPSBeam_zet[2]});
-        if(closeness(valinc.at(0)) && closeness(valinc.at(1))){
-            // Cut Particles that have variating aoq or zet
-            PID.at(0).Fill(tree.BigRIPSBeam_aoq[0],tree.BigRIPSBeam_zet[0]);
-        }
-
-        valinc.push_back({tree.BigRIPSBeam_aoq[3],tree.BigRIPSBeam_aoq[4]});
-        valinc.push_back({tree.BigRIPSBeam_zet[3], tree.BigRIPSBeam_zet[4]});
-        if(closeness(valinc.at(2)) && closeness(valinc.at(3))){
-            PID.at(1).Fill(tree.BigRIPSBeam_aoq[4],tree.BigRIPSBeam_zet[4]);
-        }
-        valinc.clear();
-
-        if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[0]-cutval.at(0)),2) +
-           pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[0]- cutval.at(1)),2)) <1){
-            PID.at(2).Fill(tree.BigRIPSBeam_aoq[0],tree.BigRIPSBeam_zet[0]);
-            PID.at(3).Fill(tree.BigRIPSBeam_aoq[4],tree.BigRIPSBeam_zet[4]);
-        }}
-        eventcounter++;
-    }
-    output.mkdir("PID");
-    output.cd("PID");
-    for(auto &elem: PID) elem.Write();
-    output.cd("");
-}
+// Definition of global variables here. Keep as short as possible!
+calibpar p1;
 
 void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
     // This function aims to rebuild the trigger from Q1*Q2 F7plastic
@@ -409,21 +363,30 @@ void highordercorrection(treereader &tree, TFile &output){
     // Initialize all the diagrams
     for(uint i=0; i<arrname.size(); i++){
         // Adjustments for beta measurement:
-        string corrarr = arrname.at(i) + "c";
-        string corrarrn = arrtitle.at(i) + "cF5X";
+        string corrarr   = arrname.at(i) + "c";
+        string corrarrn  = arrtitle.at(i) + "cF5X";
+        string corrarr2  = corrarr + "c";
+        string corrarrn2 = corrarrn + "F5A";
+        string corrarr3  = corrarr2 + "c";
+        string corrarrn3 = corrarrn2 + "F3A";
+
         if (i<4){
             culpritdiag.push_back({
-                TH2D(arrname[i].c_str(),arrtitle[i].c_str(), 200, 2.6, 2.7,
+              TH2D(arrname[i].c_str(),arrtitle[i].c_str( ), 2000, 2.2, 3.2,
                                                               500,-100, 150),
-                TH2D(corrarr.c_str(),corrarrn.c_str(),       200, 2.6, 2.7,
-                                                              500,-100, 150)});
+              TH2D(corrarr.c_str(),corrarrn.c_str(),2000,2.2,3.2,500,-100,150),
+              TH2D(corrarr2.c_str(),corrarrn2.c_str(),2000,2.2,3.2,500,-100,150),
+              TH2D(corrarr3.c_str(),corrarrn3.c_str(),2000,2.2,3.2,500,-100,150)});
         }
         else
-        culpritdiag.push_back({
-            TH2D(arrname[i].c_str(),arrtitle[i].c_str(),     200, 2.6, 2.7,
+            culpritdiag.push_back({
+              TH2D(arrname[i].c_str(),arrtitle[i].c_str(), 2000, 2.2, 3.2,
                                                               500, 0.6, 0.7),
-            TH2D(corrarr.c_str(), corrarrn.c_str(),          200, 2.6, 2.7,
-                                                              500, 0.6, 0.7)});
+              TH2D(corrarr.c_str(), corrarrn.c_str(), 2000, 2.2,3.2,500,0.6,0.7),
+              TH2D(corrarr2.c_str(),corrarrn2.c_str(),2000, 2.2,3.2,500,0.6,0.7),
+              TH2D(corrarr3.c_str(),corrarrn3.c_str(),2000, 2.2,3.2,500,0.6,0.7)}
+              );
+
         for (auto &elem: culpritdiag.back()){
             elem.SetOption("colz");
             elem.GetXaxis()->SetTitle("A/Q");
@@ -432,16 +395,19 @@ void highordercorrection(treereader &tree, TFile &output){
     }
 
     //Attempting first real correction with F5 x-position
-    const double lin = -3.673E-5;
-    const double abs = 2.658;
-    //const double x0 = -abs/lin;
-    vector <double> fillvals(7,0); // Fill dependent variable and corrected values
+    p1.F7absF5X = 2.658;
+    p1.F7linF5X = -3.673E-5;
+    p1.F7linF5A = -0.0001232;
+    p1.F7linF3X = 0.000223;
+    p1.F7absF5X0 = cutval[0];
+
+    vector <double> fillvals(9,0); // Fill dependent variable and corrected values
     double BigRIPSBeamF5corr = 0;
 
 
     while(tree.singleloop()){
-        if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[0]-cutval.at(0)),2) +
-            pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[0]- cutval.at(1)),2)) <1){
+        if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[beam]-cutval.at(0)),2) +
+            pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[beam]- cutval.at(1)),2)) <10000000){
             // Applying the elliptic cut for 85Ge
             fillvals.at(0) = tree.F3X;
             fillvals.at(1) = tree.F3A;
@@ -449,12 +415,16 @@ void highordercorrection(treereader &tree, TFile &output){
             fillvals.at(3) = tree.F5A;
             fillvals.at(4) = tree.BigRIPSBeam_beta[beam];
             fillvals.at(5) = tree.BigRIPSBeam_aoq[beam];
-            fillvals.at(6) = tree.BigRIPSBeam_aoq[beam] + cutval[0] -
-                              (abs +tree.F5X*lin);
+            fillvals.at(6) = tree.BigRIPSBeam_aoq[beam] + p1.F7absF5X0 -
+                              (p1.F7absF5X +tree.F5X*p1.F7linF5X);
+            fillvals.at(7) = fillvals.at(6) + tree.F5A*p1.F7linF5A;
+            fillvals.at(8) = fillvals.at(7) + tree.F3X*p1.F7linF3X;
 
-            for(int i=0; i<culpritdiag.size(); i++){
+            for(uint i=0; i<culpritdiag.size(); i++){
                 culpritdiag.at(i).at(0).Fill(fillvals.at(5),fillvals.at(i));
                 culpritdiag.at(i).at(1).Fill(fillvals.at(6),fillvals.at(i));
+                culpritdiag.at(i).at(2).Fill(fillvals.at(7),fillvals.at(i));
+                culpritdiag.at(i).at(3).Fill(fillvals.at(8),fillvals.at(i));
             }
         }
     }
@@ -462,24 +432,27 @@ void highordercorrection(treereader &tree, TFile &output){
     // Get linear fits of the projected means
     vector<vector<TProfile *>> projections;
     const double cutfrac = 0.8; // fraction to consider for fit
-    TF1 * corrlinfit = new TF1("Linear Fit", linfit, cutval[1]-cutfrac*cutval[3],
+    auto corrlinfit = new TF1("Linear Fit", linfit, cutval[1]-cutfrac*cutval[3],
                                cutval[1]+cutfrac*cutval[3], 2);
     corrlinfit->SetParNames("absolute", "linear");
     for (auto &elem : culpritdiag) {
-        projections.push_back({elem.at(0).ProfileY(), elem.at(1).ProfileY()});
+        projections.push_back({elem.at(0).ProfileY(), elem.at(1).ProfileY(),
+                               elem.at(2).ProfileY(), elem.at(3).ProfileY()});
 
         for(auto &back : projections.back()) back->Fit("Linear Fit");
     }
 
     const vector<string> folders{"Corrections/Raw/Profiles",
-                                 "Corrections/F5Xcorr/Profiles"};
+                                 "Corrections/F5Xcorr/Profiles",
+                                 "Corrections/F5XF5Acorr/Profiles",
+                                 "Corrections/F5XF5AF3X/Profiles"};
     for (auto &i: folders) output.mkdir(i.c_str());
 
     for(auto &elem: projections) {
-        output.cd("Corrections/Raw/Profiles");
-        elem.at(0)->Write();
-        output.cd("Corrections/F5Xcorr/Profiles");
-        elem.at(1)->Write();
+        for(uint i=0; i<folders.size(); i++){
+            output.cd(folders.at(i).c_str());
+            elem.at(i)->Write();
+        }
     }
 
     for(auto &elem : culpritdiag){
@@ -487,6 +460,10 @@ void highordercorrection(treereader &tree, TFile &output){
         elem.at(0).Write();
         output.cd("Corrections/F5Xcorr");
         elem.at(1).Write();
+        output.cd("Corrections/F5XF5Acorr");
+        elem.at(2).Write();
+        output.cd("Corrections/F5XF5AF3X");
+        elem.at(3).Write();
     }
 
     output.cd("");
@@ -520,6 +497,89 @@ void dalicalib(treereader &tree, TFile &output){
     gammadetectors.Write();
     output.cd("");
     printf("Finished DALI Calibration");
+}
+
+void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
+    // 5 beams, 2incoming, 3outgoing
+    vector <string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
+                         "F5X", "F5A"};
+    tree.setloopkeys(keys);
+
+    vector<vector<TH2D>> PID {{
+        TH2D("pidinc", "PID Incoming F3-F7",  300,2.45,2.9, 200,25,45),
+        TH2D("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,25,45),
+        TH2D("pidincut","PID Inc cut  F8-F11",300,2.45,2.9,200,25,45),
+        TH2D("pidincutout", "PID Out w/ in cut", 300,2.45,2.9,200,25,45)},
+       {TH2D("pidinccorr", "PID Incoming F3-F7",  300,2.45,2.9, 200,25,45),
+        TH2D("pidoutcorr", "PID Outgoing F8-F11", 300,2.45,2.9, 200,25,45),
+        TH2D("pidincutcorr","PID Inc cut  F8-F11",300,2.45,2.9,200,25,45),
+        TH2D("pidincutoutcorr", "PID Out w/ in cut", 300,2.45,2.9,200,25,45)}
+    };
+
+    for(auto &elem: PID){
+        for(auto &uelem: elem){
+            uelem.SetOption("colz");
+            uelem.GetXaxis()->SetTitle("A/Q");
+            uelem.GetYaxis()->SetTitle("Z");
+        }
+    }
+
+    vector<double> cutval{
+            2.742, // center x
+            31.0,  // center y
+            0.009, // radius x
+            0.6    // radius y
+    };
+
+    int eventcounter =0;
+    vector<vector<double>> valinc;     // Store temporary beam values
+    while(tree.singleloop()){
+        if(goodevents.at(eventcounter)){
+            double beamaoqcorr = tree.BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
+                                 (p1.F7absF5X+tree.F5X*p1.F7linF5X) +
+                                 tree.F5A*p1.F7linF5A +
+                                 tree.F3X*p1.F7linF3X;
+
+            //Loop over all elements in the tree
+            valinc.push_back({tree.BigRIPSBeam_aoq[0],tree.BigRIPSBeam_aoq[1],
+                              tree.BigRIPSBeam_aoq[2]});
+            valinc.push_back({tree.BigRIPSBeam_zet[0],tree.BigRIPSBeam_zet[1],
+                              tree.BigRIPSBeam_zet[2]});
+            if(closeness(valinc.at(0)) && closeness(valinc.at(1))){
+                // Cut Particles that have variating aoq or zet
+                PID.at(0).at(0).Fill(tree.BigRIPSBeam_aoq[0],
+                                     tree.BigRIPSBeam_zet[0]);
+                PID.at(1).at(0).Fill(beamaoqcorr, tree.BigRIPSBeam_zet[0]);
+            }
+
+            valinc.push_back({tree.BigRIPSBeam_aoq[3],tree.BigRIPSBeam_aoq[4]});
+            valinc.push_back({tree.BigRIPSBeam_zet[3],tree.BigRIPSBeam_zet[4]});
+            if(closeness(valinc.at(2)) && closeness(valinc.at(3))){
+                PID.at(0).at(1).Fill(tree.BigRIPSBeam_aoq[4],
+                                     tree.BigRIPSBeam_zet[4]);
+            }
+            valinc.clear();
+
+            // We now fill the cutted data (cut by ellipsoid)
+            if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[0]-cutval.at(0)),2) +
+                pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[0]-cutval.at(1)),2))<1){
+                PID.at(0).at(2).Fill(tree.BigRIPSBeam_aoq[0],
+                                     tree.BigRIPSBeam_zet[0]);
+                PID.at(1).at(2).Fill(beamaoqcorr, tree.BigRIPSBeam_zet[0]);
+                PID.at(0).at(3).Fill(tree.BigRIPSBeam_aoq[4],
+                                     tree.BigRIPSBeam_zet[4]);
+            }
+        }
+        eventcounter++;
+    }
+    vector<string> folders{"PID/Uncorrected", "PID/Corrected"};
+    for (auto i :folders) output.mkdir(i.c_str());
+
+    for(uint i=0; i<folders.size(); i++){
+        output.cd(folders.at(i).c_str());
+        for(auto &elem: PID.at(i)) elem.Write();
+    }
+    output.cd("");
 }
 
 void makehistograms(const string input){
