@@ -340,130 +340,152 @@ void highordercorrection(treereader &tree, TFile &output){
     // This method aims to determine the higher-order corrections
     // for the matrix elements
     printf("Now beginning with higher order corrections ...\n");
-    vector<string> keys{"F3X","F3A", "F5X", "F5A", "BigRIPSBeam.aoq",
-                        "BigRIPSBeam.beta", "BigRIPSBeam.zet"};
+    vector<string> keys{"F5X","F5A", "F3X", "F3A", "F8A", "F8X",
+                        "F11A", "F11X", "BigRIPSBeam.aoq",
+                        "BigRIPSBeam.beta", "BigRIPSBeam.zet",};
     tree.setloopkeys(keys);
     
-    const int beam = 0; // Evaluate Beam F3-7 (1st element)
-    const vector<string> arrname = { "DepF3X","DepF3A","DepF5X", "DepF5A",
-                                     "DepBetaF3-7"};
-    const vector<string> arrtitle = {
-        "Dependence of F3X vs AoQ", "Dependence of F3A vs AoQ", 
-        "Dependence of F5X vs AoQ", "Dependence of F5A vs AoQ",
-        "Dependence of #beta vs AoQ"};
+    const vector<int> beam{0,4}; // Evaluate Beam F3-7 (1st element)
+    const int corrcount = 3;     // Number of corrections
+    const vector<vector<string>> arrname = {
+            { "DepF3X","DepF3A","DepF5X", "DepF5A", "DepBetaF3-7"},
+            { "DepF8X", "DepF8A","DepF11X", "DepF11A", "DepBetaF8-11"}};
+
+    const vector<vector<string>> arrtitle = {
+            {"Dependence of F3X vs AoQ", "Dependence of F3A vs AoQ",
+             "Dependence of F5X vs AoQ", "Dependence of F5A vs AoQ",
+             "Dependence of #beta (F7) vs AoQ"},
+            {"Dependence of F8X vs AoQ", "Dependence of F8A vs AoQ",
+             "Dependence of F11X vs AoQ", "Dependece of F11A vs AoQ",
+             "Dependence of #beta (F11) vs AoQ"}};
     
-    vector<vector<TH2D>> culpritdiag;
-    vector<double> cutval{ // for corrections we use 85Ge
-            2.65625, // center x
-            32.0,  // center y
-            0.008, // radius x
-            0.6    // radius y
+    vector<vector<vector<TH2D>>> culpritdiag;
+    vector<vector<double>> cutval{ // for corrections we use 85Ge
+        {2.65625,      // center x
+         32.0,         // center y
+         0.008,        // radius x
+         0.6     },    // radius y
+        {2.8,          // center x
+         30.14,        // center y
+         0.008,        // radius x
+         0.6     }     // radius y
     };
 
     // Initialize all the diagrams
-    for(uint i=0; i<arrname.size(); i++){
-        // Adjustments for beta measurement:
-        string corrarr   = arrname.at(i) + "c";
-        string corrarrn  = arrtitle.at(i) + "cF5X";
-        string corrarr2  = corrarr + "c";
-        string corrarrn2 = corrarrn + "F5A";
-        string corrarr3  = corrarr2 + "c";
-        string corrarrn3 = corrarrn2 + "F3A";
-
-        if (i<4){
-            culpritdiag.push_back({
-              TH2D(arrname[i].c_str(),arrtitle[i].c_str( ), 2000, 2.2, 3.2,
-                                                              500,-100, 150),
-              TH2D(corrarr.c_str(),corrarrn.c_str(),2000,2.2,3.2,500,-100,150),
-              TH2D(corrarr2.c_str(),corrarrn2.c_str(),2000,2.2,3.2,500,-100,150),
-              TH2D(corrarr3.c_str(),corrarrn3.c_str(),2000,2.2,3.2,500,-100,150)});
+    for(uint i=0; i<arrname.size();i++){ // Loop F7, F11
+        vector<vector<TH2D>> temp2d;
+        for(uint j=0; j<arrname.at(0).size();j++){ // Loop F3X,F5X,...
+            vector<TH2D> temp1d;
+            for(uint k=0;k<=corrcount; k++){ // Loop Correction number
+                string arr = arrname.at(i).at(j) + to_string(k); // Generate array name
+                string arrn = arrtitle.at(i).at(j) + " Corr: " + to_string(k);
+                double ymax = 150;
+                double ymin = -100;
+                if(j == 4) { // Beta diagrams need smaller bins
+                    ymax = 0.7;
+                    ymin = 0.6 -0.2*i; // outgoing have lower velocities
+                }
+                temp1d.push_back(TH2D(arr.c_str(),arrn.c_str(),2000,2.2,3.2,
+                                      500,ymin,ymax));
+                temp1d.back().SetOption("colz");
+                temp1d.back().GetXaxis()->SetTitle("A/Q");
+                temp1d.back().GetYaxis()->SetTitle(arrname.at(i).at(j).c_str());
+            }
+            temp2d.push_back(temp1d);
         }
-        else
-            culpritdiag.push_back({
-              TH2D(arrname[i].c_str(),arrtitle[i].c_str(), 2000, 2.2, 3.2,
-                                                              500, 0.6, 0.7),
-              TH2D(corrarr.c_str(), corrarrn.c_str(), 2000, 2.2,3.2,500,0.6,0.7),
-              TH2D(corrarr2.c_str(),corrarrn2.c_str(),2000, 2.2,3.2,500,0.6,0.7),
-              TH2D(corrarr3.c_str(),corrarrn3.c_str(),2000, 2.2,3.2,500,0.6,0.7)}
-              );
-
-        for (auto &elem: culpritdiag.back()){
-            elem.SetOption("colz");
-            elem.GetXaxis()->SetTitle("A/Q");
-            elem.GetYaxis()->SetTitle(arrname.at(i).c_str());
-        }
+        culpritdiag.push_back(temp2d);
     }
 
+    printf("Successfully generated Histograms for higher order...\n");
     //Attempting first real correction with F5 x-position
     p1.F7absF5X = 2.658;
     p1.F7linF5X = -3.673E-5;
     p1.F7linF5A = -0.0001232;
     p1.F7linF3X = 0.000223;
-    p1.F7absF5X0 = cutval[0];
+    p1.F7absF5X0 = cutval[0][0];
 
-    vector <double> fillvals(9,0); // Fill dependent variable and corrected values
-    double BigRIPSBeamF5corr = 0;
-
+    vector<vector <double>> fillvals(2,vector<double>(9,0)); // Fill dependent variable and
 
     while(tree.singleloop()){
-        if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[beam]-cutval.at(0)),2) +
-            pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[beam]- cutval.at(1)),2)) <10000000){
-            // Applying the elliptic cut for 85Ge
-            fillvals.at(0) = tree.F3X;
-            fillvals.at(1) = tree.F3A;
-            fillvals.at(2) = tree.F5X;
-            fillvals.at(3) = tree.F5A;
-            fillvals.at(4) = tree.BigRIPSBeam_beta[beam];
-            fillvals.at(5) = tree.BigRIPSBeam_aoq[beam];
-            fillvals.at(6) = tree.BigRIPSBeam_aoq[beam] + p1.F7absF5X0 -
-                              (p1.F7absF5X +tree.F5X*p1.F7linF5X);
-            fillvals.at(7) = fillvals.at(6) + tree.F5A*p1.F7linF5A;
-            fillvals.at(8) = fillvals.at(7) + tree.F3X*p1.F7linF3X;
+        fillvals.at(0).at(0) = tree.F3X;
+        fillvals.at(0).at(1) = tree.F3A;
+        fillvals.at(0).at(2) = tree.F5X;
+        fillvals.at(0).at(3) = tree.F5A;
+        fillvals.at(1).at(0) = tree.F8X;
+        fillvals.at(1).at(1) = tree.F8A;
+        fillvals.at(1).at(2) = tree.F11X;
+        fillvals.at(1).at(3) = tree.F11A;
+        fillvals.at(0).at(6) = tree.BigRIPSBeam_aoq[beam.at(0)] + p1.F7absF5X0 -
+                               (p1.F7absF5X +tree.F5X*p1.F7linF5X);
+        fillvals.at(0).at(7) = fillvals.at(0).at(6) + tree.F5A*p1.F7linF5A;
+        fillvals.at(0).at(8) = fillvals.at(0).at(7) + tree.F3X*p1.F7linF3X;
 
-            for(uint i=0; i<culpritdiag.size(); i++){
-                culpritdiag.at(i).at(0).Fill(fillvals.at(5),fillvals.at(i));
-                culpritdiag.at(i).at(1).Fill(fillvals.at(6),fillvals.at(i));
-                culpritdiag.at(i).at(2).Fill(fillvals.at(7),fillvals.at(i));
-                culpritdiag.at(i).at(3).Fill(fillvals.at(8),fillvals.at(i));
+        // Fill pre and post events
+        for(uint ii=0; ii<beam.size();ii++){
+            if((pow(1./cutval.at(ii).at(2)*(tree.BigRIPSBeam_aoq[beam.at(ii)] -
+                                           cutval.at(ii).at(0)),2) +
+                pow(1/cutval.at(ii).at(3)*(tree.BigRIPSBeam_zet[beam.at(ii)] -
+                                          cutval.at(ii).at(1)),2)) <10000000){
+                // Applying the elliptic cut for 85Ge
+                fillvals.at(ii).at(4) = tree.BigRIPSBeam_beta[beam.at(ii)];
+                fillvals.at(ii).at(5) = tree.BigRIPSBeam_aoq[beam.at(ii)];
+
+                for(uint i=0; i<culpritdiag.at(0).size(); i++){
+                    for(uint j=0; j<=corrcount; j++){
+                        culpritdiag.at(ii).at(i).at(j).Fill(fillvals.at(ii).at(5+j),
+                                                           fillvals.at(ii).at(i));
+                    }
+                }
             }
         }
     }
-
+    printf("Successfully looped for higher order...\n");
     // Get linear fits of the projected means
-    vector<vector<TProfile *>> projections;
+    vector<vector<vector<TProfile *>>> projections;
     const double cutfrac = 0.8; // fraction to consider for fit
-    auto corrlinfit = new TF1("Linear Fit", linfit, cutval[1]-cutfrac*cutval[3],
-                               cutval[1]+cutfrac*cutval[3], 2);
+    auto corrlinfit = new TF1("Linear Fit", linfit, cutval[0][1]-cutfrac*cutval[0][3],
+                               cutval[0][1]+cutfrac*cutval[0][3], 2);
     corrlinfit->SetParNames("absolute", "linear");
     for (auto &elem : culpritdiag) {
-        projections.push_back({elem.at(0).ProfileY(), elem.at(1).ProfileY(),
-                               elem.at(2).ProfileY(), elem.at(3).ProfileY()});
-
-        for(auto &back : projections.back()) back->Fit("Linear Fit");
-    }
-
-    const vector<string> folders{"Corrections/Raw/Profiles",
-                                 "Corrections/F5Xcorr/Profiles",
-                                 "Corrections/F5XF5Acorr/Profiles",
-                                 "Corrections/F5XF5AF3X/Profiles"};
-    for (auto &i: folders) output.mkdir(i.c_str());
-
-    for(auto &elem: projections) {
-        for(uint i=0; i<folders.size(); i++){
-            output.cd(folders.at(i).c_str());
-            elem.at(i)->Write();
+        vector<vector<TProfile*>> proftemp2d;
+        for(auto &elem2: elem){
+            vector<TProfile*> proftemp1d;
+            for(int i=0; i<=corrcount;i++){
+                proftemp1d.push_back(elem2.at(i).ProfileY());
+                proftemp1d.back()->Fit("Linear Fit");
+            }
+            proftemp2d.push_back(proftemp1d);
         }
+        projections.push_back(proftemp2d);
     }
 
-    for(auto &elem : culpritdiag){
-        output.cd("Corrections/Raw");
-        elem.at(0).Write();
-        output.cd("Corrections/F5Xcorr");
-        elem.at(1).Write();
-        output.cd("Corrections/F5XF5Acorr");
-        elem.at(2).Write();
-        output.cd("Corrections/F5XF5AF3X");
-        elem.at(3).Write();
+    // Setting folder structure, this should correspond to the order of corrections
+    const vector<vector<string>> folders{
+        {"Corrections/Pre/Raw",
+         "Corrections/Pre/F5Xcorr",
+         "Corrections/Pre/F5XF5Acorr",
+         "Corrections/Pre/F5XF5AF3X"},
+        {"Corrections/Post/Raw",
+         "Corrections/Post/F8Xcorr",
+         "Corrections/Post/F8Acorr",
+         "Corrections/Post/F11Xcorr"}};
+
+    for (auto &i: folders) for(auto &j: i) output.mkdir(j.c_str());
+
+    for(int i=0; i<projections.size();i++){  // Pre, Post
+        for(int k=0; k<projections.at(0).at(0).size(); k++){ // Corr 0,1,2,
+
+            string tempfolder = folders.at(i).at(k) + "/Profiles";
+            output.mkdir(tempfolder.c_str());
+
+            for(int j=0; j<projections.at(0).size();j++){ // F3X, F5X, ...
+                output.cd(tempfolder.c_str());
+                projections.at(i).at(j).at(k)->Write();
+
+                output.cd(folders.at(i).at(k).c_str());
+                culpritdiag.at(i).at(j).at(k).Write();
+            }
+        }
     }
 
     output.cd("");
@@ -502,7 +524,7 @@ void dalicalib(treereader &tree, TFile &output){
 void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
     // 5 beams, 2incoming, 3outgoing
     vector <string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
-                         "F5X", "F5A"};
+                         "F5X", "F5A", "F8X", "F8A", "F11X", "F11A"};
     tree.setloopkeys(keys);
 
     vector<vector<TH2D>> PID {{
