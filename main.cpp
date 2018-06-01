@@ -30,7 +30,7 @@ int main(int argc, char**argv){
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
     // Step 1: analyse the raw data
-    const int analysedfile = 34; // Index of analysed file
+    const int analysedfile = 64; // Index of analysed file
     const vector<string> input = getlist("config/minosridf.txt");
     string output = "build/output/" + input.at(analysedfile).substr(16,9)+".root";
 

@@ -10,6 +10,20 @@ void stop_interrupt(){
     stoploop = true;
 }
 
+void progressbar(int currevent, int totevent, int barwidth){
+    // This method displays a nice progress bar
+    cout << "[";
+    int pos = barwidth * (float)currevent/totevent;
+    for(int i=0; i<barwidth; i++){
+        if(i<pos) cout << "=";
+        else if (i ==pos) cout << ">";
+        else cout << " ";
+    }
+
+    cout << "] " << int(100.0*currevent/totevent) << " %\r";
+    cout.flush();
+}
+
 void generatetree(const string infile, const string output){
     //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
     cout << "Now in Estore -> " << infile << endl;
@@ -281,6 +295,8 @@ void generatetree(const string infile, const string output){
 
         tree->Fill();
         neve++;
+
+        // Add Graphical Feedback
     }
     cout << "Writing the tree..."<<endl;
 

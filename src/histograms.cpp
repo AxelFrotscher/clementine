@@ -1,3 +1,4 @@
+#include <MakeAllTree_78Ni.hh>
 #include "histograms.hh"
 
 using namespace std;
@@ -86,8 +87,14 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
     }
 
     // To avoid multihit-triggers we define a range of acceptance
-    vector<vector<int>> range{{400,500},{450,750},{213,350},{260,1310}};
+    vector<vector<int>> range{{450,650},{650,950},{213,350},{260,1510}};
+
+    // Progress Bar setup
     int i=0; // counting variable
+    Long64_t totevents = tree.NumEntries();
+    const int downscale = 500; // every n-th event
+    // Get Number of Good events before
+    int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
 
     while(tree.singleloop()){
         if(sqrt(tree.BigRIPSPlastic_fQLRaw[F7pos]*
@@ -116,9 +123,12 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
                              tree.BigRIPSPlastic_fQRRaw[j]) < range[j][1]);
         }
         i++;
+        // Progress bar updating
+        if(!(i%downscale)) progressbar(i,totevents);
     }
-    
-    printf("Writing Plastic 'Histograms to disk ... \n");
+    int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
+    printf("\nPlastic Cut out %i Events %f %%\n", goodbefore-goodafter,
+           100*(goodbefore-goodafter)/(double)totevents);
     
     output.mkdir("Plastics/2D");
     output.mkdir("Plastics/Q1Q2");
@@ -209,7 +219,13 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
 
     vector<bool> temptruth(4, true);
 
-    printf("Filling in Plastics ... \n");
+    // Progress Bar setup
+    Long64_t totevents = tree.NumEntries();
+    const int downscale = 500; // every n-th event
+
+    // Prepare Cut quality control
+    int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
+
     while(tree.singleloop()){
         // Get Efficiency relative to the last Plastic
         if (tree.BigRIPSPlastic_fTime[pl11position] >0){
@@ -245,12 +261,16 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
                                                   temptruth.end(),0);
         }
         fulltotal++;
+        if(!(fulltotal%downscale)) progressbar(fulltotal, totevents);
     }
+
+    int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
+    printf("\nPPAC Cut out %i Events %f %%\n", goodbefore-goodafter,
+           100*(goodbefore-goodafter)/(double)totevents);
 
     effPPACX.Scale(1/(double)total);
     effPPACY.Scale(1/(double)total);
 
-    printf("Writing PPAC histograms... \n");
     output.mkdir("PPAC/FiredEff");
     output.cd("PPAC/FiredEff");
     effPPACX.Write();
@@ -305,7 +325,14 @@ void ionisationchamber(treereader &alt2dtree, TFile &output,
             elem.GetYaxis()->SetTitle(("ADC"+to_string(i)+ "[ch]").c_str());
         }
     }
-    uint totalcounter =0;
+
+    // Progress Bar setup
+    uint totalcounter =0; // counting variable
+    Long64_t totevents = alt2dtree.NumEntries();
+    const int downscale = 500; // every n-th event
+
+    // Prepare Cut quality control
+    int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
 
     while(alt2dtree.singleloop()){
         if((alt2dtree.BigRIPSIC_nhitchannel[0]*
@@ -325,7 +352,12 @@ void ionisationchamber(treereader &alt2dtree, TFile &output,
                         alt2dtree.BigRIPSIC_fADC[1][i+1]);
         }
         totalcounter++;
+        if(!(totalcounter%downscale)) progressbar(totalcounter,totevents);
     }
+
+    int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
+    printf("\nIC Cut out %i Events %f %%\n", goodbefore-goodafter,
+           100*(goodbefore-goodafter)/(double)totevents);
 
     output.mkdir("IC/IC7");
     output.mkdir("IC/IC11");
@@ -406,6 +438,11 @@ void highordercorrection(treereader &tree, TFile &output){
 
     vector<vector <double>> fillvals(2,vector<double>(9,0)); // Fill dependent variable and
 
+    // Progress Bar setup
+    int i=0; // counting variable
+    Long64_t totevents = tree.NumEntries();
+    const int downscale = 500; // every n-th event
+
     while(tree.singleloop()){
         fillvals.at(0).at(0) = tree.F3X;
         fillvals.at(0).at(1) = tree.F3A;
@@ -438,8 +475,10 @@ void highordercorrection(treereader &tree, TFile &output){
                 }
             }
         }
+        i++;
+        if(!(i%downscale)) progressbar(i,totevents);
     }
-    printf("Successfully looped for higher order...\n");
+    printf("\nSuccessfully looped for higher order...\n");
     // Get linear fits of the projected means
     vector<vector<vector<TProfile *>>> projections;
     const double cutfrac = 0.8; // fraction to consider for fit
@@ -506,19 +545,27 @@ void dalicalib(treereader &tree, TFile &output){
     gammadetectors.GetYaxis()->SetTitle("ADC Channel");
 
     int numdet =0;
+
+    // Progress Bar setup
+    int currevt=0; // counting variable
+    Long64_t totevents = tree.NumEntries();
+    const int downscale = 500; // every n-th event
+
     while(tree.singleloop()){
         numdet = tree.DALINaI_;
         for(int i=0; i<numdet;i++){
             if(tree.DALINaI_fADC[i]) gammadetectors.Fill(tree.DALINaI_id[i],
                 tree.DALINaI_fADC[i]);
         }
+        currevt++;
+        if(!(currevt%downscale)) progressbar(currevt,totevents);
     }
 
     output.mkdir("DALI");
     output.cd("DALI");
     gammadetectors.Write();
     output.cd("");
-    printf("Finished DALI Calibration");
+    printf("\nFinished DALI Calibration");
 }
 
 void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
@@ -528,14 +575,14 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
     tree.setloopkeys(keys);
 
     vector<vector<TH2D>> PID {{
-        TH2D("pidinc", "PID Incoming F3-F7",  300,2.45,2.9, 200,25,45),
-        TH2D("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,25,45),
-        TH2D("pidincut","PID Inc cut  F8-F11",300,2.45,2.9,200,25,45),
-        TH2D("pidincutout", "PID Out w/ in cut", 300,2.45,2.9,200,25,45)},
-       {TH2D("pidinccorr", "PID Incoming F3-F7",  300,2.45,2.9, 200,25,45),
-        TH2D("pidoutcorr", "PID Outgoing F8-F11", 300,2.45,2.9, 200,25,45),
-        TH2D("pidincutcorr","PID Inc cut  F8-F11",300,2.45,2.9,200,25,45),
-        TH2D("pidincutoutcorr", "PID Out w/ in cut", 300,2.45,2.9,200,25,45)}
+        TH2D("pidinc", "PID Incoming F3-F7",  300,2.45,2.9, 200,30,50),
+        TH2D("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,30,50),
+        TH2D("pidincut","PID Inc cut  F8-F11",300,2.45,2.9,200,30,50),
+        TH2D("pidincutout", "PID Out w/ in cut", 300,2.45,2.9,200,30,50)},
+       {TH2D("pidinccorr", "PID Incoming F3-F7",  300,2.45,2.9, 200,30,50),
+        TH2D("pidoutcorr", "PID Outgoing F8-F11", 300,2.45,2.9, 200,30,50),
+        TH2D("pidincutcorr","PID Inc cut  F8-F11",300,2.45,2.9,200,30,50),
+        TH2D("pidincutoutcorr", "PID Out w/ in cut", 300,2.45,2.9,200,30,50)}
     };
 
     for(auto &elem: PID){
@@ -553,7 +600,11 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
             0.6    // radius y
     };
 
+    // Progress Bar setup
     int eventcounter =0;
+    Long64_t totevents = tree.NumEntries();
+    const int downscale = 500; // every n-th event
+
     vector<vector<double>> valinc;     // Store temporary beam values
     while(tree.singleloop()){
         if(goodevents.at(eventcounter)){
@@ -563,10 +614,8 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
                                  tree.F3X*p1.F7linF3X;
 
             //Loop over all elements in the tree
-            valinc.push_back({tree.BigRIPSBeam_aoq[0],tree.BigRIPSBeam_aoq[1],
-                              tree.BigRIPSBeam_aoq[2]});
-            valinc.push_back({tree.BigRIPSBeam_zet[0],tree.BigRIPSBeam_zet[1],
-                              tree.BigRIPSBeam_zet[2]});
+            valinc.push_back({tree.BigRIPSBeam_aoq[0],tree.BigRIPSBeam_aoq[1]});
+            valinc.push_back({tree.BigRIPSBeam_zet[0],tree.BigRIPSBeam_zet[1]});
             if(closeness(valinc.at(0)) && closeness(valinc.at(1))){
                 // Cut Particles that have variating aoq or zet
                 PID.at(0).at(0).Fill(tree.BigRIPSBeam_aoq[0],
@@ -574,8 +623,10 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
                 PID.at(1).at(0).Fill(beamaoqcorr, tree.BigRIPSBeam_zet[0]);
             }
 
-            valinc.push_back({tree.BigRIPSBeam_aoq[3],tree.BigRIPSBeam_aoq[4]});
-            valinc.push_back({tree.BigRIPSBeam_zet[3],tree.BigRIPSBeam_zet[4]});
+            valinc.push_back({tree.BigRIPSBeam_aoq[2],tree.BigRIPSBeam_aoq[3],
+                              tree.BigRIPSBeam_aoq[4]});
+            valinc.push_back({tree.BigRIPSBeam_zet[2],tree.BigRIPSBeam_zet[3],
+                              tree.BigRIPSBeam_zet[4]});
             if(closeness(valinc.at(2)) && closeness(valinc.at(3))){
                 PID.at(0).at(1).Fill(tree.BigRIPSBeam_aoq[4],
                                      tree.BigRIPSBeam_zet[4]);
@@ -593,7 +644,9 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
             }
         }
         eventcounter++;
+        if(!(eventcounter%downscale)) progressbar(eventcounter,totevents);
     }
+    printf("\nFinished making PIDs!\n");
     vector<string> folders{"PID/Uncorrected", "PID/Corrected"};
     for (auto i :folders) output.mkdir(i.c_str());
 
@@ -627,7 +680,7 @@ void makehistograms(const string input){
     };
 
     // Store events that cannot be used
-    vector<bool> goodevents(2000000, true);
+    vector<bool> goodevents(alt2dtree.NumEntries(), true);
 
     // Then we read in the tree (lazy)
     //TTreeReader mytreereader("tree", &inputfile);
