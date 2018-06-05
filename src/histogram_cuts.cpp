@@ -368,11 +368,11 @@ void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
     // Generate output histogram
     vector<TH2D> cschist{
         TH2D("csc", "Charged state change", 500,0.9,1.1,500,4,6),
-        TH2D("csccut", "Charged state change cutted", 500,0.95,1.05,500,4,6)};
-    for(auto histo: cschist){
+        TH2D("csccut", "Charged state change cut", 500,0.95,1.05,500,4,6)};
+    for(auto &histo: cschist){
+        histo.SetOption("colz");
         histo.GetYaxis()->SetTitle("B#rho F8-9");
         histo.GetXaxis()->SetTitle("B#rho F8-9 / B#rho F9-11");
-        histo.SetOption("colz");
     }
 
     // Get relevant keys

@@ -16,3 +16,6 @@
 void makehistograms(const std::__cxx11::string input);
 void makepid(TTreeReader& datree, TFile& output,
              const std::vector<bool> &goodevents);
+void highordercorrection(treereader &tree, TFile &output,
+                         const std::vector<bool> &goodevents);
+void dalicalib(treereader &tree, TFile &output);

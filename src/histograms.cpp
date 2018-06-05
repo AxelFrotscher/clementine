@@ -6,7 +6,8 @@ using namespace std;
 
 calibpar p1;
 
-void highordercorrection(treereader &tree, TFile &output){
+void highordercorrection(treereader &tree, TFile &output,
+                         const vector<bool> &goodevents){
     // This method aims to determine the higher-order corrections
     // for the matrix elements
     printf("Now beginning with higher order corrections ...\n");
@@ -70,16 +71,16 @@ void highordercorrection(treereader &tree, TFile &output){
     //Attempting first real correction with F5 x-position
 
     p1.F7absF5X = 2.644;
-    p1.F7linF5X = -1.448E-5;
-    p1.F7linF5A = -0.0002524;
+    p1.F7linF5X = -1.453E-5;
+    p1.F7linF5A = -0.0002528;
     p1.F7linF3X = 0.000103;
     p1.F7absF5X0 = cutval[0][0];
 
     p1.F11absF9X0 = cutval[1][0];
     p1.F11absF9X = 2.647;
-    p1.F11linF9X = -5.688E-5;
-    p1.F11linF9A = 0.0002825;
-    p1.F11linF11A = 7.872E-5;
+    p1.F11linF9X = -5.871E-5;
+    p1.F11linF9A = 0.0002905;
+    p1.F11linF11A = 8.052E-5;
 
     vector<vector <double>> fillvals(2,vector<double>(9,0)); // Fill dependent variable and
 
@@ -89,40 +90,42 @@ void highordercorrection(treereader &tree, TFile &output){
     const int downscale = 500; // every n-th event
 
     while(tree.singleloop()){
-        fillvals.at(0).at(0) = tree.F3X;
-        fillvals.at(0).at(1) = tree.F3A;
-        fillvals.at(0).at(2) = tree.F5X;
-        fillvals.at(0).at(3) = tree.F5A;
-        fillvals.at(1).at(0) = tree.F9X;
-        fillvals.at(1).at(1) = tree.F9A;
-        fillvals.at(1).at(2) = tree.F11X;
-        fillvals.at(1).at(3) = tree.F11A;
+        if(goodevents.at(eventno)) { // We absolutely need CCSC cuts for HOC
+            fillvals.at(0).at(0) = tree.F3X;
+            fillvals.at(0).at(1) = tree.F3A;
+            fillvals.at(0).at(2) = tree.F5X;
+            fillvals.at(0).at(3) = tree.F5A;
+            fillvals.at(1).at(0) = tree.F9X;
+            fillvals.at(1).at(1) = tree.F9A;
+            fillvals.at(1).at(2) = tree.F11X;
+            fillvals.at(1).at(3) = tree.F11A;
 
-        // Fill corrected Values
-        fillvals.at(0).at(6) = tree.BigRIPSBeam_aoq[beam.at(0)] + p1.F7absF5X0 -
-                               (p1.F7absF5X +tree.F5X*p1.F7linF5X);
-        fillvals.at(0).at(7) = fillvals.at(0).at(6) + tree.F5A*p1.F7linF5A;
-        fillvals.at(0).at(8) = fillvals.at(0).at(7) + tree.F3X*p1.F7linF3X;
+            // Fill corrected Values
+            fillvals.at(0).at(6) = tree.BigRIPSBeam_aoq[beam.at(0)] + p1.F7absF5X0 -
+                                   (p1.F7absF5X + tree.F5X * p1.F7linF5X);
+            fillvals.at(0).at(7) = fillvals.at(0).at(6) + tree.F5A * p1.F7linF5A;
+            fillvals.at(0).at(8) = fillvals.at(0).at(7) + tree.F3X * p1.F7linF3X;
 
-        fillvals.at(1).at(6) = tree.BigRIPSBeam_aoq[beam.at(1)] + p1.F11absF9X0-
-                               (p1.F11absF9X+tree.F9X*p1.F11linF9X);
-        fillvals.at(1).at(7) = fillvals.at(1).at(6) - tree.F9A*p1.F11linF9A;
-        fillvals.at(1).at(8) = fillvals.at(1).at(7) - tree.F11A*p1.F11linF11A;
+            fillvals.at(1).at(6) = tree.BigRIPSBeam_aoq[beam.at(1)] + p1.F11absF9X0 -
+                                   (p1.F11absF9X + tree.F9X * p1.F11linF9X);
+            fillvals.at(1).at(7) = fillvals.at(1).at(6) - tree.F9A * p1.F11linF9A;
+            fillvals.at(1).at(8) = fillvals.at(1).at(7) - tree.F11A * p1.F11linF11A;
 
-        // Fill pre and post events
-        for(uint ii=0; ii<beam.size();ii++){
-            if((pow(1./cutval.at(ii).at(2)*(tree.BigRIPSBeam_aoq[beam.at(ii)] -
-                                           cutval.at(ii).at(0)),2) +
-                pow(1/cutval.at(ii).at(3)*(tree.BigRIPSBeam_zet[beam.at(ii)] -
-                                          cutval.at(ii).at(1)),2)) <1){
-                // Applying the elliptic cut for 85Ge
-                fillvals.at(ii).at(4) = tree.BigRIPSBeam_beta[beam.at(ii)];
-                fillvals.at(ii).at(5) = tree.BigRIPSBeam_aoq[beam.at(ii)];
+            // Fill pre and post events
+            for (uint ii = 0; ii < beam.size(); ii++) {
+                if ((pow(1./cutval.at(ii).at(2)*(tree.BigRIPSBeam_aoq[beam.at(ii)] -
+                                                     cutval.at(ii).at(0)), 2) +
+                     pow(1./cutval.at(ii).at(3)*(tree.BigRIPSBeam_zet[beam.at(ii)] -
+                                                cutval.at(ii).at(1)), 2)) < 1) {
+                    // Applying the elliptic cut for 85Ge
+                    fillvals.at(ii).at(4) = tree.BigRIPSBeam_beta[beam.at(ii)];
+                    fillvals.at(ii).at(5) = tree.BigRIPSBeam_aoq[beam.at(ii)];
 
-                for(uint k=0; k<culpritdiag.at(0).size(); k++){
-                    for(uint j=0; j<=corrcount; j++){
-                        culpritdiag.at(ii).at(k).at(j).Fill(fillvals.at(ii).at(5+j),
-                                                           fillvals.at(ii).at(k));
+                    for (uint k = 0; k < culpritdiag.at(0).size(); k++) {
+                        for (uint j = 0; j <= corrcount; j++) {
+                            culpritdiag.at(ii).at(k).at(j).Fill(fillvals.at(ii).at(5+j),
+                                                                fillvals.at(ii).at(k));
+                        }
                     }
                 }
             }
@@ -217,7 +220,7 @@ void dalicalib(treereader &tree, TFile &output){
     output.cd("DALI");
     gammadetectors.Write();
     output.cd("");
-    printf("\nFinished DALI Calibration");
+    printf("\nFinished DALI Calibration.\n");
 }
 
 void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
@@ -253,10 +256,20 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
             0.5    // radius y
     };
 
+    vector<double> targetval{
+        2.750, // center x
+        40.0, // center y
+        cutval.at(2),
+        cutval.at(3)
+    };
+
     // Progress Bar setup
     uint eventcounter =0;
     Long64_t totevents = tree.NumEntries();
     const int downscale = 500; // every n-th event
+
+    //Setup Crossection trigger:
+    vector<uint> reactioncounter{0,0};
 
     vector<vector<double>> valinc;     // Store temporary beam values
     while(tree.singleloop()){
@@ -299,6 +312,12 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
                 PID.at(0).at(3).Fill(tree.BigRIPSBeam_aoq[4],
                                      tree.BigRIPSBeam_zet[4]);
                 PID.at(1).at(3).Fill(beamaoqcorr2, tree.BigRIPSBeam_zet[4]);
+                reactioncounter.at(0) = reactioncounter.at(0)+1;
+
+                // Second ellipsoid for cross section
+                if((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
+                    pow(1./targetval.at(3)*(tree.BigRIPSBeam_zet[4]-targetval.at(1)),2))<1)
+                    reactioncounter.at(1) = reactioncounter.at(1)+1;
             }
         }
         eventcounter++;
@@ -313,6 +332,10 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
         for(auto &elem: PID.at(i)) elem.Write();
     }
     output.cd("");
+
+    double crosssection = 1./0.423*reactioncounter.at(1)/reactioncounter.at(0);
+    double cserror = crosssection*pow(1./reactioncounter.at(0)+1./reactioncounter.at(1),0.5);
+    printf("Inclusive 111Nb(p,2p)110Zr sigma is: %f +- %f b\n", crosssection, cserror);
 }
 
 void makehistograms(const string input){
@@ -341,9 +364,6 @@ void makehistograms(const string input){
     // Store events that cannot be used
     vector<bool> goodevents(alt2dtree.NumEntries(), true);
 
-    // Then we read in the tree (lazy)
-    //TTreeReader mytreereader("tree", &inputfile);
-
     // Rebuild F7 Trigger combined charge threshhold
     if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
 
@@ -352,11 +372,12 @@ void makehistograms(const string input){
 
     if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
     printf("Finished with PPAC Consistency checks\n");
-    // Get Corrections
-    if (options.at(3)) highordercorrection(alt2dtree, outputfile);
 
     // Apply changed charged state cut
     if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
+
+    // Get Corrections
+    if (options.at(3)) highordercorrection(alt2dtree, outputfile, goodevents);
 
     // Get Z vs. A/Q
     if (options.at(4)) makepid(alt2dtree, outputfile, goodevents);
@@ -364,7 +385,7 @@ void makehistograms(const string input){
     //Get ADC Spectra for DALI
     if(options.at(5)) dalicalib(alt2dtree, outputfile);
 
-    cout << "Runs has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
+    cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
                           /goodevents.size() << " % good Elements" << endl;
 
     //outputfile.Close();
