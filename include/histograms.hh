@@ -14,5 +14,5 @@
 #include "TF1.h"
 
 void makehistograms(const std::__cxx11::string input);
-bool closeness(std::vector< double >& d, double sigma);
-void makepid(const TTreeReader& datree, TFile& output);
+void makepid(TTreeReader& datree, TFile& output,
+             const std::vector<bool> &goodevents);

@@ -18,7 +18,7 @@ add_executable(${PROJECT_NAME} main.cpp
                                ./src/MakeAllTree_78Ni.cpp
                                ./src/histograms.cpp
                                ./src/treereader.cpp
-        )
+        src/histogram_cuts.cpp src/histogram_cuts.h)
 target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread
 -L/opt/anaroot/anarootv4.5.36/lib
 -lanacore -lanabrips -lanadali -lanaroot -lanaminos -lXMLParser
