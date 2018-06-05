@@ -20,7 +20,7 @@ void progressbar(int currevent, int totevent, int barwidth){
         else cout << " ";
     }
 
-    cout << "] " << int(100.0*currevent/totevent) << " %\r";
+    cout << "] " << int(1000.0*currevent/totevent)/10.0 << " %\r";
     cout.flush();
 }
 
@@ -79,8 +79,8 @@ void generatetree(const string infile, const string output){
     vector<vector<string>> fplname{{"F3pl", "F7pl"},
                                    {"F8pl", "F11pl-1"}};
     vector<double> tofoff{ //300.25 F3-F7 init -159.45 F8-F11 init
-            304.50,   // good Offset Value for F3-F7,  empty-target run  300.85
-            -162.49}; // good Offset Value for F8-F11, empty-target run -160.45
+            304.17,   // good Offset Value for F3-F7,  empty-target run  300.85
+            -161.64}; // good Offset Value for F8-F11, empty-target run -160.45
 
     vector<TArtTOF *> tof{
             recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0], tofoff[0], 5),
@@ -173,16 +173,17 @@ void generatetree(const string infile, const string output){
     tree->Branch("dalitimetruemultthres",&dalitimetruemultthres,
                  "dalitimetruemultthres/I");
 
-    int neve = 0;
-
     const vector<string> ppacname{
         "F8PPAC-1A", "F8PPAC-1B", "F8PPAC-2A", "F8PPAC-2B",
         "F9PPAC-1A", "F9PPAC-1B", "F9PPAC-2A", "F9PPAC-2B", 
         "F11PPAC-1A","F11PPAC-1B","F11PPAC-2A","F11PPAC-2B"};
 
-    while(estore.GetNextEvent() && (neve < 2000000)){ //&& neve < 100000
-        if(!(neve%10000)) printf("Event %i\n", neve);
+    // Progress Bar setup
+    int neve = 0; // counting variable
+    Long64_t totevents = 1400000;
+    const int downscale = 500; // every n-th event
 
+    while(estore.GetNextEvent() && (neve < totevents)){ //&& neve < 100000
         //Making the BigRIPS tree calibration
         brcalib->ClearData();
         brcalib->ReconstructData();
@@ -256,7 +257,7 @@ void generatetree(const string infile, const string output){
                 }
             }
         }
-
+        /*
         //Double_t modif = - 0.0011*(F11X-8) - 0.0000003*(F11X-8)*(F11X-8)*(F11X-8)
         //                 - 0.000023*(F9X-10) - 0.0000005*(F9X)*(F9X)
         //                 + 0.000000005*(F9X+10)*(F9X+10)*(F9X+10);
@@ -295,6 +296,8 @@ void generatetree(const string infile, const string output){
 
         tree->Fill();
         neve++;
+
+        if(!(neve%downscale)) progressbar(neve,totevents);
 
         // Add Graphical Feedback
     }
