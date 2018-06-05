@@ -79,7 +79,7 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
     }
 
     // To avoid multihit-triggers we define a range of acceptance
-    vector<vector<int>> range{{450,650},{650,950},{213,350},{260,1510}};
+    vector<vector<int>> range{{480,620},{700,920},{220,330},{270,1510}};
 
     // Progress Bar setup
     int i=0; // counting variable
@@ -103,7 +103,7 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
                         tqcorr2D.at(i).Fill(tree.BigRIPSPlastic_fTLRaw[i]-
                                             tree.BigRIPSPlastic_fTRRaw[i],
                                             TMath::Log(tree.BigRIPSPlastic_fQLRaw[i]/
-                                                       (double)tree.BigRIPSPlastic_fQRRaw[i]));
+                                            (double)tree.BigRIPSPlastic_fQRRaw[i]));
                     }
                 }
             }
@@ -201,12 +201,12 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
                                         {18,19,20,21},{22,23,24,25},{30,31,32,33}};
 
     const vector<vector<vector<int>>> ppacrange{ //{xlow,xup,ylow,yup}
-            {{85,105,85,100},{85,100,85,100},{165,180,85,105},{170,185,90,105}},  //Fpl 3
-            {{165,185,85,105},{165,185,90,105},{165,175,90,105},{165,180,95,110}},//Fpl 5
-            {{160,175,95,110},{165,180,85,100},{75,90,90,100},{85,105,95,110}},   //Fpl 7
-            {{170,185,99,110},{165,185,95,110},{165,185,95,110},{165,185,90,105}},//Fpl 8
-            {{130,145,60,75},{135,150,60,75},{140,155,70,80},{130,145,50,65}},//Fpl 9
-            {{145,160,65,80},{135,150,55,70},{145,160,75,90},{135,150,60,75}} //Fpl11
+        {{85,105,85,100},{85,100,85,100},{165,180,85,105},{170,185,90,105}},  //Fpl 3
+        {{165,185,85,105},{165,185,90,105},{165,175,90,105},{165,180,95,110}},//Fpl 5
+        {{160,175,95,110},{165,180,85,100},{75,90,90,100},{85,105,95,110}},   //Fpl 7
+        {{170,185,99,110},{165,185,95,110},{165,185,95,110},{165,185,90,105}},//Fpl 8
+        {{130,145,60,75},{135,150,60,75},{140,155,70,80},{130,145,50,65}},//Fpl 9
+        {{145,160,65,80},{135,150,55,70},{145,160,75,90},{135,150,60,75}} //Fpl11
     };
 
     vector<bool> temptruth(4, true);
@@ -357,5 +357,57 @@ void ionisationchamber(treereader &alt2dtree, TFile &output,
     for(auto &elem: comparediag) elem.at(0).Write();
     output.cd("IC/IC11");
     for(auto &elem: comparediag) elem.at(1).Write();
+    output.cd("");
+}
+
+void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
+    // this method aims to cut charge state changes between F8-9 and F9-11
+
+    printf("Now performing a charge state change cut between F8-9 and F9-11...\n");
+
+    // Generate output histogram
+    vector<TH2D> cschist{
+        TH2D("csc", "Charged state change", 500,0.9,1.1,500,4,6),
+        TH2D("csccut", "Charged state change cutted", 500,0.95,1.05,500,4,6)};
+    for(auto histo: cschist){
+        histo.GetYaxis()->SetTitle("B#rho F8-9");
+        histo.GetXaxis()->SetTitle("B#rho F8-9 / B#rho F9-11");
+        histo.SetOption("colz");
+    }
+
+    // Get relevant keys
+    vector<string> keys{"BigRIPSBeam.brho"};
+    tree.setloopkeys(keys);
+
+    // Progress Bar setup
+    uint eventno=0; // counting variable
+    Long64_t totevents = tree.NumEntries();
+    const int downscale = 500; // every n-th event
+    // Get Number of Good events before
+    int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
+    double brhoratio = 0;
+
+    // Define cut
+    const vector<double> brhocut{0.9825,1.011};
+
+    while(tree.singleloop()){
+        brhoratio = tree.BigRIPSBeam_brho[3]/tree.BigRIPSBeam_brho[2];
+        cschist.at(0).Fill(brhoratio, tree.BigRIPSBeam_brho[2]);
+        if((brhoratio>brhocut[0])&&(brhoratio<brhocut[1])){
+            cschist.at(1).Fill(brhoratio,tree.BigRIPSBeam_brho[2]);
+        }
+        else goodevents.at(eventno) = false;
+
+        eventno++;
+        if(!(eventno%downscale)) progressbar(eventno, totevents);
+    }
+
+    int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
+    printf("\nCCSC Cut out %i Events %f %%\n", goodbefore-goodafter,
+           100*(goodbefore-goodafter)/(double)totevents);
+
+    output.mkdir("CSC");
+    output.cd("CSC");
+    for(auto hist: cschist) hist.Write();
     output.cd("");
 }

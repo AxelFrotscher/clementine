@@ -222,6 +222,7 @@ void dalicalib(treereader &tree, TFile &output){
 
 void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
     // 5 beams, 2incoming, 3outgoing
+    printf("Making PID now...\n");
     vector <string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
                          "F5X", "F5A", "F9X", "F9A", "F11X", "F11A"};
     tree.setloopkeys(keys);
@@ -333,7 +334,8 @@ void makehistograms(const string input){
         true,  // Ionisationchamber
         true,  // highordercorrection
         true,  // makepid
-        true   // DALIcalib
+        true,  // DALIcalib
+        true   // charged state cuts
     };
 
     // Store events that cannot be used
@@ -353,14 +355,17 @@ void makehistograms(const string input){
     // Get Corrections
     if (options.at(3)) highordercorrection(alt2dtree, outputfile);
 
+    // Apply changed charged state cut
+    if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
+
     // Get Z vs. A/Q
     if (options.at(4)) makepid(alt2dtree, outputfile, goodevents);
     printf("Made PID histograms in %s\n", output.c_str());
     //Get ADC Spectra for DALI
     if(options.at(5)) dalicalib(alt2dtree, outputfile);
 
-    cout << "Runs has " <<accumulate(goodevents.begin(),goodevents.end(),0)
-         << " good Elements" << endl;
+    cout << "Runs has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
+                          /goodevents.size() << " % good Elements" << endl;
 
     //outputfile.Close();
 }
