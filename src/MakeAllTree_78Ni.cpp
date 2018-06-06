@@ -64,10 +64,10 @@ void generatetree(const string infile, const string output){
     const vector<int> focalplanes{3, 5, 7, 8, 9, 11};
 
     vector<vector<string>> mfil{  // matrixfiles
-            {"config/matrix/mat1.mat",               "D3"},                // F3 - F5 => D3
-            {"config/matrix/mat2.mat",               "D5"},                // F5 - F7 => D5
+            {"config/matrix/mat1.mat",               "D3"},    // F3 - F5 => D3
+            {"config/matrix/mat2.mat",               "D5"},    // F5 - F7 => D5
             {"config/matrix/F8F9_LargeAccAchr.mat",  "D7"},    // F8 - F9 => D7
-            {"config/matrix/F9F11_LargeAccAchr.mat", "D8"}}; // F9 - F11  => D8
+            {"config/matrix/F9F11_LargeAccAchr.mat", "D8"}};   // F9 - F11=> D8
 
     vector<TArtRIPS *> rips{
             recopid.DefineNewRIPS(3, 5, &mfil[0][0][0], &mfil[0][1][0]),
@@ -83,18 +83,16 @@ void generatetree(const string infile, const string output){
             -161.64}; // good Offset Value for F8-F11, empty-target run -160.45
 
     vector<TArtTOF *> tof{
-            recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0], tofoff[0], 5),
-            recopid.DefineNewTOF(&fplname[1][0][0], &fplname[1][1][0], tofoff[1], 9)};
+        recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0], tofoff[0], 5),
+        recopid.DefineNewTOF(&fplname[1][0][0], &fplname[1][1][0], tofoff[1], 9)};
 
     // Reconstruction of IC observables for ID
     vector<TArtBeam *> beam{  // br = BigRIPS, zd = ZeroDegree
-            recopid.DefineNewBeam(rips[0], rips[1], tof[0], (char *) "F7IC"),   //br_37
-            recopid.DefineNewBeam(rips[1], tof[0], (char *) "F7IC"),   //br_57
-            recopid.DefineNewBeam(rips[2], tof[1], (char *) "F11IC"),  //zd_89
-            recopid.DefineNewBeam(rips[3], tof[1], (char *) "F11IC"),  //zd_911
-            recopid.DefineNewBeam(rips[2], rips[3], tof[1], (char *) "F11IC")}; //zd_811
-
-    // To my knowledge, only [0] and [4] usable (tof-Focalplane mismatch)
+        recopid.DefineNewBeam(rips[0], rips[1], tof[0], (char *) "F7IC"),//br_37
+        recopid.DefineNewBeam(rips[1], tof[0], (char *) "F7IC"),         //br_57
+        recopid.DefineNewBeam(rips[2], tof[1], (char *) "F11IC"),        //zd_89
+        recopid.DefineNewBeam(rips[3], tof[1], (char *) "F11IC"),       //zd_911
+        recopid.DefineNewBeam(rips[2], rips[3], tof[1], (char *) "F11IC")}; //zd_811
 
     // Create DALIParameters to get ".xml"
     auto dpara = TArtDALIParameters::Instance();
@@ -118,7 +116,7 @@ void generatetree(const string infile, const string output){
         tree->Branch(array->GetName(), &array);
         printf("%s", array->GetName());
     }
-    cout << output << endl;
+
     //Making new branches
 
     //BigRIPS

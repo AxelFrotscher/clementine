@@ -56,7 +56,7 @@ void highordercorrection(treereader &tree, TFile &output,
                     ymax = 0.7;
                     ymin = 0.6 -0.2*i; // outgoing have lower velocities
                 }
-                temp1d.push_back(TH2D(arr.c_str(),arrn.c_str(),2000,2.2,3.2,
+                temp1d.emplace_back(TH2D(arr.c_str(),arrn.c_str(),2000,2.2,3.2,
                                       500,ymin,ymax));
                 temp1d.back().SetOption("colz");
                 temp1d.back().GetXaxis()->SetTitle("A/Q");
@@ -334,13 +334,17 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
     output.cd("");
 
     double crosssection = 1./0.423*reactioncounter.at(1)/reactioncounter.at(0);
-    double cserror = crosssection*pow(1./reactioncounter.at(0)+1./reactioncounter.at(1),0.5);
-    printf("Inclusive 111Nb(p,2p)110Zr sigma is: %f +- %f b\n", crosssection, cserror);
+    double cserror = crosssection*pow(1./reactioncounter.at(0) +
+                                      1./reactioncounter.at(1),0.5);
+    printf("Inclusive 111Nb(p,2p)110Zr sigma is: %f +- %f b\n", crosssection,
+           cserror);
 }
 
 void makehistograms(const string input){
     TTree* inputtree;
     TFile f(input.c_str());
+    if(!f.IsOpen()) __throw_invalid_argument((input+"not found.\n "
+                                                "Rerun with option 1").c_str());
     f.GetObject("tree", inputtree);
 
     treereader alt2dtree(inputtree); // Opens the input file...

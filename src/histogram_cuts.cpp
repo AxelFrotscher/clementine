@@ -43,7 +43,7 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
     vector<TH2D> tqcorr2D; // Charge-Time correlation
 
     vector<vector<string>> arrayname, arraytitle;
-    tree.singleloop(); // Get first event for invovled focal planes
+    tree.singleloop(); // Get first event for involved focal planes
     for(uint i=0; i<numplastic; i++){
         arrayname.push_back(vector<string>{
                 "f7pltrigQ."  + to_string(tree.BigRIPSPlastic_fpl[i]),
@@ -82,7 +82,7 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
     vector<vector<int>> range{{480,620},{700,920},{220,330},{270,1510}};
 
     // Progress Bar setup
-    int i=0; // counting variable
+    int eventno=0; // counting variable
     Long64_t totevents = tree.NumEntries();
     const int downscale = 500; // every n-th event
     // Get Number of Good events before
@@ -90,16 +90,16 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
 
     while(tree.singleloop()){
         if(sqrt(tree.BigRIPSPlastic_fQLRaw[F7pos]*
-                tree.BigRIPSPlastic_fQRRaw[F7pos])> threshhold)
-            for(uint i=0; i<numplastic; i++){
+                tree.BigRIPSPlastic_fQRRaw[F7pos])> threshhold) // F7-cut
+            for(uint i=0; i<numplastic; i++){                   // plastic loop
                 if((tree.BigRIPSPlastic_fQLRaw[i] >0 )&&
-                   (tree.BigRIPSPlastic_fQRRaw[i] >0)){
+                   (tree.BigRIPSPlastic_fQRRaw[i] >0)){   // 0 charge veto
                     qcorr2D.at(i).Fill(tree.BigRIPSPlastic_fQLRaw[i],
                                        tree.BigRIPSPlastic_fQRRaw[i]);
                     qcorr.at(i).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[i]*
                                           tree.BigRIPSPlastic_fQRRaw[i]));
                     if((tree.BigRIPSPlastic_fTLRaw[i] >0) &&
-                       (tree.BigRIPSPlastic_fTRRaw[i] >0) ){
+                       (tree.BigRIPSPlastic_fTRRaw[i] >0) ){ // 0 time veto
                         tqcorr2D.at(i).Fill(tree.BigRIPSPlastic_fTLRaw[i]-
                                             tree.BigRIPSPlastic_fTRRaw[i],
                                             TMath::Log(tree.BigRIPSPlastic_fQLRaw[i]/
@@ -108,23 +108,23 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
                 }
             }
         for(int j=0;j<numplastic;j++){
-            goodevents[i] =goodevents[i]*
+            goodevents[eventno] =goodevents[eventno]*
                            (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
                                  tree.BigRIPSPlastic_fQRRaw[j]) > range[j][0])*
                            (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
                                  tree.BigRIPSPlastic_fQRRaw[j]) < range[j][1]);
         }
-        i++;
+        eventno++;
         // Progress bar updating
-        if(!(i%downscale)) progressbar(i,totevents);
+        if(!(eventno%downscale)) progressbar(eventno,totevents);
     }
     int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
     printf("\nPlastic Cut out %i Events %f %%\n", goodbefore-goodafter,
            100*(goodbefore-goodafter)/(double)totevents);
 
-    output.mkdir("Plastics/2D");
-    output.mkdir("Plastics/Q1Q2");
-    output.mkdir("Plastics/TQCorr");
+    vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr"};
+    for (auto str:folders) output.mkdir(str.c_str());
+
     output.cd("Plastics/2D");
     for(auto histo: qcorr2D) histo.Write();
     output.cd("Plastics/Q1Q2");
@@ -133,7 +133,6 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
     for(auto histo: tqcorr2D) histo.Write();
     output.cd("");
 
-    // A careful analysis yields a threshhold of sqrt(Q1*Q2)>160
     printf("Finished Writing plastic histograms! \n");
 }
 
@@ -159,25 +158,23 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
     vector<vector<TH2D>> sumdiffppac // 1 X,Y 2 Sum,diff (2D NoPPAC, Quantity)
             {{TH2D(arrname.at(0).c_str(),arrtitle.at(0).c_str(),
                    numplane,0,numplane,300,000,300),
-                     TH2D(arrname.at(1).c_str(),arrtitle.at(1).c_str(),
-                          numplane,0,numplane,800,-200,200)},
+              TH2D(arrname.at(1).c_str(),arrtitle.at(1).c_str(),
+                   numplane,0,numplane,800,-200,200)},
              {TH2D(arrname.at(2).c_str(),arrtitle.at(2).c_str(),
                    numplane,0,numplane,150,0,150),
-                     TH2D(arrname.at(3).c_str(),arrtitle.at(3).c_str(),
-                          numplane,0,numplane,800,-200,200)}};
+              TH2D(arrname.at(3).c_str(),arrtitle.at(3).c_str(),
+                   numplane,0,numplane,800,-200,200)}};
 
-    sumdiffppac.at(0).at(0).SetOption("colz");
-    sumdiffppac.at(0).at(0).GetXaxis()->SetTitle("PPAC [ch]");
-    sumdiffppac.at(0).at(0).GetYaxis()->SetTitle("Sum [ns]");
-    sumdiffppac.at(0).at(1).SetOption("colz");
-    sumdiffppac.at(0).at(1).GetXaxis()->SetTitle("PPAC [ch]");
-    sumdiffppac.at(0).at(1).GetYaxis()->SetTitle("diff [ns]");
-    sumdiffppac.at(1).at(0).SetOption("colz");
-    sumdiffppac.at(1).at(0).GetXaxis()->SetTitle("PPAC [ch]");
-    sumdiffppac.at(1).at(0).GetYaxis()->SetTitle("Sum [ns]");
-    sumdiffppac.at(1).at(1).SetOption("colz");
-    sumdiffppac.at(1).at(1).GetXaxis()->SetTitle("PPAC [ch]");
-    sumdiffppac.at(1).at(1).GetYaxis()->SetTitle("diff [ns]");
+    for(auto &hist : sumdiffppac){
+        uint toggle =0;
+        for(auto &h: hist){
+            h.SetOption("colz");
+            h.GetXaxis()->SetTitle("PPAC [ch]");
+            if(!toggle) h.GetYaxis()->SetTitle("Sum [ns]");
+            else h.GetYaxis()->SetTitle("diff [ns]");
+            toggle++;
+        }
+    }
 
     effPPACX.GetXaxis()->SetTitle("PPAC [ch]");
     effPPACX.GetYaxis()->SetTitle("PPACX(x)/Plastic(F11)");
@@ -242,10 +239,10 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
         for(uint i =0; i<ppacplane.size();i++){
             for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
                 temptruth.at(j) =
-                        (tree.BigRIPSPPAC_fTSumX[ppacplane.at(i).at(j)] > ppacrange.at(i).at(j).at(0) &&
-                         tree.BigRIPSPPAC_fTSumX[ppacplane.at(i).at(j)] < ppacrange.at(i).at(j).at(1) &&
-                         tree.BigRIPSPPAC_fTSumY[ppacplane.at(i).at(j)] > ppacrange.at(i).at(j).at(2) &&
-                         tree.BigRIPSPPAC_fTSumY[ppacplane.at(i).at(j)] < ppacrange.at(i).at(j).at(3));
+                    (tree.BigRIPSPPAC_fTSumX[ppacplane.at(i).at(j)] > ppacrange.at(i).at(j).at(0) &&
+                     tree.BigRIPSPPAC_fTSumX[ppacplane.at(i).at(j)] < ppacrange.at(i).at(j).at(1) &&
+                     tree.BigRIPSPPAC_fTSumY[ppacplane.at(i).at(j)] > ppacrange.at(i).at(j).at(2) &&
+                     tree.BigRIPSPPAC_fTSumY[ppacplane.at(i).at(j)] < ppacrange.at(i).at(j).at(3));
             }
             // Recursively check each focal plane for at least 1 good Signal
             goodevents.at(fulltotal) = goodevents.at(fulltotal)*
@@ -362,13 +359,13 @@ void ionisationchamber(treereader &alt2dtree, TFile &output,
 
 void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
     // this method aims to cut charge state changes between F8-9 and F9-11
-
     printf("Now performing a charge state change cut between F8-9 and F9-11...\n");
 
     // Generate output histogram
     vector<TH2D> cschist{
         TH2D("csc", "Charged state change", 500,0.9,1.1,500,4,6),
         TH2D("csccut", "Charged state change cut", 500,0.95,1.05,500,4,6)};
+
     for(auto &histo: cschist){
         histo.SetOption("colz");
         histo.GetYaxis()->SetTitle("B#rho F8-9");
@@ -393,7 +390,8 @@ void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
     while(tree.singleloop()){
         brhoratio = tree.BigRIPSBeam_brho[3]/tree.BigRIPSBeam_brho[2];
         cschist.at(0).Fill(brhoratio, tree.BigRIPSBeam_brho[2]);
-        if((brhoratio>brhocut[0])&&(brhoratio<brhocut[1])){
+
+        if((brhoratio > brhocut[0]) && (brhoratio < brhocut[1])){
             cschist.at(1).Fill(brhoratio,tree.BigRIPSBeam_brho[2]);
         }
         else goodevents.at(eventno) = false;
