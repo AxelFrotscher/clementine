@@ -146,7 +146,7 @@ void highordercorrection(treereader &tree, TFile &output,
             vector<TProfile*> proftemp1d;
             for(uint i_corr=0; i_corr<=corrcount;i_corr++){
                 proftemp1d.push_back(elem2.at(i_corr).ProfileY());
-                proftemp1d.back()->Fit("Linear Fit");
+                proftemp1d.back()->Fit("Linear Fit","Q");
             }
             proftemp2d.push_back(proftemp1d);
         }
@@ -343,9 +343,14 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
 void makehistograms(const string input){
     TTree* inputtree;
     TFile f(input.c_str());
-    if(!f.IsOpen()) __throw_invalid_argument((input+"not found.\n "
+    if(!f.IsOpen()) __throw_invalid_argument((input+" not found.\n "
                                                 "Rerun with option 1").c_str());
     f.GetObject("tree", inputtree);
+
+    // testing
+    TList trees;
+    
+    // \testing
 
     treereader alt2dtree(inputtree); // Opens the input file...
 

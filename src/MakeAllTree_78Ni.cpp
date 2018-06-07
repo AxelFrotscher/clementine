@@ -34,7 +34,8 @@ void generatetree(const string infile, const string output){
     // Create EventStore to control the loop and get the EventInfo
     TArtEventStore estore;
     estore.SetInterrupt(&stoploop); 
-    estore.Open(infile.c_str());
+    if(!estore.Open(infile.c_str())) __throw_invalid_argument(("Could not open"+
+                                                               infile).c_str());
 
     // Create BigRIPSParameters to get Plastics, PPACs, ICs and FocalPlanes 
     // parameters from ".xml" files
@@ -43,7 +44,9 @@ void generatetree(const string infile, const string output){
         "config/db/BigRIPSPPAC.xml", "config/db/BigRIPSPlastic.xml",
         "config/db/BigRIPSIC.xml",   "config/db/FocalPlane.xml"};
 
-    for(auto i : parameterfiles) para.LoadParameter(&i[0]);
+    for(auto i : parameterfiles){
+        if(!para.LoadParameter(&i[0])) __throw_invalid_argument(&i[0]);
+    }
 
     para.SetFocusPosOffset(8,138.5);
     // Create CalibPID to get and calibrate raw data ( CalibPID -> [CalibPPAC , 
@@ -88,11 +91,11 @@ void generatetree(const string infile, const string output){
 
     // Reconstruction of IC observables for ID
     vector<TArtBeam *> beam{  // br = BigRIPS, zd = ZeroDegree
-        recopid.DefineNewBeam(rips[0], rips[1], tof[0], (char *) "F7IC"),//br_37
-        recopid.DefineNewBeam(rips[1], tof[0], (char *) "F7IC"),         //br_57
-        recopid.DefineNewBeam(rips[2], tof[1], (char *) "F11IC"),        //zd_89
-        recopid.DefineNewBeam(rips[3], tof[1], (char *) "F11IC"),       //zd_911
-        recopid.DefineNewBeam(rips[2], rips[3], tof[1], (char *) "F11IC")}; //zd_811
+        recopid.DefineNewBeam(rips[0], rips[1], tof[0], (char *) "F7IC"),  //br_37
+        recopid.DefineNewBeam(rips[1], tof[0], (char *) "F7IC"),           //br_57
+        recopid.DefineNewBeam(rips[2], tof[1], (char *) "F11IC"),          //zd_89
+        recopid.DefineNewBeam(rips[3], tof[1], (char *) "F11IC"),          //zd_911
+        recopid.DefineNewBeam(rips[2], rips[3], tof[1], (char *) "F11IC")};//zd_811
 
     // Create DALIParameters to get ".xml"
     auto dpara = TArtDALIParameters::Instance();
@@ -103,6 +106,8 @@ void generatetree(const string infile, const string output){
 
     // Create TTree and output file for it
     TFile fout(output.c_str(), "RECREATE");
+    if(!fout.IsOpen()) __throw_bad_alloc();
+
     auto tree = new TTree("tree","tree");
 
     // Define data nodes which are supposed to be dumped to tree 
