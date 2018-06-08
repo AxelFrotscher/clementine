@@ -106,7 +106,7 @@ void generatetree(const string infile, const string output){
 
     // Create TTree and output file for it
     TFile fout(output.c_str(), "RECREATE");
-    if(!fout.IsOpen()) __throw_bad_alloc();
+    if(!fout.IsOpen()) __throw_invalid_argument("Could not open output file!\n");
 
     auto tree = new TTree("tree","tree");
 
@@ -183,7 +183,7 @@ void generatetree(const string infile, const string output){
 
     // Progress Bar setup
     int neve = 0; // counting variable
-    Long64_t totevents = 1400000;
+    Long64_t totevents = 5000000;
     const int downscale = 500; // every n-th event
 
     while(estore.GetNextEvent() && (neve < totevents)){ //&& neve < 100000

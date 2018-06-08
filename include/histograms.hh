@@ -13,7 +13,7 @@
 #include "TProfile.h"
 #include "TF1.h"
 
-void makehistograms(const std::__cxx11::string input);
+void makehistograms(const std::vector<std::__cxx11::string> input);
 void makepid(TTreeReader& datree, TFile& output,
              const std::vector<bool> &goodevents);
 void highordercorrection(treereader &tree, TFile &output,

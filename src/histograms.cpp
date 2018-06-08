@@ -340,22 +340,17 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
            cserror);
 }
 
-void makehistograms(const string input){
-    TTree* inputtree;
-    TFile f(input.c_str());
-    if(!f.IsOpen()) __throw_invalid_argument((input+" not found.\n "
-                                                "Rerun with option 1").c_str());
-    f.GetObject("tree", inputtree);
+void makehistograms(const vector<string> input){
+    cout << "Making new TList..." << endl;
 
-    // testing
-    TList trees;
-    
-    // \testing
+    auto chain = new TChain("tree");
+    for(auto h: input) chain->Add(h.c_str());
 
-    treereader alt2dtree(inputtree); // Opens the input file...
+    treereader alt2dtree(chain); // Opens the input file...
 
     // Generating an outputfile that matches names with the input file
-    string output = input.substr(0,22) + "hist.root";
+    string output = "build/output/" + input.at(0).substr(16,9) + "hist" +
+                    to_string(input.size()) + ".root";
 
     TFile outputfile(output.c_str(), "RECREATE");
     if(!outputfile.IsOpen()) __throw_invalid_argument("Output file not valid");
@@ -366,10 +361,12 @@ void makehistograms(const string input){
         true,  // Ionisationchamber
         true,  // highordercorrection
         true,  // makepid
-        true,  // DALIcalib
+        false, // DALIcalib
         true   // charged state cuts
     };
 
+    cout << "Beginning reconstruction of " << chain->GetEntries()
+         << " Elements." << endl;
     // Store events that cannot be used
     vector<bool> goodevents(alt2dtree.NumEntries(), true);
 
