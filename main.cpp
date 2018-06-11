@@ -50,8 +50,10 @@ int main(int argc, char**argv){
             cout << "Which file to analyse? " << endl;
             uint i = 0;
             if(!(cin >> i)) throw invalid_argument("WTH");
-            cout << "Analyzing SEASTAR:" << input.at(analysedfile.at(0)+goodruns.at(i)) << endl;
-            generatetree(input.at(analysedfile.at(0)+goodruns.at(i)), output.at(i));
+            cout << "Analyzing SEASTAR:"
+                 << input.at(analysedfile.at(0)+goodruns.at(i)) << endl;
+            generatetree(input.at(analysedfile.at(0)+goodruns.at(i)),
+                         output.at(i));
             break;
         }
         case 0:{

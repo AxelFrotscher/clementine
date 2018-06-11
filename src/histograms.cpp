@@ -370,17 +370,17 @@ void makehistograms(const vector<string> input){
     // Store events that cannot be used
     vector<bool> goodevents(alt2dtree.NumEntries(), true);
 
+    // Apply changed charged state cut [fastest -> first]
+    if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
+
     // Rebuild F7 Trigger combined charge threshhold
     if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
 
-    // Cut the PPAC's
-    if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
-
+    // Cut on IC values
     if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
-    printf("Finished with PPAC Consistency checks\n");
 
-    // Apply changed charged state cut
-    if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
+    // Cut the PPAC's [slowest cut -> last cut]
+    if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
 
     // Get Corrections
     if (options.at(3)) highordercorrection(alt2dtree, outputfile, goodevents);

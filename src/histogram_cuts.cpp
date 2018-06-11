@@ -89,6 +89,7 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
     int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
 
     while(tree.singleloop()){
+        if(goodevents.at(eventno)){
         if(sqrt(tree.BigRIPSPlastic_fQLRaw[F7pos]*
                 tree.BigRIPSPlastic_fQRRaw[F7pos])> threshhold) // F7-cut
             for(uint i=0; i<numplastic; i++){                   // plastic loop
@@ -113,6 +114,7 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
                                  tree.BigRIPSPlastic_fQRRaw[j]) > range[j][0])*
                            (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
                                  tree.BigRIPSPlastic_fQRRaw[j]) < range[j][1]);
+        }
         }
         eventno++;
         // Progress bar updating
@@ -216,38 +218,41 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
     int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
 
     while(tree.singleloop()){
-        // Get Efficiency relative to the last Plastic
-        if (tree.BigRIPSPlastic_fTime[pl11position] >0){
-            for(int i=1; i<=numplane; i++){
-                //ripsvec.at(0).at(i)
-                if(tree.BigRIPSPPAC_fFiredX[i-1])
-                    effPPACX.SetBinContent(i, effPPACX.GetBinContent(i)+1);
-                if(tree.BigRIPSPPAC_fFiredY[i-1])
-                    effPPACY.SetBinContent(i, effPPACY.GetBinContent(i)+1);
+        if(goodevents.at(fulltotal)){ // Determine cut only on good events
+            // Get Efficiency relative to the last Plastic
+            if (tree.BigRIPSPlastic_fTime[pl11position] >0){
+                for(int i=1; i<=numplane; i++){
+                    //ripsvec.at(0).at(i)
+                    if(tree.BigRIPSPPAC_fFiredX[i-1])
+                        effPPACX.SetBinContent(i, effPPACX.GetBinContent(i)+1);
+                    if(tree.BigRIPSPPAC_fFiredY[i-1])
+                        effPPACY.SetBinContent(i, effPPACY.GetBinContent(i)+1);
+                }
+                total++;
             }
-            total++;
-        }
-        for(int i=0; i<numplane;i++){
-            sumdiffppac.at(0).at(0).Fill(i,tree.BigRIPSPPAC_fTSumX[i]);
-            sumdiffppac.at(0).at(1).Fill(i,tree.BigRIPSPPAC_fTDiffX[i]);
-            sumdiffppac.at(1).at(0).Fill(i,tree.BigRIPSPPAC_fTSumY[i]);
-            sumdiffppac.at(1).at(1).Fill(i,tree.BigRIPSPPAC_fTDiffY[i]);
-        }
+            for(int i=0; i<numplane;i++){
+                sumdiffppac.at(0).at(0).Fill(i,tree.BigRIPSPPAC_fTSumX[i]);
+                sumdiffppac.at(0).at(1).Fill(i,tree.BigRIPSPPAC_fTDiffX[i]);
+                sumdiffppac.at(1).at(0).Fill(i,tree.BigRIPSPPAC_fTSumY[i]);
+                sumdiffppac.at(1).at(1).Fill(i,tree.BigRIPSPPAC_fTDiffY[i]);
+            }
 
-        // Make Cut conditions: each focal Plane needs to have one valid entry
-        // := Sum for x and y is in range
-        for(uint i =0; i<ppacplane.size();i++){
-            for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
-                temptruth.at(j) =
-                    (tree.BigRIPSPPAC_fTSumX[ppacplane.at(i).at(j)] > ppacrange.at(i).at(j).at(0) &&
-                     tree.BigRIPSPPAC_fTSumX[ppacplane.at(i).at(j)] < ppacrange.at(i).at(j).at(1) &&
-                     tree.BigRIPSPPAC_fTSumY[ppacplane.at(i).at(j)] > ppacrange.at(i).at(j).at(2) &&
-                     tree.BigRIPSPPAC_fTSumY[ppacplane.at(i).at(j)] < ppacrange.at(i).at(j).at(3));
+            // Make Cut conditions: each focal Plane needs to have one valid entry
+            // := Sum for x and y is in range
+            for(uint i =0; i<ppacplane.size();i++){
+                for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
+                    int cpl = ppacplane.at(i).at(j);
+                    temptruth.at(j) =
+                       (tree.BigRIPSPPAC_fTSumX[cpl] > ppacrange.at(i).at(j).at(0) &&
+                        tree.BigRIPSPPAC_fTSumX[cpl] < ppacrange.at(i).at(j).at(1) &&
+                        tree.BigRIPSPPAC_fTSumY[cpl] > ppacrange.at(i).at(j).at(2) &&
+                        tree.BigRIPSPPAC_fTSumY[cpl] < ppacrange.at(i).at(j).at(3));
+                }
+                // Recursively check each focal plane for at least 1 good Signal
+                goodevents.at(fulltotal) = goodevents.at(fulltotal)*
+                                           accumulate(temptruth.begin(),
+                                                      temptruth.end(),0);
             }
-            // Recursively check each focal plane for at least 1 good Signal
-            goodevents.at(fulltotal) = goodevents.at(fulltotal)*
-                                       accumulate(temptruth.begin(),
-                                                  temptruth.end(),0);
         }
         fulltotal++;
         if(!(fulltotal%downscale)) progressbar(fulltotal, totevents);
@@ -324,21 +329,23 @@ void ionisationchamber(treereader &alt2dtree, TFile &output,
     int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
 
     while(alt2dtree.singleloop()){
-        if((alt2dtree.BigRIPSIC_nhitchannel[0]*
-            alt2dtree.BigRIPSIC_nhitchannel[1]) <16){ //Require 4 hits in each IC
-            goodevents.at(totalcounter) = false;
-        }
-        if((alt2dtree.BigRIPSIC_fADC[0][0] <0) ||
-           (alt2dtree.BigRIPSIC_fADC[1][0] <0)) continue;
-        for(int i=0; i<(numchannel-1);i++){
-            if(alt2dtree.BigRIPSIC_fADC[0][i] >0)
-                comparediag.at(i).at(0).Fill(
-                        alt2dtree.BigRIPSIC_fADC[0][0],
-                        alt2dtree.BigRIPSIC_fADC[0][i+1]);
-            if(alt2dtree.BigRIPSIC_fADC[1][i] >0)
-                comparediag.at(i).at(1).Fill(
-                        alt2dtree.BigRIPSIC_fADC[1][0],
-                        alt2dtree.BigRIPSIC_fADC[1][i+1]);
+        if(goodevents.at(totalcounter)){ // Determine cut only on good events
+            if((alt2dtree.BigRIPSIC_nhitchannel[0]*
+                alt2dtree.BigRIPSIC_nhitchannel[1]) <16){ //Require 4 hits in each IC
+                goodevents.at(totalcounter) = false;
+            }
+            if((alt2dtree.BigRIPSIC_fADC[0][0] <0) ||
+                (alt2dtree.BigRIPSIC_fADC[1][0] <0)) continue;
+            for(int i=0; i<(numchannel-1);i++){
+                if(alt2dtree.BigRIPSIC_fADC[0][i] >0)
+                    comparediag.at(i).at(0).Fill(
+                            alt2dtree.BigRIPSIC_fADC[0][0],
+                            alt2dtree.BigRIPSIC_fADC[0][i+1]);
+                if(alt2dtree.BigRIPSIC_fADC[1][i] >0)
+                    comparediag.at(i).at(1).Fill(
+                            alt2dtree.BigRIPSIC_fADC[1][0],
+                            alt2dtree.BigRIPSIC_fADC[1][i+1]);
+            }
         }
         totalcounter++;
         if(!(totalcounter%downscale)) progressbar(totalcounter,totevents);
@@ -388,16 +395,18 @@ void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
     const vector<double> brhocut{0.9825,1.011};
 
     while(tree.singleloop()){
-        brhoratio = tree.BigRIPSBeam_brho[3]/tree.BigRIPSBeam_brho[2];
-        cschist.at(0).Fill(brhoratio, tree.BigRIPSBeam_brho[2]);
+        if(goodevents.at(eventno)){ // Determine cut only on good events
+            brhoratio = tree.BigRIPSBeam_brho[3]/tree.BigRIPSBeam_brho[2];
+            cschist.at(0).Fill(brhoratio, tree.BigRIPSBeam_brho[2]);
 
-        if((brhoratio > brhocut[0]) && (brhoratio < brhocut[1])){
-            cschist.at(1).Fill(brhoratio,tree.BigRIPSBeam_brho[2]);
+            if((brhoratio > brhocut[0]) && (brhoratio < brhocut[1])){
+                cschist.at(1).Fill(brhoratio,tree.BigRIPSBeam_brho[2]);
+            }
+            else goodevents.at(eventno) = false;
+
+            eventno++;
+            if(!(eventno%downscale)) progressbar(eventno, totevents);
         }
-        else goodevents.at(eventno) = false;
-
-        eventno++;
-        if(!(eventno%downscale)) progressbar(eventno, totevents);
     }
 
     int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
