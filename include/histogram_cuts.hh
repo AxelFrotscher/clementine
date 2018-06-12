@@ -16,6 +16,7 @@
 #include "treereader.hh"
 #include "TProfile.h"
 #include "TF1.h"
+#include "TCutG.h"
 
 struct calibpar{
     // Nice encapsulation of variables for the correction

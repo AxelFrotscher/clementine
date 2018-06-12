@@ -31,17 +31,17 @@ int main(int argc, char**argv){
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
     // Step 1: analyse the raw data
-    const vector<int> analysedfile{57,2}; // Index of analysed file (first, length)
+    const vector<uint> analysedfile{57,2}; // Index of analysed file (first, offset)
     const vector<string> input = getlist("config/minosridf.txt");
 
     // Define good runs
     const vector<int> goodruns{1,3,4,5,7,8,9,10,11,13,14,19,26,29,32,33,35,37,
-                                          38,40,41,42,46,49,50,51,52,54,57,58,59};
+                                       38,40,41,42,46,49,50,51,52,54,57,58,59};
 
     vector<string> output;
-    for(int i=0; i<goodruns.size(); i++) {
-        output.push_back("/mnt/MINOS/root/" +
-                         input.at(analysedfile.at(0)+goodruns.at(i)).substr(16, 9)
+    for(auto run : goodruns) {
+        output.push_back("/d/d02-1/ag_ob/MINOS_DATA/root/" +
+                         input.at(analysedfile.at(0)+run).substr(16, 9)
                          + ".root");
     }
 

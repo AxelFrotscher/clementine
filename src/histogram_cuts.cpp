@@ -392,14 +392,17 @@ void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
     double brhoratio = 0;
 
     // Define cut
-    const vector<double> brhocut{0.9825,1.011};
+    TFile cutfile("config/brhocut.root");
+    if(!(cutfile.IsOpen())) __throw_invalid_argument("Could not open cut file "
+                                                     "at config/brhocut.root");
+    auto mycut = (TCutG*)cutfile.Get("CUTG");
 
     while(tree.singleloop()){
         if(goodevents.at(eventno)){ // Determine cut only on good events
             brhoratio = tree.BigRIPSBeam_brho[3]/tree.BigRIPSBeam_brho[2];
             cschist.at(0).Fill(brhoratio, tree.BigRIPSBeam_brho[2]);
 
-            if((brhoratio > brhocut[0]) && (brhoratio < brhocut[1])){
+            if(mycut->IsInside(brhoratio,tree.BigRIPSBeam_brho[2])){
                 cschist.at(1).Fill(brhoratio,tree.BigRIPSBeam_brho[2]);
             }
             else goodevents.at(eventno) = false;
