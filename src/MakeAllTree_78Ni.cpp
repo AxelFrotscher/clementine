@@ -10,17 +10,26 @@ void stop_interrupt(){
     stoploop = true;
 }
 
-void progressbar(int currevent, int totevent, int barwidth){
-    // This method displays a nice progress bar
-    cout << "[";
-    int pos = barwidth * (float)currevent/totevent;
-    for(int i=0; i<barwidth; i++){
-        if(i<pos) cout << "=";
-        else if (i ==pos) cout << ">";
-        else cout << " ";
-    }
+vector <int> currevt{0,0,0,0,0};
+const int constadd = 10;
 
-    cout << "] " << int(1000.0*currevent/totevent)/10.0 << " %\r";
+void progressbar(int currevent, int totevent, int offset ,int barwidth){
+    // This method displays a nice progress bar
+    currevt.at(offset) = currevent;
+    vector<int> pos; // position for each bar
+
+    for(int i=0; i<currevt.size(); i++){ // Loop over each bar
+        pos.push_back(i*(barwidth+constadd)+barwidth*(float)currevt.at(i)/totevent);
+        cout << "[";
+        for(int j=i*(barwidth+constadd); j<(i*(barwidth+constadd)+barwidth); j++){
+            // determine output for each bar
+            if(j<pos.at(i)) cout << "=";
+            else if (j==pos.at(i)) cout << ">";
+            else cout << " ";
+        }
+        cout << "] " << int(1000.*currevt.at(i)/totevent)/10.0 << " % ";
+    }
+    cout << "\r";
     cout.flush();
 }
 
@@ -300,7 +309,7 @@ void generatetree(const string infile, const string output){
         tree->Fill();
         neve++;
 
-        if(!(neve%downscale)) progressbar(neve,totevents);
+        if(!(neve%downscale)) progressbar(neve,totevents,0);
 
         // Add Graphical Feedback
     }

@@ -25,7 +25,7 @@ double linfit(double *x, double *par){
     return par[0] + par[1]*x[0];
 }
 
-void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
+void plastics(treereader &tree, TFile *output, vector<bool> &goodevents){
     // This function aims to rebuild the trigger from Q1*Q2 F7plastic
     // therefore we set a limit on sqrt(Q1*Q2) to suppress random noise
     printf("Now beginning with reconstruction of plastic scintillators ...\n");
@@ -83,10 +83,10 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
 
     // Progress Bar setup
     int eventno=0; // counting variable
-    Long64_t totevents = tree.NumEntries();
-    const int downscale = 500; // every n-th event
+    uint totevents = goodevents.size();
+    const int downscale = 5000; // every n-th event
     // Get Number of Good events before
-    int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
+    int cutcount =0;
 
     while(tree.singleloop()){
         if(goodevents.at(eventno)){
@@ -108,37 +108,43 @@ void plastics(treereader &tree, TFile &output, vector<bool> &goodevents){
                     }
                 }
             }
-        for(int j=0;j<numplastic;j++){
-            goodevents[eventno] =goodevents[eventno]*
-                           (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
-                                 tree.BigRIPSPlastic_fQRRaw[j]) > range[j][0])*
-                           (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
-                                 tree.BigRIPSPlastic_fQRRaw[j]) < range[j][1]);
-        }
+            goodeventmutex.lock();
+            for(int j=0;j<numplastic;j++){
+                goodevents[eventno] =goodevents[eventno]*
+                               (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
+                                     tree.BigRIPSPlastic_fQRRaw[j]) > range[j][0])*
+                               (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
+                                     tree.BigRIPSPlastic_fQRRaw[j]) < range[j][1]);
+            }
+            cutcount = cutcount + 1-goodevents[eventno];
+            goodeventmutex.unlock();
         }
         eventno++;
-        // Progress bar updating
-        if(!(eventno%downscale)) progressbar(eventno,totevents);
+        if(!(eventno%downscale)){
+            goodeventmutex.lock();
+            progressbar(eventno,totevents, 1);
+            goodeventmutex.unlock();
+        }
     }
-    int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
-    printf("\nPlastic Cut out %i Events %f %%\n", goodbefore-goodafter,
-           100*(goodbefore-goodafter)/(double)totevents);
+    goodeventmutex.lock();
+    printf("\nPlastic Cut out %i Events %f %%\n", cutcount,
+           100*cutcount/(double)totevents);
 
     vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr"};
-    for (auto str:folders) output.mkdir(str.c_str());
+    for (auto str:folders) output->mkdir(str.c_str());
 
-    output.cd("Plastics/2D");
+    output->cd("Plastics/2D");
     for(auto histo: qcorr2D) histo.Write();
-    output.cd("Plastics/Q1Q2");
+    output->cd("Plastics/Q1Q2");
     for(auto histo: qcorr) histo.Write();
-    output.cd("Plastics/TQCorr");
+    output->cd("Plastics/TQCorr");
     for(auto histo: tqcorr2D) histo.Write();
-    output.cd("");
-
+    output->cd("");
+    goodeventmutex.unlock();
     printf("Finished Writing plastic histograms! \n");
 }
 
-void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
+void ppacs(treereader &tree, TFile *output, vector<bool> &goodevents){
     printf("Now beginning with reconstruction of the ppac's ...\n");
     const int numplane = 36;
     const int pl11position = 3; //Plastic at F11 is fourth in array
@@ -211,18 +217,15 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
     vector<bool> temptruth(4, true);
 
     // Progress Bar setup
-    Long64_t totevents = tree.NumEntries();
-    const int downscale = 500; // every n-th event
-
-    // Prepare Cut quality control
-    int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
+    Long64_t totevents = goodevents.size();
+    const int downscale = 5000; // every n-th event
+    int cutno = 0;
 
     while(tree.singleloop()){
         if(goodevents.at(fulltotal)){ // Determine cut only on good events
             // Get Efficiency relative to the last Plastic
             if (tree.BigRIPSPlastic_fTime[pl11position] >0){
                 for(int i=1; i<=numplane; i++){
-                    //ripsvec.at(0).at(i)
                     if(tree.BigRIPSPPAC_fFiredX[i-1])
                         effPPACX.SetBinContent(i, effPPACX.GetBinContent(i)+1);
                     if(tree.BigRIPSPPAC_fFiredY[i-1])
@@ -239,6 +242,8 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
 
             // Make Cut conditions: each focal Plane needs to have one valid entry
             // := Sum for x and y is in range
+            bool temp = true;
+
             for(uint i =0; i<ppacplane.size();i++){
                 for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
                     int cpl = ppacplane.at(i).at(j);
@@ -247,47 +252,58 @@ void ppacs(treereader &tree, TFile &output, vector<bool> &goodevents){
                         tree.BigRIPSPPAC_fTSumX[cpl] < ppacrange.at(i).at(j).at(1) &&
                         tree.BigRIPSPPAC_fTSumY[cpl] > ppacrange.at(i).at(j).at(2) &&
                         tree.BigRIPSPPAC_fTSumY[cpl] < ppacrange.at(i).at(j).at(3));
+                    if(temptruth.at(j)) break; // We got our nice event at this F-point
                 }
                 // Recursively check each focal plane for at least 1 good Signal
-                goodevents.at(fulltotal) = goodevents.at(fulltotal)*
-                                           accumulate(temptruth.begin(),
-                                                      temptruth.end(),0);
+                temp = temp*accumulate(temptruth.begin(), temptruth.end(),0);
+            }
+            if(!temp){
+                goodeventmutex.lock();
+                goodevents.at(fulltotal) = false;
+                cutno++;
+                goodeventmutex.unlock();
             }
         }
         fulltotal++;
-        if(!(fulltotal%downscale)) progressbar(fulltotal, totevents);
+        if(!(fulltotal%downscale)){
+            goodeventmutex.lock();
+            progressbar(fulltotal, totevents,3);
+            goodeventmutex.unlock();
+        }
     }
-
-    int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
-    printf("\nPPAC Cut out %i Events %f %%\n", goodbefore-goodafter,
-           100*(goodbefore-goodafter)/(double)totevents);
 
     effPPACX.Scale(1/(double)total);
     effPPACY.Scale(1/(double)total);
 
-    output.mkdir("PPAC/FiredEff");
-    output.cd("PPAC/FiredEff");
-    effPPACX.Write();
-    effPPACY.Write();
-
     vector<string> xy = {"X","Y"};
     vector<string> sd = {"Sum", "Diff"};
+
+    goodeventmutex.lock();
+
+    printf("\nPPAC Cut out %i Events %f %%\n", cutno,
+           100*cutno/(double)totevents);
+
+    output->mkdir("PPAC/FiredEff");
+    output->cd("PPAC/FiredEff");
+    effPPACX.Write();
+    effPPACY.Write();
 
     // Generating output structure
     for(uint j=0; j<2; j++){ // Loop over X and Y//
         string folder = "PPAC/" + sd.at(j);
-        output.mkdir(folder.c_str());
-        output.cd(folder.c_str());
+        output->mkdir(folder.c_str());
+        output->cd(folder.c_str());
         for(uint k=0; k<2; k++){     // Loop Sum and diff
             sumdiffppac.at(k).at(j).Write();
         }
     }
 
-    output.cd("");
+    output->cd("");
     printf("Finished Writing PPAC histogram!\n");
+    goodeventmutex.unlock();
 }
 
-void ionisationchamber(treereader &alt2dtree, TFile &output,
+void ionisationchamber(treereader &alt2dtree, TFile *output,
                        vector<bool> &goodevents) {
     // This method aims to control the Ionisation Chamber values
     // therefore only certain events are accepted
@@ -322,17 +338,18 @@ void ionisationchamber(treereader &alt2dtree, TFile &output,
 
     // Progress Bar setup
     uint totalcounter =0; // counting variable
-    Long64_t totevents = alt2dtree.NumEntries();
-    const int downscale = 500; // every n-th event
-
-    // Prepare Cut quality control
-    int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
+    const Long64_t totevents = goodevents.size();
+    uint cutcount =0;
+    const int downscale = 5000; // every n-th event
 
     while(alt2dtree.singleloop()){
         if(goodevents.at(totalcounter)){ // Determine cut only on good events
             if((alt2dtree.BigRIPSIC_nhitchannel[0]*
                 alt2dtree.BigRIPSIC_nhitchannel[1]) <16){ //Require 4 hits in each IC
+                goodeventmutex.lock();
                 goodevents.at(totalcounter) = false;
+                goodeventmutex.unlock();
+                cutcount++;
             }
             if((alt2dtree.BigRIPSIC_fADC[0][0] <0) ||
                 (alt2dtree.BigRIPSIC_fADC[1][0] <0)) continue;
@@ -348,23 +365,28 @@ void ionisationchamber(treereader &alt2dtree, TFile &output,
             }
         }
         totalcounter++;
-        if(!(totalcounter%downscale)) progressbar(totalcounter,totevents);
+        if(!(totalcounter%downscale)){
+            goodeventmutex.lock();
+            progressbar(totalcounter,totevents,2);
+            goodeventmutex.unlock();
+        }
     }
+    goodeventmutex.lock();
+    printf("\nIC Cut out %i Events %f %%\n", cutcount,
+           100*cutcount/(double)totevents);
 
-    int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
-    printf("\nIC Cut out %i Events %f %%\n", goodbefore-goodafter,
-           100*(goodbefore-goodafter)/(double)totevents);
-
-    output.mkdir("IC/IC7");
-    output.mkdir("IC/IC11");
-    output.cd("IC/IC7");
+    output->mkdir("IC/IC7");
+    output->mkdir("IC/IC11");
+    output->cd("IC/IC7");
     for(auto &elem: comparediag) elem.at(0).Write();
-    output.cd("IC/IC11");
+    output->cd("IC/IC11");
     for(auto &elem: comparediag) elem.at(1).Write();
-    output.cd("");
+    output->cd("");
+    goodeventmutex.unlock();
 }
 
-void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
+void chargestatecut(treereader &tree, TFile *output, vector<bool> &goodevents){
+
     // this method aims to cut charge state changes between F8-9 and F9-11
     printf("Now performing a charge state change cut between F8-9 and F9-11...\n");
 
@@ -385,10 +407,10 @@ void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
 
     // Progress Bar setup
     uint eventno=0; // counting variable
-    Long64_t totevents = tree.NumEntries();
-    const int downscale = 500; // every n-th event
+    uint totevents = goodevents.size();
+    const int downscale = 5000; // every n-th event
     // Get Number of Good events before
-    int goodbefore = accumulate(goodevents.begin(),goodevents.end(),0);
+    int  cutcount =0;
     double brhoratio = 0;
 
     // Define cut
@@ -405,19 +427,28 @@ void chargestatecut(treereader &tree, TFile &output, vector<bool> &goodevents){
             if(mycut->IsInside(brhoratio,tree.BigRIPSBeam_brho[2])){
                 cschist.at(1).Fill(brhoratio,tree.BigRIPSBeam_brho[2]);
             }
-            else goodevents.at(eventno) = false;
-
-            eventno++;
-            if(!(eventno%downscale)) progressbar(eventno, totevents);
+            else {
+                goodeventmutex.lock();
+                goodevents.at(eventno) = false;
+                goodeventmutex.unlock();
+                cutcount++;
+            }
+        }
+        eventno++;
+        if(!(eventno%downscale)){
+            goodeventmutex.lock();
+            progressbar(eventno, totevents,0);
+            goodeventmutex.unlock();
         }
     }
 
-    int goodafter = accumulate(goodevents.begin(),goodevents.end(),0);
-    printf("\nCCSC Cut out %i Events %f %%\n", goodbefore-goodafter,
-           100*(goodbefore-goodafter)/(double)totevents);
+    goodeventmutex.lock();
+    printf("\nCCSC Cut out %i Events %f %%\n", cutcount,
+           100*cutcount/(double)totevents);
 
-    output.mkdir("CSC");
-    output.cd("CSC");
+    output->mkdir("CSC");
+    output->cd("CSC");
     for(auto hist: cschist) hist.Write();
-    output.cd("");
+    output->cd("");
+    goodeventmutex.unlock();
 }

@@ -5,8 +5,9 @@
 using namespace std;
 
 calibpar p1;
+mutex goodeventmutex;
 
-void highordercorrection(treereader &tree, TFile &output,
+void highordercorrection(treereader &tree, TFile *output,
                          const vector<bool> &goodevents){
     // This method aims to determine the higher-order corrections
     // for the matrix elements
@@ -86,8 +87,8 @@ void highordercorrection(treereader &tree, TFile &output,
 
     // Progress Bar setup
     int eventno=0; // counting variable
-    Long64_t totevents = tree.NumEntries();
-    const int downscale = 500; // every n-th event
+    Long64_t totevents = goodevents.size();
+    const int downscale = 5000; // every n-th event
 
     while(tree.singleloop()){
         if(goodevents.at(eventno)) { // We absolutely need CCSC cuts for HOC
@@ -131,9 +132,15 @@ void highordercorrection(treereader &tree, TFile &output,
             }
         }
         eventno++;
-        if(!(eventno%downscale)) progressbar(eventno,totevents);
+        if(!(eventno%downscale)){
+            goodeventmutex.lock();
+            progressbar(eventno,totevents,4);
+            goodeventmutex.unlock();
+        }
     }
+    goodeventmutex.lock();
     printf("\nSuccessfully looped for higher order...\n");
+    goodeventmutex.unlock();
     // Get linear fits of the projected means
     vector<vector<vector<TProfile *>>> projections;
     const double cutfrac = 0.8; // fraction to consider for fit
@@ -164,29 +171,31 @@ void highordercorrection(treereader &tree, TFile &output,
          "Corrections/Post/F9Acorr",
          "Corrections/Post/F11Acorr"}};
 
-    for (auto &i_fold: folders) for(auto &j: i_fold) output.mkdir(j.c_str());
+    goodeventmutex.lock();
+    for (auto &i_fold: folders) for(auto &j: i_fold) output->mkdir(j.c_str());
 
     for(uint i=0; i<projections.size();i++){  // Pre, Post
         for(uint k=0; k<projections.at(0).at(0).size(); k++){ // Corr 0,1,2,
 
             string tempfolder = folders.at(i).at(k) + "/Profiles";
-            output.mkdir(tempfolder.c_str());
+            output->mkdir(tempfolder.c_str());
 
             for(uint j=0; j<projections.at(0).size();j++){ // F3X, F5X, ...
-                output.cd(tempfolder.c_str());
+                output->cd(tempfolder.c_str());
                 projections.at(i).at(j).at(k)->Write();
 
-                output.cd(folders.at(i).at(k).c_str());
+                output->cd(folders.at(i).at(k).c_str());
                 culpritdiag.at(i).at(j).at(k).Write();
             }
         }
     }
 
-    output.cd("");
+    output->cd("");
     printf("Finished with higher order corrections!\n");
+    goodeventmutex.unlock();
 }
 
-void dalicalib(treereader &tree, TFile &output){
+void dalicalib(treereader &tree, TFile *output){
     // This Method aims to calibrate the 187 detectors of DALI
     printf("Now beginning the Calibration of the NaI crystals... \n");
 
@@ -213,17 +222,17 @@ void dalicalib(treereader &tree, TFile &output){
                 tree.DALINaI_fADC[i]);
         }
         currevt++;
-        if(!(currevt%downscale)) progressbar(currevt,totevents);
+        if(!(currevt%downscale)) progressbar(currevt,totevents,0);
     }
 
-    output.mkdir("DALI");
-    output.cd("DALI");
+    output->mkdir("DALI");
+    output->cd("DALI");
     gammadetectors.Write();
-    output.cd("");
+    output->cd("");
     printf("\nFinished DALI Calibration.\n");
 }
 
-void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
+void makepid(treereader &tree, TFile *output, const vector<bool> &goodevents){
     // 5 beams, 2incoming, 3outgoing
     printf("Making PID now...\n");
     vector <string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
@@ -321,17 +330,17 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
             }
         }
         eventcounter++;
-        if(!(eventcounter%downscale)) progressbar(eventcounter,totevents);
+        if(!(eventcounter%downscale)) progressbar(eventcounter,totevents,0);
     }
     printf("\nFinished making PIDs!\n");
     vector<string> folders{"PID/Uncorrected", "PID/Corrected"};
-    for (auto i :folders) output.mkdir(i.c_str());
+    for (auto i :folders) output->mkdir(i.c_str());
 
     for(uint i=0; i<folders.size(); i++){
-        output.cd(folders.at(i).c_str());
+        output->cd(folders.at(i).c_str());
         for(auto &elem: PID.at(i)) elem.Write();
     }
-    output.cd("");
+    output->cd("");
 
     double crosssection = 1./0.423*reactioncounter.at(1)/reactioncounter.at(0);
     double cserror = crosssection*pow(1./reactioncounter.at(0) +
@@ -340,20 +349,33 @@ void makepid(treereader &tree, TFile &output, const vector<bool> &goodevents){
            cserror);
 }
 
-void makehistograms(const vector<string> input){
+void makehistograms(const vector<string> input) {
     cout << "Making new TList..." << endl;
 
-    auto chain = new TChain("tree");
-    for(auto h: input) chain->Add(h.c_str());
+    // Explicit construction for explicit multithreading. WTF C++11!
+    auto  cscchain = new TChain("tree");
+    for(auto h: input) cscchain->Add(h.c_str());
+    auto  plasticchain = new TChain("tree");
+    for(auto h: input) plasticchain->Add(h.c_str());
+    auto  ionichain = new TChain("tree");
+    for(auto h: input) ionichain->Add(h.c_str());
+    auto  ppacchain = new TChain("tree");
+    for(auto h: input) ppacchain->Add(h.c_str());
+    auto  hochain = new TChain("tree");
+    for(auto h: input) hochain->Add(h.c_str());
 
-    treereader alt2dtree(chain); // Opens the input file...
+    treereader alt2dtree(cscchain);
+    treereader alt3dtree(plasticchain);
+    treereader alt4dtree(ionichain);
+    treereader alt5dtree(ppacchain);
+    treereader alt6dtree(hochain);
 
     // Generating an outputfile that matches names with the input file
-    string output = "build/output/" + input.at(0).substr(16,9) + "hist" +
+    string output = "build/output/" + input.at(0).substr(31,9) + "hist" +
                     to_string(input.size()) + ".root";
 
-    TFile outputfile(output.c_str(), "RECREATE");
-    if(!outputfile.IsOpen()) __throw_invalid_argument("Output file not valid");
+    auto outputfile = new TFile(output.c_str(), "RECREATE");
+    if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
 
     vector<bool> options{
         true,  // Plastics
@@ -365,34 +387,48 @@ void makehistograms(const vector<string> input){
         true   // charged state cuts
     };
 
-    cout << "Beginning reconstruction of " << chain->GetEntries()
+    vector<treereader> tree;
+    //for(auto step: options) tree.push_back(treereader(chain));
+
+    cout << "Beginning reconstruction of " << cscchain->GetEntries()
          << " Elements." << endl;
     // Store events that cannot be used
-    vector<bool> goodevents(alt2dtree.NumEntries(), true);
+    vector<bool> goodevents(cscchain->GetEntries(), true);
 
+    thread plasticthread(plastics, ref(alt2dtree), outputfile, ref(goodevents));
+    thread chargestatethread(chargestatecut, ref(alt3dtree), outputfile, ref(goodevents));
+    thread ionisationthread(ionisationchamber, ref(alt4dtree), outputfile, ref(goodevents));
+    //thread ppacthread(ppacs, ref(alt5dtree), outputfile, ref(goodevents));
+    thread hothread(highordercorrection, ref(alt6dtree), outputfile, ref(goodevents));
+
+    chargestatethread.join();
+    plasticthread.join();
+    ionisationthread.join();
+    //ppacthread.join();
+    hothread.join();
     // Apply changed charged state cut [fastest -> first]
-    if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
+    //if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
 
     // Rebuild F7 Trigger combined charge threshhold
-    if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
+    //if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
 
     // Cut on IC values
-    if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
+    //if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
 
     // Cut the PPAC's [slowest cut -> last cut]
-    if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
+    //if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
 
     // Get Corrections
-    if (options.at(3)) highordercorrection(alt2dtree, outputfile, goodevents);
+    //if (options.at(3)) highordercorrection(alt2dtree, outputfile, goodevents);
 
     // Get Z vs. A/Q
-    if (options.at(4)) makepid(alt2dtree, outputfile, goodevents);
+    if (options.at(4)) makepid(alt4dtree, outputfile, goodevents);
     printf("Made PID histograms in %s\n", output.c_str());
     //Get ADC Spectra for DALI
-    if(options.at(5)) dalicalib(alt2dtree, outputfile);
+    if(options.at(5)) dalicalib(alt4dtree, outputfile);
 
     cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
                           /goodevents.size() << " % good Elements" << endl;
 
-    //outputfile.Close();
+    outputfile->Close();
 }

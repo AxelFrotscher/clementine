@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <thread>
+#include "TThread.h"
 
 R__LOAD_LIBRARY(libanacore.so)
 
@@ -23,6 +24,8 @@ vector<string> getlist(const char *instring){
 }
 
 int main(int argc, char**argv){
+    ROOT::EnableThreadSafety();
+
     // The Scope of this project is to analyse the 2015 SEASTAR
     printf("Welcome to the analysis program for 2015 SEASTAR DATA\n"
            "Would you like to analyse a raw file first? \n"

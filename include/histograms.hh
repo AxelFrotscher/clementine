@@ -14,8 +14,8 @@
 #include "TF1.h"
 
 void makehistograms(const std::vector<std::__cxx11::string> input);
-void makepid(TTreeReader& datree, TFile& output,
+void makepid(treereader& datree, TFile* output,
              const std::vector<bool> &goodevents);
-void highordercorrection(treereader &tree, TFile &output,
+void highordercorrection(treereader &tree, TFile *output,
                          const std::vector<bool> &goodevents);
-void dalicalib(treereader &tree, TFile &output);
+void dalicalib(treereader &tree, TFile *output);
