@@ -15,7 +15,7 @@ const int constadd = 10;
 
 void progressbar(int currevent, int totevent, int offset ,int barwidth){
     // This method displays a nice progress bar
-    currevt.at(offset) = currevent;
+    if(offset<currevt.size()) currevt.at(offset) = currevent;
     vector<int> pos; // position for each bar
 
     for(int i=0; i<currevt.size(); i++){ // Loop over each bar

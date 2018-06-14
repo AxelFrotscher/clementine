@@ -39,4 +39,4 @@
 
 void stop_interrupt();
 void generatetree(std::__cxx11::string infile, std::__cxx11::string output);
-void progressbar(int currevent, int totevent, int offset, int barwidth=35);
+void progressbar(int currevent, int totevent, int offset, int barwidth=30);

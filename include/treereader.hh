@@ -455,7 +455,7 @@ public :
     bool singleloop();
     Long64_t NumEntries();
     void setloopkeys(std::vector<std::string> Vals);
-    void treereader::getevent(int eventno)
+    bool getevent(int eventno);
 };
 
 #endif

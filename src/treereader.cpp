@@ -57,7 +57,7 @@ bool treereader::singleloop(){
 }
 
 bool treereader::getevent(int eventno){
-    Long64_t size =LoadTree(eventno);
+    Long64_t size = LoadTree(eventno);
     if(size<0) return false;
     fChain->GetEntry(eventno);
     return true;
@@ -75,5 +75,5 @@ void treereader::setloopkeys(std::vector <std::string> Vals){
 }
 
 Long64_t treereader::NumEntries(){
-    return fChain->GetEntriesFast();
+    return fChain->GetEntries();
 }
