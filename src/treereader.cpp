@@ -56,6 +56,13 @@ bool treereader::singleloop(){
     return true;
 }
 
+bool treereader::getevent(int eventno){
+    Long64_t size =LoadTree(eventno);
+    if(size<0) return false;
+    fChain->GetEntry(eventno);
+    return true;
+}
+
 void treereader::setloopkeys(std::vector <std::string> Vals){
     // Set Branches we want to read
     currenteventnum = 0; // reset event number on change of readout

@@ -232,6 +232,10 @@ void dalicalib(treereader &tree, TFile *output){
     printf("\nFinished DALI Calibration.\n");
 }
 
+void pidth(treereader & tree){
+    //Thread worker for PID plot
+}
+
 void makepid(treereader &tree, TFile *output, const vector<bool> &goodevents){
     // 5 beams, 2incoming, 3outgoing
     printf("Making PID now...\n");
@@ -275,7 +279,7 @@ void makepid(treereader &tree, TFile *output, const vector<bool> &goodevents){
     // Progress Bar setup
     uint eventcounter =0;
     Long64_t totevents = tree.NumEntries();
-    const int downscale = 500; // every n-th event
+    const int downscale = 50000; // every n-th event
 
     //Setup Crossection trigger:
     vector<uint> reactioncounter{0,0};
@@ -312,7 +316,7 @@ void makepid(treereader &tree, TFile *output, const vector<bool> &goodevents){
             }
             valinc.clear();
 
-            // We now fill the cutted data (cut by ellipsoid)
+            // We now fill the cut data (cut by ellipsoid)
             if((pow(1./cutval.at(2)*(tree.BigRIPSBeam_aoq[0]-cutval.at(0)),2) +
                 pow(1/cutval.at(3)*(tree.BigRIPSBeam_zet[0]-cutval.at(1)),2))<1){
                 PID.at(0).at(2).Fill(tree.BigRIPSBeam_aoq[0],
@@ -350,7 +354,7 @@ void makepid(treereader &tree, TFile *output, const vector<bool> &goodevents){
 }
 
 void makehistograms(const vector<string> input) {
-    cout << "Making new TList..." << endl;
+    cout << "Making new Threads..." << endl;
 
     // Explicit construction for explicit multithreading. WTF C++11!
     auto  cscchain = new TChain("tree");
@@ -377,55 +381,44 @@ void makehistograms(const vector<string> input) {
     auto outputfile = new TFile(output.c_str(), "RECREATE");
     if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
 
-    vector<bool> options{
-        true,  // Plastics
-        true,  // ppac
-        true,  // Ionisationchamber
-        true,  // highordercorrection
-        true,  // makepid
-        false, // DALIcalib
-        true   // charged state cuts
-    };
-
-    vector<treereader> tree;
-    //for(auto step: options) tree.push_back(treereader(chain));
-
     cout << "Beginning reconstruction of " << cscchain->GetEntries()
          << " Elements." << endl;
     // Store events that cannot be used
     vector<bool> goodevents(cscchain->GetEntries(), true);
 
+    // Rebuild F7 Trigger combined charge threshhold
     thread plasticthread(plastics, ref(alt2dtree), outputfile, ref(goodevents));
+
+    // Apply changed charged state cut
     thread chargestatethread(chargestatecut, ref(alt3dtree), outputfile, ref(goodevents));
+
+    // Cut on IC values
     thread ionisationthread(ionisationchamber, ref(alt4dtree), outputfile, ref(goodevents));
-    //thread ppacthread(ppacs, ref(alt5dtree), outputfile, ref(goodevents));
+
+    // Cut the PPAC's [slowest cut -> last cut]
+    thread ppacthread(ppacs, ref(alt5dtree), outputfile, ref(goodevents));
+
+    // Get higher order corrections
     thread hothread(highordercorrection, ref(alt6dtree), outputfile, ref(goodevents));
 
+    // Join all created threads
     chargestatethread.join();
     plasticthread.join();
     ionisationthread.join();
-    //ppacthread.join();
+    ppacthread.join();
     hothread.join();
-    // Apply changed charged state cut [fastest -> first]
-    //if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
 
-    // Rebuild F7 Trigger combined charge threshhold
-    //if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
-
-    // Cut on IC values
-    //if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
-
-    // Cut the PPAC's [slowest cut -> last cut]
-    //if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
-
-    // Get Corrections
-    //if (options.at(3)) highordercorrection(alt2dtree, outputfile, goodevents);
+    /*if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
+    if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
+    if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
+    if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
+    if (options.at(3)) highordercorrection(alt2dtree, outputfile, goodevents);*/
 
     // Get Z vs. A/Q
-    if (options.at(4)) makepid(alt4dtree, outputfile, goodevents);
+    makepid(alt4dtree, outputfile, goodevents);
     printf("Made PID histograms in %s\n", output.c_str());
     //Get ADC Spectra for DALI
-    if(options.at(5)) dalicalib(alt4dtree, outputfile);
+    dalicalib(alt4dtree, outputfile);
 
     cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
                           /goodevents.size() << " % good Elements" << endl;

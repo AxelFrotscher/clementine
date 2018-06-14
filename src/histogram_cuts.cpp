@@ -84,7 +84,7 @@ void plastics(treereader &tree, TFile *output, vector<bool> &goodevents){
     // Progress Bar setup
     int eventno=0; // counting variable
     uint totevents = goodevents.size();
-    const int downscale = 5000; // every n-th event
+    const int downscale = 50000; // every n-th event
     // Get Number of Good events before
     int cutcount =0;
 
@@ -218,7 +218,7 @@ void ppacs(treereader &tree, TFile *output, vector<bool> &goodevents){
 
     // Progress Bar setup
     Long64_t totevents = goodevents.size();
-    const int downscale = 5000; // every n-th event
+    const int downscale = 50000; // every n-th event
     int cutno = 0;
 
     while(tree.singleloop()){
@@ -340,7 +340,7 @@ void ionisationchamber(treereader &alt2dtree, TFile *output,
     uint totalcounter =0; // counting variable
     const Long64_t totevents = goodevents.size();
     uint cutcount =0;
-    const int downscale = 5000; // every n-th event
+    const int downscale = 50000; // every n-th event
 
     while(alt2dtree.singleloop()){
         if(goodevents.at(totalcounter)){ // Determine cut only on good events
@@ -408,7 +408,7 @@ void chargestatecut(treereader &tree, TFile *output, vector<bool> &goodevents){
     // Progress Bar setup
     uint eventno=0; // counting variable
     uint totevents = goodevents.size();
-    const int downscale = 5000; // every n-th event
+    const int downscale = 50000; // every n-th event
     // Get Number of Good events before
     int  cutcount =0;
     double brhoratio = 0;
