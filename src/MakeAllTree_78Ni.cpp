@@ -27,7 +27,7 @@ void progressbar(int currevent, int totevent, int offset ,int barwidth){
             else if (j==pos.at(i)) cout << ">";
             else cout << " ";
         }
-        cout << "] " << int(1000.*currevt.at(i)/totevent)/10.0 << " % ";
+        cout << "] " << int(100.*currevt.at(i)/totevent) << "% ";
     }
     cout << "\r";
     cout.flush();

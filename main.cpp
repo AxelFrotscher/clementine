@@ -43,8 +43,8 @@ int main(int argc, char**argv){
 
     vector<string> output;
     for(auto run : goodruns) {
-        output.push_back("/d/d02-1/ag_ob/MINOS_DATA/root/" +
-                         input.at(analysedfile.at(0)+run).substr(16, 9)
+        output.push_back("/d/d02-1/ag_ob/SEASTAR2_DATA/root/" +
+                         input.at(analysedfile.at(0)+run).substr(34, 9)
                          + ".root");
     }
 

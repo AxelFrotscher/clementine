@@ -40,9 +40,9 @@ extern std::mutex goodeventmutex;
 
 double linfit(double *x, double *par);
 const bool closeness(const std::vector<double> &d, double sigma=0.1);
-void plastics(treereader &tree, TFile *output, std::vector<bool> &goodevents);
-void ppacs(treereader &tree, TFile *output, std::vector<bool> &goodevents);
-void ionisationchamber(treereader &alt2dtree, TFile *output,
+void plastics(treereader *tree, TFile *output, std::vector<bool> &goodevents);
+void ppacs(treereader *tree, TFile *output, std::vector<bool> &goodevents);
+void ionisationchamber(treereader *alt2dtree, TFile *output,
                        std::vector<bool> &goodevents);
-void chargestatecut(treereader &tree, TFile *output,
+void chargestatecut(treereader *tree, TFile *output,
                     std::vector<bool> &goodevents);
