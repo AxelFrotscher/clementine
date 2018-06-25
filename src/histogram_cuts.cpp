@@ -46,15 +46,15 @@ void plastics(treereader *tree, TFile *output, vector<bool> &goodevents){
     tree->singleloop(); // Get first event for involved focal planes
     for(uint i=0; i<numplastic; i++){
         arrayname.push_back(vector<string>{
-                "f7pltrigQ."  + to_string(tree->BigRIPSPlastic_fpl[i]),
-                "PlasticQ2D." + to_string(tree->BigRIPSPlastic_fpl[i]),
-                "tQcorr."     + to_string(tree->BigRIPSPlastic_fpl[i])
+            "f7pltrigQ."  + to_string(tree->BigRIPSPlastic_fpl[i]),
+            "PlasticQ2D." + to_string(tree->BigRIPSPlastic_fpl[i]),
+            "tQcorr."     + to_string(tree->BigRIPSPlastic_fpl[i])
         });
 
         arraytitle.push_back(vector<string>{
-                "Charge deposition by Plastic F"     + to_string(tree->BigRIPSPlastic_fpl[i]),
-                "Charge distribution by Plastic F"   + to_string(tree->BigRIPSPlastic_fpl[i]),
-                "Charge Ratio/time difference Pl. F" + to_string(tree->BigRIPSPlastic_fpl[i])
+            "Charge deposition by Plastic F"     + to_string(tree->BigRIPSPlastic_fpl[i]),
+            "Charge distribution by Plastic F"   + to_string(tree->BigRIPSPlastic_fpl[i]),
+            "Charge Ratio/time difference Pl. F" + to_string(tree->BigRIPSPlastic_fpl[i])
         });
 
         qcorr2D.emplace_back(TH2D(arrayname.at(i).at(1).c_str(),
@@ -121,12 +121,12 @@ void plastics(treereader *tree, TFile *output, vector<bool> &goodevents){
         }
         eventno++;
         if(!(eventno%downscale)){
-            goodeventmutex.lock();
+            consolemutex.lock();
             progressbar(eventno,totevents, 1);
-            goodeventmutex.unlock();
+            consolemutex.unlock();
         }
     }
-    goodeventmutex.lock();
+    writemutex.lock();
     printf("\nPlastic Cut out %i Events %f %%\n", cutcount,
            100*cutcount/(double)totevents);
 
@@ -140,7 +140,7 @@ void plastics(treereader *tree, TFile *output, vector<bool> &goodevents){
     output->cd("Plastics/TQCorr");
     for(auto histo: tqcorr2D) histo.Write();
     output->cd("");
-    goodeventmutex.unlock();
+    writemutex.unlock();
     printf("Finished Writing plastic histograms! \n");
 }
 
@@ -266,9 +266,9 @@ void ppacs(treereader *tree, TFile *output, vector<bool> &goodevents){
         }
         fulltotal++;
         if(!(fulltotal%downscale)){
-            goodeventmutex.lock();
+            consolemutex.lock();
             progressbar(fulltotal, totevents,3);
-            goodeventmutex.unlock();
+            consolemutex.unlock();
         }
     }
 
@@ -278,7 +278,7 @@ void ppacs(treereader *tree, TFile *output, vector<bool> &goodevents){
     vector<string> xy = {"X","Y"};
     vector<string> sd = {"Sum", "Diff"};
 
-    goodeventmutex.lock();
+    writemutex.lock();
 
     printf("\nPPAC Cut out %i Events %f %%\n", cutno,
            100*cutno/(double)totevents);
@@ -300,7 +300,7 @@ void ppacs(treereader *tree, TFile *output, vector<bool> &goodevents){
 
     output->cd("");
     printf("Finished Writing PPAC histogram!\n");
-    goodeventmutex.unlock();
+    writemutex.unlock();
 }
 
 void ionisationchamber(treereader *alt2dtree, TFile *output,
@@ -312,7 +312,6 @@ void ionisationchamber(treereader *alt2dtree, TFile *output,
     //datree.Restart();
 
     // Explicit Method for 2D arrays
-    // Create new reader class
 
     vector <string> readoutkeys{"BigRIPSIC.nhitchannel", "BigRIPSIC.fADC[32]"};
     alt2dtree->setloopkeys(readoutkeys);
@@ -345,7 +344,7 @@ void ionisationchamber(treereader *alt2dtree, TFile *output,
     while(alt2dtree->singleloop()){
         if(goodevents.at(totalcounter)){ // Determine cut only on good events
             if((alt2dtree->BigRIPSIC_nhitchannel[0]*
-                alt2dtree->BigRIPSIC_nhitchannel[1]) <16){ //Require 4 hits in each IC
+                alt2dtree->BigRIPSIC_nhitchannel[1]) <16){//Require 4 hits per IC
                 goodeventmutex.lock();
                 goodevents.at(totalcounter) = false;
                 goodeventmutex.unlock();
@@ -366,12 +365,12 @@ void ionisationchamber(treereader *alt2dtree, TFile *output,
         }
         totalcounter++;
         if(!(totalcounter%downscale)){
-            goodeventmutex.lock();
+            consolemutex.lock();
             progressbar(totalcounter,totevents,2);
-            goodeventmutex.unlock();
+            consolemutex.unlock();
         }
     }
-    goodeventmutex.lock();
+    writemutex.lock();
     printf("\nIC Cut out %i Events %f %%\n", cutcount,
            100*cutcount/(double)totevents);
 
@@ -382,18 +381,18 @@ void ionisationchamber(treereader *alt2dtree, TFile *output,
     output->cd("IC/IC11");
     for(auto &elem: comparediag) elem.at(1).Write();
     output->cd("");
-    goodeventmutex.unlock();
+    writemutex.unlock();
 }
 
 void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
 
     // this method aims to cut charge state changes between F8-9 and F9-11
-    printf("Now performing a charge state change cut between F8-9 and F9-11...\n");
+    printf("Now performing charge state change cut between F8-9 and F9-11...\n");
 
     // Generate output histogram
     vector<TH2D> cschist{
         TH2D("csc", "Charged state change", 1000,0.8,1.2,1000,3,7),
-        TH2D("csccut", "Charged state change cut", 500,0.95,1.05,500,4,6)};
+        TH2D("csccut", "Charged state change cut", 500,0.95,1.05,1000,3,7)};
 
     for(auto &histo: cschist){
         histo.SetOption("colz");
@@ -414,10 +413,13 @@ void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
     double brhoratio = 0;
 
     // Define cut
-    TFile cutfile("config/brhocut.root");
+    TFile cutfile("config/cut.root");
     if(!(cutfile.IsOpen())) __throw_invalid_argument("Could not open cut file "
-                                                     "at config/brhocut.root");
-    auto mycut = (TCutG*)cutfile.Get("CUTG");
+                                                     "at config/rhocut.root");
+    TCutG* mycut;
+    if(totevents == 513225) mycut = (TCutG*)cutfile.Get("emptybrhocut");
+    else mycut = (TCutG*)cutfile.Get("brhocut");
+    if(!mycut) __throw_invalid_argument("Could not load cut from file!\n");
 
     while(tree->singleloop()){
         if(goodevents.at(eventno)){ // Determine cut only on good events
@@ -436,13 +438,13 @@ void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
         }
         eventno++;
         if(!(eventno%downscale)){
-            goodeventmutex.lock();
+            consolemutex.lock();
             progressbar(eventno, totevents,0);
-            goodeventmutex.unlock();
+            consolemutex.unlock();
         }
     }
 
-    goodeventmutex.lock();
+    writemutex.lock();
     printf("\nCCSC Cut out %i Events %f %%\n", cutcount,
            100*cutcount/(double)totevents);
 
@@ -450,5 +452,5 @@ void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
     output->cd("CSC");
     for(auto hist: cschist) hist.Write();
     output->cd("");
-    goodeventmutex.unlock();
+    writemutex.unlock();
 }

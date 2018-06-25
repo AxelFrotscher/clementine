@@ -6,6 +6,8 @@ using namespace std;
 
 calibpar p1;
 mutex goodeventmutex;
+mutex consolemutex;
+mutex writemutex;
 
 void highordercorrection(treereader *tree, TFile *output,
                          const vector<bool> &goodevents){
@@ -133,14 +135,14 @@ void highordercorrection(treereader *tree, TFile *output,
         }
         eventno++;
         if(!(eventno%downscale)){
-            goodeventmutex.lock();
+            consolemutex.lock();
             progressbar(eventno,totevents,4);
-            goodeventmutex.unlock();
+            consolemutex.unlock();
         }
     }
-    goodeventmutex.lock();
+    consolemutex.lock();
     printf("\nSuccessfully looped for higher order...\n");
-    goodeventmutex.unlock();
+    consolemutex.unlock();
     // Get linear fits of the projected means
     vector<vector<vector<TProfile *>>> projections;
     const double cutfrac = 0.8; // fraction to consider for fit
@@ -171,7 +173,7 @@ void highordercorrection(treereader *tree, TFile *output,
          "Corrections/Post/F9Acorr",
          "Corrections/Post/F11Acorr"}};
 
-    goodeventmutex.lock();
+    writemutex.lock();
     for (auto &i_fold: folders) for(auto &j: i_fold) output->mkdir(j.c_str());
 
     for(uint i=0; i<projections.size();i++){  // Pre, Post
@@ -192,7 +194,7 @@ void highordercorrection(treereader *tree, TFile *output,
 
     output->cd("");
     printf("Finished with higher order corrections!\n");
-    goodeventmutex.unlock();
+    writemutex.unlock();
 }
 
 void dalicalib(treereader *tree, TFile *output){
@@ -290,18 +292,17 @@ void pidth(treereader *tree, vector<vector<TH2D>> &PID, const vector<double> &cu
                 if((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
                     pow(1./targetval.at(3)*(tree->BigRIPSBeam_zet[4]-targetval.at(1)),2))<1) {
                     reactionval.at(1) = reactionval.at(1) + 1;
+                    // Investigate F9 position of (p,2p) ions
                     reactf9.Fill(tree->F9X);
                 }
             }
         }
         if(!(eventcounter%downscale)){
-            goodeventmutex.lock();
+            consolemutex.lock();
             progressbar(eventcounter-range.at(0),range.at(1)-range.at(0),id);
-            goodeventmutex.unlock();
+            consolemutex.unlock();
         }
     }
-
-
 }
 
 void makepid(const vector<string> input, TFile *output, const vector<bool> &goodevents){
@@ -321,7 +322,6 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     for(auto *i:chain){
         tree.emplace_back(new treereader(i));
     }
-
 
     vector <string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
                          "F5X", "F5A", "F9X", "F9A", "F11X", "F11A"};
@@ -386,9 +386,10 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     cout << "Created all thread structure for Threads: " << threadno << endl;
     vector<thread> th;
     for(int i=0; i<threadno;i++){
-        th.emplace_back(thread(pidth, tree.at(i), ref(PIDthread.at(i)), ref(cutval),
-                            ref(targetval), ref(reactionthread.at(i)), ref(range.at(i)),
-                            ref(goodevents), i, ref(reactthreadf9.at(i))));
+        th.emplace_back(
+            thread(pidth, tree.at(i), ref(PIDthread.at(i)), ref(cutval),
+                   ref(targetval), ref(reactionthread.at(i)), ref(range.at(i)),
+                   ref(goodevents), i, ref(reactthreadf9.at(i))));
     }
     for(auto &t : th) t.join();
 
@@ -400,13 +401,14 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
 
     for(int i=0; i<PID.size();i++){
         for(int j=0; j<PID.at(0).size(); j++){
-            for(auto &hist:PIDthread) PID.at(i).at(j).Add(new TH2D(hist.at(i).at(j)));
+            for(auto &hist:PIDthread)
+                PID.at(i).at(j).Add(new TH2D(hist.at(i).at(j)));
         }
     }
     for(auto &i: reactthreadf9) reactf9.Add(new TH1D(i));
 
     printf("\nFinished making PIDs!\n");
-    vector<string> folders{"PID/Uncorrected", "PID/Corrected", "PID/investigate"};
+    vector<string> folders{"PID/Uncorrected","PID/Corrected","PID/investigate"};
     for (auto &i :folders) output->mkdir(i.c_str());
 
     for(uint i=0; i<folders.size(); i++){
@@ -422,7 +424,6 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     printf("Inclusive 111Nb(p,2p)110Zr sigma is: %f +- %f b\n", crosssection,
            cserror);
 }
-
 
 void makehistograms(const vector<string> input) {
     cout << "Making new Threads..." << endl;
@@ -448,7 +449,7 @@ void makehistograms(const vector<string> input) {
     cout << "Beginning reconstruction of " << chain.at(0)->GetEntries()
          << " Elements." << endl;
     // Store events that cannot be used
-    vector<bool> goodevents(chain.at(0)->GetEntries(), true);
+    vector<bool> goodevents((uint)chain.at(0)->GetEntries(), true);
 
     vector<thread> th;
     th.emplace_back(thread(plastics, tree.at(0), outputfile, ref(goodevents)));
@@ -458,28 +459,6 @@ void makehistograms(const vector<string> input) {
     th.emplace_back(thread(highordercorrection, tree.at(3), outputfile, ref(goodevents)));
 
     for(auto &i: th) i.join();
-
-    // Rebuild F7 Trigger combined charge threshhold
-    /*thread plasticthread(plastics, tree.at(0), outputfile, ref(goodevents));
-
-    // Apply changed charged state cut
-    thread chargestatethread(chargestatecut, tree.at(1), outputfile, ref(goodevents));
-
-    // Cut on IC values
-    thread ionisationthread(ionisationchamber, tree.at(2), outputfile, ref(goodevents));
-
-    // Cut the PPAC's [slowest cut -> last cut]
-    //thread ppacthread(ppacs, tree.at(4), outputfile, ref(goodevents));
-
-    // Get higher order corrections
-    thread hothread(highordercorrection, tree.at(3), outputfile, ref(goodevents));
-
-    // Join all created threads
-    chargestatethread.join();
-    plasticthread.join();
-    ionisationthread.join();
-    //ppacthread.join();
-    hothread.join();*/
 
     /*if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
     if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
