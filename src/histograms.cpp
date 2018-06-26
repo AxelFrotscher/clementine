@@ -1,6 +1,7 @@
 #include <MakeAllTree_78Ni.hh>
 #include "histograms.hh"
 #include "histogram_cuts.hh"
+#include "libconstant.h"
 
 using namespace std;
 
@@ -8,6 +9,10 @@ calibpar p1;
 mutex goodeventmutex;
 mutex consolemutex;
 mutex writemutex;
+
+void castcal(calibpar &cal){
+
+}
 
 void highordercorrection(treereader *tree, TFile *output,
                          const vector<bool> &goodevents){
@@ -34,16 +39,33 @@ void highordercorrection(treereader *tree, TFile *output,
              "Dependence of #beta (F11) vs AoQ"}};
     
     vector<vector<vector<TH2D>>> culpritdiag;
-    vector<vector<double>> cutval{ // for corrections we use 85Ge
-        {2.6449,      // center x
-         42.0,         // center y
-         0.008,        // radius x
-         0.6     },    // radius y
-        {2.6437,          // center x
-         41.86,        // center y
-         0.008,        // radius x
-         0.5     }     // radius y
-    };
+    vector<vector<double>> cutval;
+
+    // Decide which cut to use based on total event number
+    if(goodevents.size()==513225){
+        cutval = nancyempty::cutval;
+        p1.F7absF5X   = nancyempty::F7absF5X;
+        p1.F7linF5X   = nancyempty::F7linF5X;
+        p1.F7linF5A   = nancyempty::F7linF5A;
+        p1.F7linF3X   = nancyempty::F7linF3X;
+        p1.F11absF9X  = nancyempty::F11absF9X;
+        p1.F11linF9X  = nancyempty::F11linF9X;
+        p1.F11linF9A  = nancyempty::F11linF9A;
+        p1.F11linF11A = nancyempty::F11linF11A;
+    }
+    else {
+        cutval = nancy::cutval;
+        p1.F7absF5X   = nancy::F7absF5X;
+        p1.F7linF5X   = nancy::F7linF5X;
+        p1.F7linF5A   = nancy::F7linF5A;
+        p1.F7linF3X   = nancy::F7linF3X;
+        p1.F11absF9X  = nancy::F11absF9X;
+        p1.F11linF9X  = nancy::F11linF9X;
+        p1.F11linF9A  = nancy::F11linF9A;
+        p1.F11linF11A = nancy::F11linF11A;
+    }
+    p1.F7absF5X0 = cutval[0][0];
+    p1.F11absF9X0 = cutval[1][0];
 
     // Initialize all the diagrams
     for(uint i=0; i<arrname.size();i++){ // Loop F7, F11
@@ -71,19 +93,6 @@ void highordercorrection(treereader *tree, TFile *output,
     }
 
     printf("Successfully generated Histograms for higher order...\n");
-    //Attempting first real correction with F5 x-position
-
-    p1.F7absF5X = 2.644;
-    p1.F7linF5X = -1.453E-5;
-    p1.F7linF5A = -0.0002528;
-    p1.F7linF3X = 0.000103;
-    p1.F7absF5X0 = cutval[0][0];
-
-    p1.F11absF9X0 = cutval[1][0];
-    p1.F11absF9X = 2.647;
-    p1.F11linF9X = -5.871E-5;
-    p1.F11linF9A = 0.0002905;
-    p1.F11linF11A = 8.052E-5;
 
     vector<vector <double>> fillvals(2,vector<double>(9,0)); // Fill dependent variable and
 
@@ -241,7 +250,9 @@ void pidth(treereader *tree, vector<vector<TH2D>> &PID, const vector<double> &cu
     //Thread worker for PID plot
     //uint eventcounter =0;
     const int downscale = 50000; // every n-th event
+    consolemutex.lock();
     cout << "Created thread " << range.at(0) << endl;
+    consolemutex.unlock();
 
     vector<vector<double>> valinc;     // Store temporary beam values
     for(uint eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
@@ -278,7 +289,7 @@ void pidth(treereader *tree, vector<vector<TH2D>> &PID, const vector<double> &cu
             valinc.clear();
 
             // We now fill the cut data (cut by ellipsoid)
-            if((pow(1./cutval.at(2)*(tree->BigRIPSBeam_aoq[0]-cutval.at(0)),2) +
+            if((pow(1./cutval.at(2)*(beamaoqcorr-cutval.at(0)),2) +
                 pow(1/cutval.at(3)*(tree->BigRIPSBeam_zet[0]-cutval.at(1)),2))<1){
                 PID.at(0).at(2).Fill(tree->BigRIPSBeam_aoq[0],
                                      tree->BigRIPSBeam_zet[0]);
@@ -348,19 +359,17 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
         }
     }
 
-    vector<double> cutval{
-            2.7084, // center x
-            41.0,  // center y
-            0.009, // radius x
-            0.5    // radius y
-    };
+    vector<double> incval; // cut on incoming particles (F7)
+    vector<double> targetval; // second cut to detected particles (F11)
 
-    vector<double> targetval{
-        2.750, // center x
-        40.0, // center y
-        cutval.at(2),
-        cutval.at(3)
-    };
+    if(goodevents.size()==513225){
+        incval = nancyempty::incval;
+        targetval = nancyempty::targetval;
+    }
+    else{
+        incval = nancy::incval;
+        targetval = nancy::targetval;
+    }
 
     //Setup Crossection trigger:
     vector<uint> reactioncounter{0,0};
@@ -387,7 +396,7 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     vector<thread> th;
     for(int i=0; i<threadno;i++){
         th.emplace_back(
-            thread(pidth, tree.at(i), ref(PIDthread.at(i)), ref(cutval),
+            thread(pidth, tree.at(i), ref(PIDthread.at(i)), ref(incval),
                    ref(targetval), ref(reactionthread.at(i)), ref(range.at(i)),
                    ref(goodevents), i, ref(reactthreadf9.at(i))));
     }
@@ -423,6 +432,9 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
                                       1./reactioncounter.at(1),0.5);
     printf("Inclusive 111Nb(p,2p)110Zr sigma is: %f +- %f b\n", crosssection,
            cserror);
+
+    printf("Raw: in %i out %i ratio %f %%\n",reactioncounter.at(0),reactioncounter.at(1),
+           100.*reactioncounter.at(1)/reactioncounter.at(0));
 }
 
 void makehistograms(const vector<string> input) {

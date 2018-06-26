@@ -34,7 +34,7 @@ int main(int argc, char**argv){
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
     // Step 1: analyse the raw data
-    const vector<uint> analysedfile{57}; // 57 Index of analysed file (first, offset)
+    const vector<uint> analysedfile{52}; // 57 Index of analysed file (first, offset)
     const vector<string> input = getlist("config/minosridf.txt");
 
     // Define good runs
