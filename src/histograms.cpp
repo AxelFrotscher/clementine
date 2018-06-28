@@ -44,28 +44,12 @@ void highordercorrection(treereader *tree, TFile *output,
     // Decide which cut to use based on total event number
     if(goodevents.size()==513225){
         cutval = nancyempty::cutval;
-        p1.F7absF5X   = nancyempty::F7absF5X;
-        p1.F7linF5X   = nancyempty::F7linF5X;
-        p1.F7linF5A   = nancyempty::F7linF5A;
-        p1.F7linF3X   = nancyempty::F7linF3X;
-        p1.F11absF9X  = nancyempty::F11absF9X;
-        p1.F11linF9X  = nancyempty::F11linF9X;
-        p1.F11linF9A  = nancyempty::F11linF9A;
-        p1.F11linF11A = nancyempty::F11linF11A;
+        p1 = nancyempty::hoparame;
     }
     else {
         cutval = nancy::cutval;
-        p1.F7absF5X   = nancy::F7absF5X;
-        p1.F7linF5X   = nancy::F7linF5X;
-        p1.F7linF5A   = nancy::F7linF5A;
-        p1.F7linF3X   = nancy::F7linF3X;
-        p1.F11absF9X  = nancy::F11absF9X;
-        p1.F11linF9X  = nancy::F11linF9X;
-        p1.F11linF9A  = nancy::F11linF9A;
-        p1.F11linF11A = nancy::F11linF11A;
+        p1 = nancy::hoparame;
     }
-    p1.F7absF5X0 = cutval[0][0];
-    p1.F11absF9X0 = cutval[1][0];
 
     // Initialize all the diagrams
     for(uint i=0; i<arrname.size();i++){ // Loop F7, F11
