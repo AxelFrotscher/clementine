@@ -5,6 +5,10 @@
 #pragma once
 #include "histogram_cuts.hh"
 
+namespace runinfo{
+    const int emptysize = 395267; // Runs containing this number are empty
+}
+
 namespace nancy{
     //Variables and constants used for 111Nb->110Zr setting
 
@@ -83,8 +87,8 @@ namespace nancyempty{
     };
 
     const std::vector<double> targetval{
-            2.711, // center x
-            39.549, // center y
+            2.706, // center x
+            41.0, // center y
             incval.at(2),
             incval.at(3)
     };

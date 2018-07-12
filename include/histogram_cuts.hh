@@ -56,3 +56,4 @@ void ionisationchamber(treereader *alt2dtree, TFile *output,
                        std::vector<bool> &goodevents);
 void chargestatecut(treereader *tree, TFile *output,
                     std::vector<bool> &goodevents);
+void targetcut(treereader *tree, TFile *output, std::vector<bool> &goodevents);

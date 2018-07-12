@@ -10,7 +10,7 @@ void stop_interrupt(){
     stoploop = true;
 }
 
-vector <int> currevt{0,0,0,0,0};
+vector <int> currevt{0,0,0,0,0,0};
 const int constadd = 10;
 
 void progressbar(int currevent, int totevent, int offset ,int barwidth){
@@ -31,6 +31,20 @@ void progressbar(int currevent, int totevent, int offset ,int barwidth){
     }
     cout << "\r";
     cout.flush();
+}
+
+const double slope(const vector<double> &x, const vector<double> &y){
+    // Simple linear regression (explicit)
+    if(!(x.size())==y.size()) __throw_invalid_argument("Argument number mismatch!\n");
+    if(x.size()<2) __throw_invalid_argument("Slope points too few!\n");
+
+    const auto n= x.size();
+    const auto s_x = accumulate(x.begin(),x.end(), 0.0);
+    const auto s_y = accumulate(y.begin(),y.end(), 0.0);
+    const auto s_xx = inner_product(x.begin(),x.end(),x.begin(), 0.0);
+    const auto s_xy = inner_product(x.begin(),x.end(),y.begin(), 0.0);
+    const auto a = (n*s_xy-s_x*s_y)/(n*s_xx-s_x*s_x);
+    return a;
 }
 
 void generatetree(const string infile, const string output){
@@ -92,7 +106,7 @@ void generatetree(const string infile, const string output){
                                    {"F8pl", "F11pl-1"}};
     vector<double> tofoff{ //300.25 F3-F7 init -159.45 F8-F11 init
         304.17+0.17,   // good Offset Value for F3-F7,  empty-target run  300.85
-        -161.64-2.10}; // good Offset Value for F8-F11, empty-target run -160.45
+        -161.64-0.08}; // good Offset Value for F8-F11, empty-target run -160.45
 
     vector<TArtTOF *> tof{
         recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0], tofoff[0], 5),
@@ -147,12 +161,12 @@ void generatetree(const string infile, const string output){
     vector<int> fGoodPPACFocus(12, 0);
     vector<int> fGoodPPACFocusOr(12, 0);
 
+    // F8 PPAC positions relative to F8 0: x 1: y
+    const vector<vector<double>> f8z{{-1310.7,-1302.1},{-1273.3,-1281.9},
+                                     {-810.7,-802.1},{-773.3,-781.9}};
+
     tree->Branch("xtar",&fXTar,"fXTar/D");
     tree->Branch("ytar",&fYTar,"fYTar/D");
-    /*tree->Branch("f8ppacx",fF8PPAC.at(0),"fF8PPAC[0][6]/D");
-    tree->Branch("f8ppacy",fF8PPAC.at(1),"fF8PPAC[1][6]/D");
-    tree->Branch("f8posx",fF8Pos.at(0),"fF8Pos[0][3]/D");
-    tree->Branch("f8posy",fF8Pos.at(1),"fF8Pos[1][3]/D");*/
 
     vector<vector<string>> focalname{{"F3X","F3A"}, {"F5X","F5A"}, 
                                      {"F7X","F7A"}, {"F8X","F8A"},
@@ -214,8 +228,6 @@ void generatetree(const string infile, const string output){
         fill(fGoodPPACFocusOr.begin(), fGoodPPACFocusOr.end(), 0);
 
         // Reading out the PPAC'S
-        bool  posRec = true; // First PPAC has 4 fired planes
-
         vector<TArtPPAC*> fppac; // Storage Vector for all PPAC's
         vector<bool> fired;
 
@@ -225,12 +237,12 @@ void generatetree(const string infile, const string output){
                             fppac.back()->IsFiredY());
         }
 
-        // Determine well focussed events
+        // Determine well focused events
         const vector<uint> ppacuse{8,9,11}; // Which PPAC's to use (match w/ ppacname!)
 
         for(uint i=0; i<ppacuse.size(); i++){ // Loop over every PPAC
             uint ppacno = ppacuse.at(i);
-            int j = planesperppac;
+            const int j = planesperppac;
             // If every Plane has a signal, set fGoodPPACFocus(Or)
             if(fppac.at(j*i+0) && fppac.at(j*i+1) && 
                fppac.at(j*i+2) && fppac.at(j*i+3)){
@@ -243,32 +255,41 @@ void generatetree(const string infile, const string output){
             }
         }
 
+        vector<vector<double>> slopex(2,vector<double>(0)); //0:x,y 1:val, z
+        vector<vector<double>> slopey(2,vector<double>(0)); //0:x,y 1:val, z
+
         for(uint i=0; i<planesperppac; i++){ // Check first PPAC for hits
             if(fired.at(i)){
                 fF8PPAC.at(0).at(i) = fppac.at(i)->GetX();
                 fF8PPAC.at(1).at(i) = fppac.at(i)->GetY();
+                // Add Points to linear regression list
+                slopex.at(0).push_back(fppac.at(i)->GetX());
+                slopex.at(1).push_back(f8z.at(i).at(0));
+                slopey.at(0).push_back(fppac.at(i)->GetY());
+                slopey.at(1).push_back(f8z.at(i).at(1));
             }
-            posRec *= fired.at(i); // check for hits on all planes
         }
 
-        if(posRec){
-            double mX = (fF8POS.at(0).at(1)-fF8POS.at(0).at(0))/  // dX/dZ
-                        (fF8POS.at(2).at(1)-fF8POS.at(2).at(0));
-            double mY = (fF8POS.at(1).at(1)-fF8POS.at(1).at(0))/  // dY/dZ
-                        (fF8POS.at(2).at(1)-fF8POS.at(2).at(0));
+        if(slopex.at(0).size()>1){
+            double meanx = accumulate(slopex.at(0).begin(), slopex.at(0).end(), 0.0)/slopex.at(0).size();
+            double meany = accumulate(slopey.at(0).begin(), slopey.at(0).end(), 0.0)/slopey.at(0).size();
+            double meanxz =accumulate(slopex.at(1).begin(), slopex.at(1).end(), 0.0)/slopex.at(1).size();
+            double meanyz =accumulate(slopey.at(1).begin(), slopey.at(1).end(), 0.0)/slopey.at(1).size();
+            fXTar= meanx - meanxz*slope(slopex.at(1),slopex.at(0));
+            fYTar= meany - meanyz*slope(slopey.at(1),slopey.at(0));
+        }
 
-            fXTar = fF8POS.at(0).at(1) + 880 * mX;
-            fYTar = fF8POS.at(1).at(1) + 880 * mY;
+        // 880mm F8-1B to target
 
-            for(uint i=0; i<focalplanes.size(); i++){ // Loop all focal planes
-                if(cfpl->FindFocalPlane(focalplanes.at(i))){
-                    vec = cfpl->FindFocalPlane(focalplanes.at(i))->GetOptVector();
-                    for(uint j=0; j<planesperppac; j++){
-                        focal.at(i).at(j) = (*vec)(j);
-                    }
+        for(uint i=0; i<focalplanes.size(); i++){ // Loop all focal planes
+            if(cfpl->FindFocalPlane(focalplanes.at(i))){
+                vec = cfpl->FindFocalPlane(focalplanes.at(i))->GetOptVector();
+                for(uint j=0; j<planesperppac; j++){
+                    focal.at(i).at(j) = (*vec)(j);
                 }
             }
         }
+
         /*
         //Double_t modif = - 0.0011*(F11X-8) - 0.0000003*(F11X-8)*(F11X-8)*(F11X-8)
         //                 - 0.000023*(F9X-10) - 0.0000005*(F9X)*(F9X)

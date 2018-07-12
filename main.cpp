@@ -41,7 +41,7 @@ int main(int argc, char**argv){
     const vector<int> goodruns{1,3,4,5,7,8,9,10,11,13,14,19,26,29,32,33,35,37,
                                        38,40,41,42,46,49,50,51,52,54,57,58,59};
 
-    const vector<int> emptyrun{ 52,53 };
+    const vector<int> emptyrun{54}; //empty 52,53
 
     vector<string> output;
     for(auto run : goodruns) {
@@ -69,7 +69,7 @@ int main(int argc, char**argv){
         case 0:{
             printf("Now proceeding to make histograms\n");
             makehistograms(output);
-            makehistograms(emptyout);
+            //makehistograms(emptyout);
             break;
         }
         default:

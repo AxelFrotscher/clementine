@@ -10,10 +10,6 @@ mutex goodeventmutex;
 mutex consolemutex;
 mutex writemutex;
 
-void castcal(calibpar &cal){
-
-}
-
 void highordercorrection(treereader *tree, TFile *output,
                          const vector<bool> &goodevents){
     // This method aims to determine the higher-order corrections
@@ -42,7 +38,7 @@ void highordercorrection(treereader *tree, TFile *output,
     vector<vector<double>> cutval;
 
     // Decide which cut to use based on total event number
-    if(goodevents.size()==513225){
+    if(runinfo::emptysize == goodevents.size()){
         cutval = nancyempty::cutval;
         p1 = nancyempty::hoparame;
     }
@@ -304,7 +300,7 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     // 5 beams, 2incoming, 3outgoing
     printf("Making PID now...\n");
     // Progress Bar setup
-    uint totevents = goodevents.size();
+    const uint totevents = goodevents.size();
     const int threadno= 20;
 
     vector<TChain*> chain;
@@ -346,7 +342,7 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     vector<double> incval; // cut on incoming particles (F7)
     vector<double> targetval; // second cut to detected particles (F11)
 
-    if(goodevents.size()==513225){
+    if(runinfo::emptysize == goodevents.size()){
         incval = nancyempty::incval;
         targetval = nancyempty::targetval;
     }
@@ -425,7 +421,7 @@ void makehistograms(const vector<string> input) {
     cout << "Making new Threads..." << endl;
 
     vector<TChain*> chain;
-    for(int i=0; i<5; i++){
+    for(int i=0; i<6; i++){
         chain.emplace_back(new TChain("tree"));
         for(auto h: input) chain.back()->Add(h.c_str());
     }
@@ -446,6 +442,10 @@ void makehistograms(const vector<string> input) {
          << " Elements." << endl;
     // Store events that cannot be used
     vector<bool> goodevents((uint)chain.at(0)->GetEntries(), true);
+    // Determine run type:
+    if(runinfo::emptysize == chain.at(0)->GetEntries()){
+        printf("!!! Analysing an empty run !!!\n");
+    }
 
     vector<thread> th;
     th.emplace_back(thread(plastics, tree.at(0), outputfile, ref(goodevents)));
@@ -453,6 +453,7 @@ void makehistograms(const vector<string> input) {
     th.emplace_back(thread(ionisationchamber, tree.at(2), outputfile, ref(goodevents)));
     th.emplace_back(thread(ppacs, tree.at(4), outputfile, ref(goodevents)));
     th.emplace_back(thread(highordercorrection, tree.at(3), outputfile, ref(goodevents)));
+    th.emplace_back(thread(targetcut,tree.at(5),outputfile, ref(goodevents)));
 
     for(auto &i: th) i.join();
 
