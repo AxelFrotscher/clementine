@@ -418,7 +418,10 @@ void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
     if(!(cutfile.IsOpen())) __throw_invalid_argument("Could not open cut file "
                                                      "at config/rhocut.root");
     TCutG* mycut;
-    if(runinfo::emptysize == goodevents.size()) mycut = (TCutG*)cutfile.Get("brhoempty");
+    if(runinfo::transsize == goodevents.size()) mycut = (TCutG*)cutfile.Get("brhoempty");
+    else if(runinfo::emptysize == goodevents.size()){
+        mycut = (TCutG*)cutfile.Get("emptybrhocut");
+    }
     else mycut = (TCutG*)cutfile.Get("brhocut");
     if(!mycut) __throw_invalid_argument("Could not load cut from file!\n");
 
@@ -562,5 +565,4 @@ void targetcut(treereader *tree, TFile *output, vector<bool> &goodevents){
     for(auto hist: tarhist) hist.Write();
     output->cd("");
     writemutex.unlock();
-
 }

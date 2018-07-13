@@ -38,7 +38,11 @@ void highordercorrection(treereader *tree, TFile *output,
     vector<vector<double>> cutval;
 
     // Decide which cut to use based on total event number
-    if(runinfo::emptysize == goodevents.size()){
+    if(runinfo::transsize == goodevents.size()){
+        cutval = nancytrans::cutval;
+        p1 = nancytrans::hoparame;
+    }
+    else if(runinfo::emptysize == goodevents.size()){
         cutval = nancyempty::cutval;
         p1 = nancyempty::hoparame;
     }
@@ -342,7 +346,11 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     vector<double> incval; // cut on incoming particles (F7)
     vector<double> targetval; // second cut to detected particles (F11)
 
-    if(runinfo::emptysize == goodevents.size()){
+    if(runinfo::transsize == goodevents.size()){
+        incval = nancytrans::incval;
+        targetval = nancytrans::targetval;
+    }
+    else if(runinfo::emptysize == goodevents.size()){
         incval = nancyempty::incval;
         targetval = nancyempty::targetval;
     }
@@ -443,8 +451,11 @@ void makehistograms(const vector<string> input) {
     // Store events that cannot be used
     vector<bool> goodevents((uint)chain.at(0)->GetEntries(), true);
     // Determine run type:
+    if(runinfo::transsize == chain.at(0)->GetEntries()){
+        printf("!!! Analysing an transmission run !!!\n");
+    }
     if(runinfo::emptysize == chain.at(0)->GetEntries()){
-        printf("!!! Analysing an empty run !!!\n");
+        printf("!!! Analysing an empty target run !!!\n");
     }
 
     vector<thread> th;

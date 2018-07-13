@@ -38,10 +38,11 @@ int main(int argc, char**argv){
     const vector<string> input = getlist("config/minosridf.txt");
 
     // Define good runs
-    const vector<int> goodruns{1,3,4,5,7,8,9,10,11,13,14,19,26,29,32,33,35,37,
+    const vector<uint> goodruns{1,3,4,5,7,8,9,10,11,13,14,19,26,29,32,33,35,37,
                                        38,40,41,42,46,49,50,51,52,54,57,58,59};
 
-    const vector<int> emptyrun{54}; //empty 52,53
+    const vector<uint> transmissionrun{54};
+    const vector<uint> emptyrun{52,53};
 
     vector<string> output;
     for(auto run : goodruns) {
@@ -50,25 +51,56 @@ int main(int argc, char**argv){
                          + ".root");
     }
 
+    vector<string> transmissionout;
+    for(auto run: transmissionrun)
+        transmissionout.push_back("/d/d02-1/ag_ob/SEASTAR2_DATA/root/" +
+                           input.at(run).substr(34,9) + ".root");
+
     vector<string> emptyout;
     for(auto run: emptyrun)
         emptyout.push_back("/d/d02-1/ag_ob/SEASTAR2_DATA/root/" +
-                           input.at(run).substr(34,9) + ".root");
+                                  input.at(run).substr(34,9) + ".root");
 
     switch(analyse_raw){
         case 1:{ // Analyse SEASTAR-DATA
-            cout << "Which file to analyse? " << endl;
+            cout << "Which file to analyse?"
+                    " [0] empty, [1] trans, [2] file " << endl;
             uint i = 0;
             if(!(cin >> i)) throw invalid_argument("WTH");
-            cout << "Analyzing SEASTAR:"
-                 << input.at(analysedfile.at(0)+goodruns.at(i)) << endl;
-            generatetree(input.at(analysedfile.at(0)+goodruns.at(i)),
-                         output.at(i));
+
+            switch(i){
+                case 0:{
+                    cout << "Which emptyrun? [0-1] " << endl;
+                    if(!(cin >> i)) throw invalid_argument("WTH");
+                    cout << "(Empty) Analyzing SEASTAR:"
+                         << input.at(emptyrun.at(i)) << endl;
+                    generatetree(input.at(emptyrun.at(i)),
+                                 output.at(i));
+                    break;
+                }
+                case 1:{
+                    cout << "(Trans) Analyzing SEASTAR:"
+                         << input.at(transmissionrun.at(0)) << endl;
+                    generatetree(input.at(transmissionrun.at(0)), output.at(i));
+                    break;
+                }
+                case 2:{
+                    cout << "Which physicsrun? [0-30] " << endl;
+                    if(!(cin >> i)) throw invalid_argument("WTH");
+                    cout << "(Empty) Analyzing SEASTAR:"
+                         << input.at(analysedfile.at(0)+goodruns.at(i)) << endl;
+                    generatetree(input.at(analysedfile.at(0)+goodruns.at(i)),
+                                 output.at(i));
+                    break;
+                }
+                default: __throw_invalid_argument("Option not available\n");
+            }
             break;
         }
         case 0:{
             printf("Now proceeding to make histograms\n");
-            makehistograms(output);
+            //makehistograms(output);
+            makehistograms(transmissionout);
             //makehistograms(emptyout);
             break;
         }
