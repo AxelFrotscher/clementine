@@ -66,7 +66,7 @@ int main(int argc, char**argv){
             cout << "Which file to analyse?"
                     " [0] empty, [1] trans, [2] file " << endl;
             uint i = 0;
-            if(!(cin >> i)) throw invalid_argument("WTH");
+            if(!(cin >> i)) throw invalid_argument("WTH no int");
 
             switch(i){
                 case 0:{
@@ -98,10 +98,25 @@ int main(int argc, char**argv){
             break;
         }
         case 0:{
-            printf("Now proceeding to make histograms\n");
-            //makehistograms(output);
-            makehistograms(transmissionout);
-            //makehistograms(emptyout);
+            int choose;
+            printf("Now proceeding to make histograms...\n");
+            cout << "Which setting? [0 physics, 1 trans, 2 empty] " << endl;
+            if(!(cin >> choose)) throw invalid_argument("WTH no int");
+            switch(choose){
+                case 0:{
+                    makehistograms(output);
+                    break;
+                }
+                case 1:{
+                    makehistograms(transmissionout);
+                    break;
+                }
+                case 2:{
+                    makehistograms(emptyout);
+                    break;
+                }
+                default: __throw_invalid_argument("Option not available\n");
+            }
             break;
         }
         default:

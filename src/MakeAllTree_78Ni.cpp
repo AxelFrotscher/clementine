@@ -151,7 +151,6 @@ void generatetree(const string infile, const string output){
     const double magnum = -999; // Magic Number for unset events
     const int planesperppac = 4;
     vector<vector<double>> fF8PPAC(3, vector<double>(planesperppac, magnum));
-    vector<vector<double>> fF8POS(3, vector<double>(2,magnum));
 
     Double_t fXTar = magnum, fYTar = magnum;
  
@@ -223,7 +222,6 @@ void generatetree(const string infile, const string output){
         fXTar = fYTar = magnum;
 
         for(auto &elem: fF8PPAC) fill(elem.begin(), elem.end(), magnum);
-        for(auto &elem: fF8POS)  fill(elem.begin(), elem.end(), magnum);
         fill(fGoodPPACFocus.begin(), fGoodPPACFocus.end(), 0);
         fill(fGoodPPACFocusOr.begin(), fGoodPPACFocusOr.end(), 0);
 
@@ -253,30 +251,6 @@ void generatetree(const string infile, const string output){
                     (fppac.at(j*i+0)->IsFiredX() || fppac.at(j*i+1)->IsFiredX()) &&
                     (fppac.at(j*i+2)->IsFiredX() || fppac.at(j*i+3)->IsFiredX());
             }
-        }
-
-        vector<vector<double>> slopex(2,vector<double>(0)); //0:x,y 1:val, z
-        vector<vector<double>> slopey(2,vector<double>(0)); //0:x,y 1:val, z
-
-        for(uint i=0; i<planesperppac; i++){ // Check first PPAC for hits
-            if(fired.at(i)){
-                fF8PPAC.at(0).at(i) = fppac.at(i)->GetX();
-                fF8PPAC.at(1).at(i) = fppac.at(i)->GetY();
-                // Add Points to linear regression list
-                slopex.at(0).push_back(fppac.at(i)->GetX());
-                slopex.at(1).push_back(f8z.at(i).at(0));
-                slopey.at(0).push_back(fppac.at(i)->GetY());
-                slopey.at(1).push_back(f8z.at(i).at(1));
-            }
-        }
-
-        if(slopex.at(0).size()>1){
-            double meanx = accumulate(slopex.at(0).begin(), slopex.at(0).end(), 0.0)/slopex.at(0).size();
-            double meany = accumulate(slopey.at(0).begin(), slopey.at(0).end(), 0.0)/slopey.at(0).size();
-            double meanxz =accumulate(slopex.at(1).begin(), slopex.at(1).end(), 0.0)/slopex.at(1).size();
-            double meanyz =accumulate(slopey.at(1).begin(), slopey.at(1).end(), 0.0)/slopey.at(1).size();
-            fXTar= meanx - meanxz*slope(slopex.at(1),slopex.at(0));
-            fYTar= meany - meanyz*slope(slopey.at(1),slopey.at(0));
         }
 
         // 880mm F8-1B to target
