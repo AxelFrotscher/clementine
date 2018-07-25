@@ -8,6 +8,7 @@
 namespace runinfo{
     const int transsize = 395267; // Runs containing this number are transmission
     const int emptysize = 513225; // Empty-target measurement
+    const std::string prefix = "/d/d02-1/ag_ob/SEASTAR2_DATA/root/";
 }
 
 namespace nancy{

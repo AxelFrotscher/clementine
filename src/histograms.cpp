@@ -396,8 +396,8 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
         reactioncounter.at(0) = reactioncounter.at(0) + i.at(0);
     }
 
-    for(int i=0; i<PID.size();i++){
-        for(int j=0; j<PID.at(0).size(); j++){
+    for(uint i=0; i<PID.size();i++){
+        for(uint j=0; j<PID.at(0).size(); j++){
             for(auto &hist:PIDthread)
                 PID.at(i).at(j).Add(new TH2D(hist.at(i).at(j)));
         }
@@ -415,7 +415,7 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     }
     output->cd("");
 
-    double crosssection = 1./0.423*reactioncounter.at(1)/reactioncounter.at(0);
+    double crosssection = 1./0.423*reactioncounter.at(1)/reactioncounter.at(0)/0.7754;
     double cserror = crosssection*pow(1./reactioncounter.at(0) +
                                       1./reactioncounter.at(1),0.5);
     printf("Inclusive 111Nb(p,2p)110Zr sigma is: %f +- %f b\n", crosssection,

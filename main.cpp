@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <thread>
 #include "TThread.h"
+#include "libconstant.h"
 
 R__LOAD_LIBRARY(libanacore.so)
 
@@ -46,20 +47,19 @@ int main(int argc, char**argv){
 
     vector<string> output;
     for(auto run : goodruns) {
-        output.push_back("/d/d02-1/ag_ob/SEASTAR2_DATA/root/" +
+        output.push_back(runinfo::prefix +
                          input.at(analysedfile.at(0)+run).substr(34, 9)
                          + ".root");
     }
 
     vector<string> transmissionout;
     for(auto run: transmissionrun)
-        transmissionout.push_back("/d/d02-1/ag_ob/SEASTAR2_DATA/root/" +
-                           input.at(run).substr(34,9) + ".root");
+        transmissionout.push_back(runinfo::prefix + input.at(run).substr(34,9)
+                                  + ".root");
 
     vector<string> emptyout;
     for(auto run: emptyrun)
-        emptyout.push_back("/d/d02-1/ag_ob/SEASTAR2_DATA/root/" +
-                                  input.at(run).substr(34,9) + ".root");
+        emptyout.push_back(runinfo::prefix + input.at(run).substr(34,9) + ".root");
 
     switch(analyse_raw){
         case 1:{ // Analyse SEASTAR-DATA
@@ -75,13 +75,13 @@ int main(int argc, char**argv){
                     cout << "(Empty) Analyzing SEASTAR:"
                          << input.at(emptyrun.at(i)) << endl;
                     generatetree(input.at(emptyrun.at(i)),
-                                 output.at(i));
+                                 emptyout.at(i));
                     break;
                 }
                 case 1:{
                     cout << "(Trans) Analyzing SEASTAR:"
                          << input.at(transmissionrun.at(0)) << endl;
-                    generatetree(input.at(transmissionrun.at(0)), output.at(i));
+                    generatetree(input.at(transmissionrun.at(0)), transmissionout.at(0));
                     break;
                 }
                 case 2:{

@@ -137,14 +137,26 @@ void generatetree(const string infile, const string output){
     // EventInfo is important for the fBit information to know the trigger!
     vector<string> datanodes{"EventInfo", "BigRIPSPPAC", "BigRIPSPlastic",
                                   "BigRIPSIC","BigRIPSFocalPlane","BigRIPSRIPS",
-                                  "BigRIPSTOF", "BigRIPSBeam", "DALINaI"};
+                                  "BigRIPSTOF", "BigRIPSBeam", "DALINaI", "EventInfo_FBIT"};
+
+    // Trigger bits are broken in anaroot manual recover (kudos to n.hupin)
+    uint EventInfo_FBIT =0;
+    TClonesArray * fbitarray;
 
     for(auto i : datanodes){
-        auto *array = (TClonesArray *)sman->FindDataContainer(&i[0]);
-        tree->Branch(array->GetName(), &array);
+        TClonesArray * array;
+        if(i=="EventInfo_FBIT") {
+            fbitarray = (TClonesArray *)sman->FindDataContainer("EventInfo");
+            //tree->Branch("EventInfo_FBIT", &EventInfo_FBIT, "EventInfo_FBIT/I");
+        }
+        else{
+            array = (TClonesArray *)sman->FindDataContainer(&i[0]);
+            tree->Branch(array->GetName(), &array);
+        }
         printf("%s", array->GetName());
     }
 
+    if(!fbitarray) __throw_bad_function_call();
     //Making new branches
 
     //BigRIPS
@@ -220,6 +232,7 @@ void generatetree(const string infile, const string output){
         //Reconstructing the scattering angle:
         //Beam spot on target reconstruction
         fXTar = fYTar = magnum;
+        EventInfo_FBIT = 0;
 
         for(auto &elem: fF8PPAC) fill(elem.begin(), elem.end(), magnum);
         fill(fGoodPPACFocus.begin(), fGoodPPACFocus.end(), 0);
@@ -263,6 +276,20 @@ void generatetree(const string infile, const string output){
                 }
             }
         }
+
+        // Manual filling of the trigger
+        auto rawevent = (TArtRawEventObject *)sman->FindDataContainer("RawEvent");
+        for(uint i=0; i<rawevent->GetNumSeg(); i++){
+            auto seg = rawevent->GetSegment(i);
+            if(seg->GetFP()==63 && seg->GetDetector()==10){
+                for(uint j=0; j<seg->GetNumData();j++){
+                    EventInfo_FBIT = seg->GetData(j)->GetVal();
+                }
+            }
+        }
+
+        ((TArtEventInfo *)fbitarray->At(0))->SetTriggerBit(EventInfo_FBIT);
+        //cout << EventInfo_FBIT << endl;
 
         /*
         //Double_t modif = - 0.0011*(F11X-8) - 0.0000003*(F11X-8)*(F11X-8)*(F11X-8)
