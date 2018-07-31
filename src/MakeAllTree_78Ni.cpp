@@ -10,12 +10,14 @@ void stop_interrupt(){
     stoploop = true;
 }
 
-vector <int> currevt{0,0,0,0,0,0};
+vector <int> currevt{0,0,0,0,0,0,0};
 const int constadd = 10;
 
 void progressbar(int currevent, int totevent, int offset ,int barwidth){
     // This method displays a nice progress bar
     if(offset<currevt.size()) currevt.at(offset) = currevent;
+    else return;
+
     vector<int> pos; // position for each bar
 
     for(int i=0; i<currevt.size(); i++){ // Loop over each bar

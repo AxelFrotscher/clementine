@@ -12,13 +12,15 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 
 #Define useful functions
 include(${ROOT_USE_FILE})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include /home/afrotscher/soft/anaroot/anarootv4.5.36/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
+        /home/afrotscher/soft/anaroot/anarootv4.5.36/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/cutclasses)
 
 add_executable(${PROJECT_NAME} main.cpp
                                ./src/MakeAllTree_78Ni.cpp
                                ./src/histograms.cpp
                                ./src/treereader.cpp
-        src/histogram_cuts.cpp)
+        src/histogram_cuts.cpp src/cutclasses/triggercut.cpp src/cutclasses/ppaccut.cpp)
 target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread
 -L/home/afrotscher/soft/anaroot/anarootv4.5.36/lib
 -lanacore -lanabrips -lanadali -lanaroot -lanaminos -lXMLParser

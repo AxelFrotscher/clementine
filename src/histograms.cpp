@@ -1,4 +1,6 @@
-#include <MakeAllTree_78Ni.hh>
+#include "MakeAllTree_78Ni.hh"
+#include "cutclasses/triggercut.h"
+#include "cutclasses/ppaccut.h"
 #include "histograms.hh"
 #include "histogram_cuts.hh"
 #include "libconstant.h"
@@ -6,12 +8,11 @@
 using namespace std;
 
 calibpar p1;
-mutex goodeventmutex;
 mutex consolemutex;
 mutex writemutex;
 
 void highordercorrection(treereader *tree, TFile *output,
-                         const vector<bool> &goodevents){
+                         const vector<atomic<bool>> &goodevents){
     // This method aims to determine the higher-order corrections
     // for the matrix elements
     printf("Now beginning with higher order corrections ...\n");
@@ -83,7 +84,7 @@ void highordercorrection(treereader *tree, TFile *output,
     // Progress Bar setup
     int eventno=0; // counting variable
     Long64_t totevents = goodevents.size();
-    const int downscale = 5000; // every n-th event
+    const int downscale = totevents/100; // every percent
 
     while(tree->singleloop()){
         if(goodevents.at(eventno)) { // We absolutely need CCSC cuts for HOC
@@ -229,8 +230,8 @@ void dalicalib(treereader *tree, TFile *output){
 
 void pidth(treereader *tree, vector<vector<TH2D>> &PID, const vector<double> &cutval,
            const vector<double> &targetval, vector<uint> &reactionval,
-           const vector<int> &range, const vector<bool> &goodevents, const int id,
-           TH1D &reactf9){
+           const vector<int> &range, const vector<atomic<bool>> &goodevents, const int id,
+           vector<TH1D> &reactf9){
     //Thread worker for PID plot
     //uint eventcounter =0;
     const int downscale = 50000; // every n-th event
@@ -283,12 +284,15 @@ void pidth(treereader *tree, vector<vector<TH2D>> &PID, const vector<double> &cu
                 PID.at(1).at(3).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
                 reactionval.at(0) = reactionval.at(0)+1;
 
+                // Fill F7 value with PID
+                reactf9.at(0).Fill(tree->F5X);
+
                 // Second ellipsoid for cross section
                 if((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
                     pow(1./targetval.at(3)*(tree->BigRIPSBeam_zet[4]-targetval.at(1)),2))<1) {
                     reactionval.at(1) = reactionval.at(1) + 1;
-                    // Investigate F9 position of (p,2p) ions
-                    reactf9.Fill(tree->F9X);
+                    // Investigate F7 position of (p,2p) ions (off center effects)
+                    reactf9.at(1).Fill(tree->F5X);
                 }
             }
         }
@@ -300,7 +304,8 @@ void pidth(treereader *tree, vector<vector<TH2D>> &PID, const vector<double> &cu
     }
 }
 
-void makepid(const vector<string> input, TFile *output, const vector<bool> &goodevents){
+void makepid(const vector<string> input, TFile *output,
+             const vector<atomic<bool>> &goodevents){
     // 5 beams, 2incoming, 3outgoing
     printf("Making PID now...\n");
     // Progress Bar setup
@@ -319,7 +324,8 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
     }
 
     vector <string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
-                         "F5X", "F5A", "F9X", "F9A", "F11X", "F11A"};
+                         "F5X", "F5A", "F9X", "F9A", "F11X", "F11A",
+                         "BigRIPSIC.fCalMeVSqSum"};
     for(auto &i:tree) i->setloopkeys(keys);
 
     vector<vector<TH2D>> PID {{
@@ -333,7 +339,14 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
         TH2D("pidincutoutcorr", "PID Out w/ in cut", 300,2.45,2.9,200,30,50)}
     };
 
-    TH1D reactf9("prodF9", "F9 position of reacted particles", 400,-200,200);
+    vector<TH1D> reactF5 {
+        TH1D("F5beam", "F5 beam profile", 1100,-200,2000),
+        TH1D("F5react", "F5-position of reacted particles", 1100,-200,2000)
+    };
+    for (auto &elem: reactF5){
+        elem.GetXaxis()->SetTitle("x [mm]");
+        elem.GetYaxis()->SetTitle("N");
+    }
 
     for(auto &elem: PID){
         for(auto &uelem: elem){
@@ -370,13 +383,13 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
 
     // Setup crosssection vector:
     vector<vector<uint>> reactionthread;
-    vector<TH1D> reactthreadf9;
+    vector<vector<TH1D>> reactF9;
 
     for(int i=0; i<threadno; i++){
         PIDthread.push_back(PID);
         reactionthread.push_back(reactioncounter);
         range.push_back({i*totevents/threadno, (i+1)*totevents/threadno-1});
-        reactthreadf9.push_back(reactf9);
+        reactF9.push_back(reactF5);
     }
     range.back().back() = totevents;
 
@@ -386,8 +399,9 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
         th.emplace_back(
             thread(pidth, tree.at(i), ref(PIDthread.at(i)), ref(incval),
                    ref(targetval), ref(reactionthread.at(i)), ref(range.at(i)),
-                   ref(goodevents), i, ref(reactthreadf9.at(i))));
+                   ref(goodevents), i, ref(reactF9.at(i))));
     }
+
     for(auto &t : th) t.join();
 
     // Rejoin the data structure
@@ -402,20 +416,54 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
                 PID.at(i).at(j).Add(new TH2D(hist.at(i).at(j)));
         }
     }
-    for(auto &i: reactthreadf9) reactf9.Add(new TH1D(i));
+    for(auto &i: reactF9){
+        reactF5.at(0).Add(new TH1D(i.at(0)));
+        reactF5.at(1).Add(new TH1D(i.at(1)));
+    }
 
-    printf("\nFinished making PIDs!\n");
+    // Using custom function to scale and get output
+    const vector<double> acceptancerange{0.,75.}; // mm
+    int dividend = 0; // dividend/divisor
+    double divisor = 0;
+    int binlow  = reactF5.at(0).FindBin(acceptancerange.at(0));
+    int binhigh = reactF5.at(0).FindBin(acceptancerange.at(1));
+    double chisq =0;
+
+    // Calculating scaling factor alpha
+    for(int i=binlow; i < binhigh; i++){
+        dividend += reactF5.at(0).GetBinContent(i);
+        divisor  += pow(reactF5.at(0).GetBinContent(i),2)/
+                (double)reactF5.at(1).GetBinContent(i);
+    }
+    double alpha =dividend/divisor;
+
+    // Calculating corresponding chi-square
+    for(int i=binlow; i<binhigh; i++){
+        chisq += pow(alpha*reactF5.at(0).GetBinContent(i)-
+                 reactF5.at(1).GetBinContent(i),2)/
+                (double)reactF5.at(1).GetBinContent(i);
+    }
+    chisq /= binhigh - binlow -1;
+    reactF5.push_back(reactF5.at(0));
+    reactF5.back().Scale(alpha);
+    reactF5.back().SetTitle("F5 scaled beam profile");
+
+    double curpart = reactF5.at(1).Integral()/reactF5.at(2).Integral();
+    printf("\n Scaling Factor: %f, with chisq/ndof %f, transmission: %f !\n",
+           alpha, chisq,curpart);
+
+    printf("Finished making PIDs!\n");
     vector<string> folders{"PID/Uncorrected","PID/Corrected","PID/investigate"};
     for (auto &i :folders) output->mkdir(i.c_str());
 
     for(uint i=0; i<folders.size(); i++){
         output->cd(folders.at(i).c_str());
         if(i<2) for(auto &elem: PID.at(i)) elem.Write();
-        else reactf9.Write();
+        else for(auto &elem: reactF5) elem.Write();
     }
     output->cd("");
 
-    double crosssection = 1./0.423*reactioncounter.at(1)/reactioncounter.at(0)/0.7754;
+    double crosssection = 1./0.433*reactioncounter.at(1)/reactioncounter.at(0)/0.7754;
     double cserror = crosssection*pow(1./reactioncounter.at(0) +
                                       1./reactioncounter.at(1),0.5);
     printf("Inclusive 111Nb(p,2p)110Zr sigma is: %f +- %f b\n", crosssection,
@@ -426,10 +474,11 @@ void makepid(const vector<string> input, TFile *output, const vector<bool> &good
 }
 
 void makehistograms(const vector<string> input) {
-    cout << "Making new Threads..." << endl;
+    const int threadno = 7;
+    cout << "Making " << threadno << " new Threads..." << endl;
 
     vector<TChain*> chain;
-    for(int i=0; i<6; i++){
+    for(int i=0; i<threadno; i++){
         chain.emplace_back(new TChain("tree"));
         for(auto h: input) chain.back()->Add(h.c_str());
     }
@@ -449,7 +498,9 @@ void makehistograms(const vector<string> input) {
     cout << "Beginning reconstruction of " << chain.at(0)->GetEntries()
          << " Elements." << endl;
     // Store events that cannot be used
-    vector<bool> goodevents((uint)chain.at(0)->GetEntries(), true);
+    vector<atomic<bool>> goodevents((uint)chain.at(0)->GetEntries());
+    for(auto &i:goodevents) i.exchange(true);
+
     // Determine run type:
     if(runinfo::transsize == chain.at(0)->GetEntries()){
         printf("!!! Analysing an transmission run !!!\n");
@@ -458,13 +509,17 @@ void makehistograms(const vector<string> input) {
         printf("!!! Analysing an empty target run !!!\n");
     }
 
+    triggercut(tree, goodevents);
+    ppaccut(tree, goodevents, outputfile);
+
     vector<thread> th;
     th.emplace_back(thread(plastics, tree.at(0), outputfile, ref(goodevents)));
     th.emplace_back(thread(chargestatecut, tree.at(1), outputfile, ref(goodevents)));
     th.emplace_back(thread(ionisationchamber, tree.at(2), outputfile, ref(goodevents)));
-    th.emplace_back(thread(ppacs, tree.at(4), outputfile, ref(goodevents)));
+    //th.emplace_back(thread(ppacs, tree.at(4), outputfile, ref(goodevents)));
     th.emplace_back(thread(highordercorrection, tree.at(3), outputfile, ref(goodevents)));
     th.emplace_back(thread(targetcut,tree.at(5),outputfile, ref(goodevents)));
+    //th.emplace_back(thread(triggercut, tree.at(6),outputfile, ref(goodevents)));
 
     for(auto &i: th) i.join();
 

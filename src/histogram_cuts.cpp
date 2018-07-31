@@ -5,6 +5,8 @@
 #include "histogram_cuts.hh"
 #include "MakeAllTree_78Ni.hh"
 #include "libconstant.h"
+#include "histograms.hh"
+#include "cutclasses/triggercut.h"
 
 using namespace std;
 
@@ -26,7 +28,7 @@ double linfit(double *x, double *par){
     return par[0] + par[1]*x[0];
 }
 
-void plastics(treereader *tree, TFile *output, vector<bool> &goodevents){
+void plastics(treereader *tree, TFile *output, vector<atomic<bool>> &goodevents){
     // This function aims to rebuild the trigger from Q1*Q2 F7plastic
     // therefore we set a limit on sqrt(Q1*Q2) to suppress random noise
     printf("Now beginning with reconstruction of plastic scintillators ...\n");
@@ -85,12 +87,13 @@ void plastics(treereader *tree, TFile *output, vector<bool> &goodevents){
     // Progress Bar setup
     int eventno=0; // counting variable
     uint totevents = goodevents.size();
-    const int downscale = 50000; // every n-th event
+    const int downscale = totevents/100; // every percent
     // Get Number of Good events before
     int cutcount =0;
 
-    while(tree->singleloop()){
+    while(eventno < totevents){
         if(goodevents.at(eventno)){
+            tree->getevent(eventno);
         if(sqrt(tree->BigRIPSPlastic_fQLRaw[F7pos]*
                 tree->BigRIPSPlastic_fQRRaw[F7pos])> threshhold) // F7-cut
             for(uint i=0; i<numplastic; i++){                   // plastic loop
@@ -109,16 +112,16 @@ void plastics(treereader *tree, TFile *output, vector<bool> &goodevents){
                     }
                 }
             }
-            goodeventmutex.lock();
+            bool temp = true;
             for(int j=0;j<numplastic;j++){
-                goodevents[eventno] =goodevents[eventno]*
-                               (sqrt(tree->BigRIPSPlastic_fQLRaw[j]*
+                temp = temp *  (sqrt(tree->BigRIPSPlastic_fQLRaw[j]*
                                      tree->BigRIPSPlastic_fQRRaw[j]) > range[j][0])*
                                (sqrt(tree->BigRIPSPlastic_fQLRaw[j]*
                                      tree->BigRIPSPlastic_fQRRaw[j]) < range[j][1]);
             }
-            cutcount = cutcount + 1-goodevents[eventno];
-            goodeventmutex.unlock();
+            cutcount = cutcount + 1-temp;
+            if(!temp) goodevents.at(eventno).exchange(false);
+
         }
         eventno++;
         if(!(eventno%downscale)){
@@ -145,7 +148,7 @@ void plastics(treereader *tree, TFile *output, vector<bool> &goodevents){
     printf("Finished Writing plastic histograms! \n");
 }
 
-void ppacs(treereader *tree, TFile *output, vector<bool> &goodevents){
+void ppacs(treereader *tree, TFile *output, vector<atomic<bool>> &goodevents){
     printf("Now beginning with reconstruction of the ppac's ...\n");
     const int numplane = 36;
     const int pl11position = 3; //Plastic at F11 is fourth in array
@@ -218,12 +221,14 @@ void ppacs(treereader *tree, TFile *output, vector<bool> &goodevents){
     vector<bool> temptruth(4, true);
 
     // Progress Bar setup
-    Long64_t totevents = goodevents.size();
-    const int downscale = 50000; // every n-th event
+    uint totevents = goodevents.size();
+    const int downscale = totevents/100; // every percent
     int cutno = 0;
 
-    while(tree->singleloop()){
-        if(goodevents.at(fulltotal)){ // Determine cut only on good events
+    while(fulltotal < totevents){
+        if(goodevents.at(fulltotal)){
+            // Determine cut only on good events
+            tree->getevent(fulltotal);
             // Get Efficiency relative to the last Plastic
             if (tree->BigRIPSPlastic_fTime[pl11position] >0){
                 for(int i=1; i<=numplane; i++){
@@ -259,10 +264,8 @@ void ppacs(treereader *tree, TFile *output, vector<bool> &goodevents){
                 temp = temp*accumulate(temptruth.begin(), temptruth.end(),0);
             }
             if(!temp){
-                goodeventmutex.lock();
-                goodevents.at(fulltotal) = false;
+                goodevents.at(fulltotal).exchange(false);
                 cutno++;
-                goodeventmutex.unlock();
             }
         }
         fulltotal++;
@@ -305,7 +308,7 @@ void ppacs(treereader *tree, TFile *output, vector<bool> &goodevents){
 }
 
 void ionisationchamber(treereader *alt2dtree, TFile *output,
-                       vector<bool> &goodevents) {
+                       vector<atomic<bool>> &goodevents) {
     // This method aims to control the Ionisation Chamber values
     // therefore only certain events are accepted
 
@@ -340,15 +343,16 @@ void ionisationchamber(treereader *alt2dtree, TFile *output,
     uint totalcounter =0; // counting variable
     const Long64_t totevents = goodevents.size();
     uint cutcount =0;
-    const int downscale = 50000; // every n-th event
+    const int downscale = totevents/100; // every percent
 
-    while(alt2dtree->singleloop()){
-        if(goodevents.at(totalcounter)){ // Determine cut only on good events
+    while(totalcounter < totevents){
+        if(goodevents.at(totalcounter)){
+            // Determine cut only on good events
+            alt2dtree->getevent(totalcounter);
+
             if((alt2dtree->BigRIPSIC_nhitchannel[0]*
                 alt2dtree->BigRIPSIC_nhitchannel[1]) <16){//Require 4 hits per IC
-                goodeventmutex.lock();
-                goodevents.at(totalcounter) = false;
-                goodeventmutex.unlock();
+                goodevents.at(totalcounter).exchange(false);
                 cutcount++;
             }
             if((alt2dtree->BigRIPSIC_fADC[0][0] <0) ||
@@ -385,7 +389,8 @@ void ionisationchamber(treereader *alt2dtree, TFile *output,
     writemutex.unlock();
 }
 
-void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
+void chargestatecut(treereader *tree, TFile *output,
+                    vector<atomic<bool>> &goodevents){
 
     // this method aims to cut charge state changes between F8-9 and F9-11
     printf("Now performing charge state change cut between F8-9 and F9-11...\n");
@@ -408,7 +413,7 @@ void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
     // Progress Bar setup
     uint eventno=0; // counting variable
     uint totevents = goodevents.size();
-    const int downscale = 50000; // every n-th event
+    const int downscale = totevents/100; // every percent
     // Get Number of Good events before
     int  cutcount =0;
     double brhoratio = 0;
@@ -425,8 +430,11 @@ void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
     else mycut = (TCutG*)cutfile.Get("brhocut");
     if(!mycut) __throw_invalid_argument("Could not load cut from file!\n");
 
-    while(tree->singleloop()){
-        if(goodevents.at(eventno)){ // Determine cut only on good events
+    while(eventno < totevents){
+        if(goodevents.at(eventno)){
+            // Determine cut only on good events
+            tree->getevent(eventno);
+
             brhoratio = tree->BigRIPSBeam_brho[3]/tree->BigRIPSBeam_brho[2];
             cschist.at(0).Fill(brhoratio, tree->BigRIPSBeam_brho[2]);
 
@@ -434,9 +442,7 @@ void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
                 cschist.at(1).Fill(brhoratio,tree->BigRIPSBeam_brho[2]);
             }
             else {
-                goodeventmutex.lock();
-                goodevents.at(eventno) = false;
-                goodeventmutex.unlock();
+                goodevents.at(eventno).exchange(false);
                 cutcount++;
             }
         }
@@ -459,14 +465,14 @@ void chargestatecut(treereader *tree, TFile *output, vector<bool> &goodevents){
     writemutex.unlock();
 }
 
-void targetcut(treereader *tree, TFile *output, vector<bool> &goodevents){
+void targetcut(treereader *tree, TFile *output,
+               vector<atomic<bool>> &goodevents){
     // This method aims to reconstruct the target impinging position at F8
     printf("Now performing the Target cut... \n");
 
     vector<TH2D> tarhist{
         TH2D("target", "Beam Profile F8", 1000,-50,50,1000,-50,50),
         TH2D("targetcut", "Cut Beam Profile F8", 1000,-50,50,1000,-50,50)};
-
 
     for(auto &histo: tarhist){
         histo.SetOption("colz");
@@ -493,14 +499,16 @@ void targetcut(treereader *tree, TFile *output, vector<bool> &goodevents){
     // Progress Bar setup
     uint eventno=0; // counting variable
     uint totevents = goodevents.size();
-    const int downscale = 50000; // every n-th event
+    const int downscale = totevents/100; // every percent
     // Get Number of Good events before
     int  cutcount =0;
     // Get temporary mean value:
     double meanx = 0, meany = 0, meanxz=0, meanyz =0, fXTar=0, fYTar=0;
 
-    while(tree->singleloop()){
-        if(goodevents.at(eventno)){ // Determine cut only on good events
+    while(eventno < totevents){
+        if(goodevents.at(eventno)){
+            // Determine cut only on good events
+            tree->getevent(eventno);
             // 1. Fill valid events
             for(uint i =ppacoffset; i<(ppacoffset+f8ppac); i++) {
                 if (abs(tree->BigRIPSPPAC_fX[i] - magnum) > 1){
@@ -515,9 +523,7 @@ void targetcut(treereader *tree, TFile *output, vector<bool> &goodevents){
             if((slopex.at(0).size() < 2) || (slopey.at(0).size() <2)){
                 // cutting
                 cutcount++;
-                goodeventmutex.lock();
-                goodevents.at(eventno) = false;
-                goodeventmutex.unlock();
+                if(goodevents.at(eventno)) goodevents.at(eventno).exchange(false);
             }
             else{
                 meanx = accumulate(slopex.at(0).begin(), slopex.at(0).end(), 0.0)/
@@ -536,9 +542,7 @@ void targetcut(treereader *tree, TFile *output, vector<bool> &goodevents){
                 }
                 else{
                     cutcount++;
-                    goodeventmutex.lock();
-                    goodevents.at(eventno) = false;
-                    goodeventmutex.unlock();
+                    goodevents.at(eventno).exchange(false);
                 }
             }
 
@@ -566,3 +570,36 @@ void targetcut(treereader *tree, TFile *output, vector<bool> &goodevents){
     output->cd("");
     writemutex.unlock();
 }
+
+/*
+void triggercut(treereader *tree, TFile *output, vector<atomic<bool>> &goodevents){
+    // This method cuts out "bad triggers"
+    printf("Now proceeding with the trigger cut... \n");
+
+
+    // Get relevant keys
+    vector<string> keys{"EventInfo.fBit"};
+    tree->setloopkeys(keys);
+
+    const int badtrg = 6;
+
+    // Progress Bar setup
+    uint eventno=0; // counting variable
+    uint totevents = goodevents.size();
+    const int downscale = totevents/100; // every percent
+    // Get Number of Good events before
+    int  cutcount =0;
+
+    while(tree->singleloop()){
+        if(tree->EventInfo_fBit[0] == badtrg){
+            goodevents.at(eventno).exchange(false);
+        }
+        eventno++;
+        if(!(eventno%downscale)){
+            consolemutex.lock();
+            progressbar(eventno, totevents,6);
+            consolemutex.unlock();
+        }
+    }
+}
+ */

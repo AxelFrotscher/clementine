@@ -44,16 +44,16 @@ struct calibpar{
 
 // Definition of global variables here. Keep as short as possible!
 extern calibpar p1;
-extern std::mutex goodeventmutex;
 extern std::mutex consolemutex;
 extern std::mutex writemutex;
 
 double linfit(double *x, double *par);
 const bool closeness(const std::vector<double> &d, double sigma=0.1);
-void plastics(treereader *tree, TFile *output, std::vector<bool> &goodevents);
-void ppacs(treereader *tree, TFile *output, std::vector<bool> &goodevents);
+void plastics(treereader *tree, TFile *output, std::vector<std::atomic<bool>> &goodevents);
+void ppacs(treereader *tree, TFile *output, std::vector<std::atomic<bool>> &goodevents);
 void ionisationchamber(treereader *alt2dtree, TFile *output,
-                       std::vector<bool> &goodevents);
+                       std::vector<std::atomic<bool>> &goodevents);
 void chargestatecut(treereader *tree, TFile *output,
-                    std::vector<bool> &goodevents);
-void targetcut(treereader *tree, TFile *output, std::vector<bool> &goodevents);
+                    std::vector<std::atomic<bool>> &goodevents);
+void targetcut(treereader *tree, TFile *output, std::vector<std::atomic<bool>> &goodevents);
+//void triggercut(treereader *tree, TFile *output, std::vector<std::atomic<bool>> &goodevents);

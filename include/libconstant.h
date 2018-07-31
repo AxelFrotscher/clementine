@@ -47,8 +47,8 @@ namespace nancy{
     };
 
     const std::vector<double> targetval{
-            2.750, // center x
-            40.0, // center y
+            2.684, //2.750, // center x
+            40.96, //40.0, // center y
             incval.at(2),
             incval.at(3)
     };
