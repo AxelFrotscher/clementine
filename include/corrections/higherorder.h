@@ -1,0 +1,60 @@
+//
+// Created by afrotscher on 8/2/18.
+//
+
+#pragma once
+#include "treereader.hh"
+#include "TFile.h"
+#include "histogram_cuts.hh"
+#include "MakeAllTree_78Ni.hh"
+#include <atomic>
+#include <thread>
+#include <string>
+
+class higherorder{
+public:
+    std::thread innerloop(treereader *tree, std::vector<std::atomic<bool>>
+    &goodevents, std::vector<int> range);
+    void analyse(std::vector<treereader*> tree, TFile* output);
+    higherorder(std::vector<treereader*> tree, std::vector<std::atomic<bool>>
+            &goodevents_, TFile* output):goodevents(goodevents_){
+            analyse(tree, output);
+    };
+
+    std::vector<std::atomic<bool>> &goodevents;
+
+private:
+    int threads;
+    std:: mutex unitemutex;
+
+    const std::vector<int> beam{0,4}; // Evaluate Beam F3-7 (1st element)
+    const int corrcount = 3;     // Number of corrections
+    const std::vector<std::vector<std::string>> arrname = {
+            { "DepF3X","DepF3A","DepF5X", "DepF5A", "DepBetaF3-7"},
+            { "DepF9X", "DepF9A","DepF11X", "DepF11A", "DepBetaF8-11"}};
+
+    const std::vector<std::vector<std::string>> arrtitle = {
+            {"Dependence of F3X vs AoQ", "Dependence of F3A vs AoQ",
+                    "Dependence of F5X vs AoQ", "Dependence of F5A vs AoQ",
+                    "Dependence of #beta (F7) vs AoQ"},
+            {"Dependence of F9X vs AoQ", "Dependence of F9A vs AoQ",
+                    "Dependence of F11X vs AoQ", "Dependece of F11A vs AoQ",
+                    "Dependence of #beta (F11) vs AoQ"}};
+
+    std::vector<std::vector<std::vector<TH2D>>> culpritdiag;
+    std::vector<std::vector<double>> cutval;
+
+    // Get linear fits of the projected means
+    std::vector<std::vector<std::vector<TProfile *>>> projections;
+    const double cutfrac = 0.8; // fraction to consider for fit
+
+    const std::vector<std::vector<std::string>> folders{
+            {"Corrections/Pre/Raw",
+             "Corrections/Pre/F5Xcorr",
+             "Corrections/Pre/F5XF5Acorr",
+             "Corrections/Pre/F5XF5AF3X"},
+            {"Corrections/Post/Raw",
+             "Corrections/Post/F9Xcorr",
+             "Corrections/Post/F9Acorr",
+             "Corrections/Post/F11Acorr"}};
+};

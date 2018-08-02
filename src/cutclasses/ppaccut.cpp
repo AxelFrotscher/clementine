@@ -175,7 +175,7 @@ void ppaccut::analyse(std::vector<treereader*> tree, TFile* output){
     printf("Finished Writing PPAC histogram!\n");
 
     int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
-    printf("\nTrigger Cut out %i Events %f %%\n", cutafter-cutpre,
+    printf("\nPPAC Cut out %i Events %f %%\n", cutpre-cutafter,
            100*(cutpre-cutafter)/(double)goodevents.size());
 
 }
