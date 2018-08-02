@@ -26,7 +26,7 @@ add_executable(${PROJECT_NAME} main.cpp
         src/cutclasses/ppaccut.cpp
         src/cutclasses/chargestatecut.cpp
         src/cutclasses/plasticcut.cpp
-        src/corrections/higherorder.cpp src/cutclasses/ICcut.cpp)
+        src/corrections/higherorder.cpp src/cutclasses/ICcut.cpp src/cutclasses/targetcut.cpp)
 target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread
 -L/home/afrotscher/soft/anaroot/anarootv4.5.36/lib
 -lanacore -lanabrips -lanadali -lanaroot -lanaminos -lXMLParser

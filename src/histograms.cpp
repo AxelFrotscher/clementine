@@ -5,6 +5,7 @@
 #include "cutclasses/plasticcut.h"
 #include "corrections/higherorder.h"
 #include "cutclasses/ICcut.h"
+#include "cutclasses/targetcut.h"
 #include "histograms.hh"
 #include "histogram_cuts.hh"
 #include "libconstant.h"
@@ -334,22 +335,23 @@ void makehistograms(const vector<string> input) {
     }
 
     triggercut(tree, goodevents);
-    iccut(tree,goodevents,outputfile);
-    plasticcut(tree, goodevents, outputfile);
-    ppaccut(tree, goodevents, outputfile);
     ccsc(tree,goodevents,outputfile);
+    targetcut(tree,goodevents,outputfile);
+    plasticcut(tree, goodevents, outputfile);
+    iccut(tree,goodevents,outputfile);
+    ppaccut(tree, goodevents, outputfile);
     higherorder(tree, goodevents, outputfile);
 
-    vector<thread> th;
+    //vector<thread> th;
     //th.emplace_back(thread(plastics, tree.at(0), outputfile, ref(goodevents)));
     //th.emplace_back(thread(chargestatecut, tree.at(1), outputfile, ref(goodevents)));
     //th.emplace_back(thread(ionisationchamber, tree.at(2), outputfile, ref(goodevents)));
     //th.emplace_back(thread(ppacs, tree.at(4), outputfile, ref(goodevents)));
     //th.emplace_back(thread(highordercorrection, tree.at(3), outputfile, ref(goodevents)));
-    th.emplace_back(thread(targetcut,tree.at(5),outputfile, ref(goodevents)));
+    //th.emplace_back(thread(targetcut,tree.at(5),outputfile, ref(goodevents)));
     //th.emplace_back(thread(triggercut, tree.at(6),outputfile, ref(goodevents)));
 
-    for(auto &i: th) i.join();
+    //for(auto &i: th) i.join();
 
     /*if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
     if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);

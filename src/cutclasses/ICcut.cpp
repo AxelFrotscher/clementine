@@ -75,9 +75,9 @@ void iccut::analyse(std::vector<treereader *> tree, TFile *output) {
                                   "ICratio" + to_string(i) + "to0fpl11"};
         string arrtitle = "Peak ADC Ratio " + to_string(i) + " to 0";
         comparediag.push_back({TH2D(arrname.at(0).c_str(),arrtitle.c_str(),
-                                    2048,0,16384,750,-1500,1500),
+                                    1024,0,16384,375,-1500,1500),
                                TH2D(arrname.at(1).c_str(),arrtitle.c_str(),
-                                    2048,0,16384,750,-1500,1500)});
+                                    1024,0,16384,375,-1500,1500)});
         for(auto &elem: comparediag.back()){
             elem.SetOption("colz");
             elem.GetXaxis()->SetTitle("ADC0 [ch]");

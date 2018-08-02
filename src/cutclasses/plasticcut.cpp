@@ -100,10 +100,10 @@ void plasticcut::analyse(std::vector<treereader *> tree, TFile *output) {
 
         qcorr2D.emplace_back(
             TH2D(arrayname.at(i).at(1).c_str(), arraytitle.at(i).at(1).c_str(),
-                 1500,0,1500, 1500,0,1500));
+                 500,0,1500, 500,0,1500));
         qcorr.emplace_back(
             TH1D(arrayname.at(i).at(0).c_str(), arraytitle.at(i).at(0).c_str(),
-                 1500,0,1500));
+                 750,0,1500));
         tqcorr2D.emplace_back(
             TH2D(arrayname.at(i).at(2).c_str(), arraytitle.at(i).at(2).c_str(),
                  300,-150,150, 400,-2,2));

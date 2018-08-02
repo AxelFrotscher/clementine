@@ -28,89 +28,7 @@ double linfit(double *x, double *par){
     return par[0] + par[1]*x[0];
 }
 
-void ionisationchamber(treereader *alt2dtree, TFile *output,
-                       vector<atomic<bool>> &goodevents) {
-    // This method aims to control the Ionisation Chamber values
-    // therefore only certain events are accepted
-
-    printf("Now beginning analysis of the IC's (Fpl 7 & 11)\n");
-    //datree.Restart();
-
-    // Explicit Method for 2D arrays
-
-    vector <string> readoutkeys{"BigRIPSIC.nhitchannel", "BigRIPSIC.fADC[32]"};
-    alt2dtree->setloopkeys(readoutkeys);
-
-    const int numchannel = 6; // There are 6 channel per IC
-    const int numic = 2; // Number of Ionisation Chambers
-    vector<vector<TH2D>> comparediag;
-
-    for(int i=1; i<numchannel; i++){
-        vector<string> arrname = {"ICratio" + to_string(i) + "to0fpl7",
-                                  "ICratio" + to_string(i) + "to0fpl11"};
-        string arrtitle = "Peak ADC Ratio " + to_string(i) + " to 0";
-        comparediag.push_back({TH2D(arrname.at(0).c_str(),arrtitle.c_str(),
-                                    2048,0,16384,2048,0,16384),
-                               TH2D(arrname.at(1).c_str(),arrtitle.c_str(),
-                                    2048,0,16384,2048,0,16384)});
-        for(auto &elem: comparediag.back()){
-            elem.SetOption("colz");
-            elem.GetXaxis()->SetTitle("ADC0 [ch]");
-            elem.GetYaxis()->SetTitle(("ADC"+to_string(i)+ "[ch]").c_str());
-        }
-    }
-
-    // Progress Bar setup
-    uint totalcounter =0; // counting variable
-    const Long64_t totevents = goodevents.size();
-    uint cutcount =0;
-    const int downscale = totevents/100; // every percent
-
-    while(totalcounter < totevents){
-        if(goodevents.at(totalcounter)){
-            // Determine cut only on good events
-            alt2dtree->getevent(totalcounter);
-
-            if((alt2dtree->BigRIPSIC_nhitchannel[0]*
-                alt2dtree->BigRIPSIC_nhitchannel[1]) <16){//Require 4 hits per IC
-                goodevents.at(totalcounter).exchange(false);
-                cutcount++;
-            }
-            if((alt2dtree->BigRIPSIC_fADC[0][0] <0) ||
-                (alt2dtree->BigRIPSIC_fADC[1][0] <0)) continue;
-            for(int i=0; i<(numchannel-1);i++){
-                if(alt2dtree->BigRIPSIC_fADC[0][i] >0)
-                    comparediag.at(i).at(0).Fill(
-                            alt2dtree->BigRIPSIC_fADC[0][0],
-                            alt2dtree->BigRIPSIC_fADC[0][i+1]);
-                if(alt2dtree->BigRIPSIC_fADC[1][i] >0)
-                    comparediag.at(i).at(1).Fill(
-                            alt2dtree->BigRIPSIC_fADC[1][0],
-                            alt2dtree->BigRIPSIC_fADC[1][i+1]);
-            }
-        }
-        totalcounter++;
-        if(!(totalcounter%downscale)){
-            consolemutex.lock();
-            progressbar(totalcounter,totevents,2);
-            consolemutex.unlock();
-        }
-    }
-    writemutex.lock();
-    printf("\nIC Cut out %i Events %f %%\n", cutcount,
-           100*cutcount/(double)totevents);
-
-    output->mkdir("IC/IC7");
-    output->mkdir("IC/IC11");
-    output->cd("IC/IC7");
-    for(auto &elem: comparediag) elem.at(0).Write();
-    output->cd("IC/IC11");
-    for(auto &elem: comparediag) elem.at(1).Write();
-    output->cd("");
-    writemutex.unlock();
-}
-
-void targetcut(treereader *tree, TFile *output,
+/*void targetcut(treereader *tree, TFile *output,
                vector<atomic<bool>> &goodevents){
     // This method aims to reconstruct the target impinging position at F8
     printf("Now performing the Target cut... \n");
@@ -214,4 +132,4 @@ void targetcut(treereader *tree, TFile *output,
     for(auto hist: tarhist) hist.Write();
     output->cd("");
     writemutex.unlock();
-}
+}*/

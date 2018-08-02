@@ -129,7 +129,7 @@ void higherorder::analyse(std::vector<treereader *> tree, TFile *output) {
                     ymax = 0.7;
                     ymin = 0.6 -0.2*i; // outgoing have lower velocities
                 }
-                temp1d.emplace_back(TH2D(arr.c_str(),arrn.c_str(),1200,2.4,3.0,
+                temp1d.emplace_back(TH2D(arr.c_str(),arrn.c_str(),600,2.5,2.8,
                                          400,ymin,ymax));
                 temp1d.back().SetOption("colz");
                 temp1d.back().GetXaxis()->SetTitle("A/Q");
