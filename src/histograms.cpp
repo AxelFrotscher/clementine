@@ -1,6 +1,8 @@
+#include <cutclasses/chargestatecut.h>
 #include "MakeAllTree_78Ni.hh"
 #include "cutclasses/triggercut.h"
 #include "cutclasses/ppaccut.h"
+#include "cutclasses/plasticcut.h"
 #include "histograms.hh"
 #include "histogram_cuts.hh"
 #include "libconstant.h"
@@ -510,11 +512,13 @@ void makehistograms(const vector<string> input) {
     }
 
     triggercut(tree, goodevents);
+    plasticcut(tree, goodevents, outputfile);
     ppaccut(tree, goodevents, outputfile);
+    ccsc(tree,goodevents,outputfile);
 
     vector<thread> th;
-    th.emplace_back(thread(plastics, tree.at(0), outputfile, ref(goodevents)));
-    th.emplace_back(thread(chargestatecut, tree.at(1), outputfile, ref(goodevents)));
+    //th.emplace_back(thread(plastics, tree.at(0), outputfile, ref(goodevents)));
+    //th.emplace_back(thread(chargestatecut, tree.at(1), outputfile, ref(goodevents)));
     th.emplace_back(thread(ionisationchamber, tree.at(2), outputfile, ref(goodevents)));
     //th.emplace_back(thread(ppacs, tree.at(4), outputfile, ref(goodevents)));
     th.emplace_back(thread(highordercorrection, tree.at(3), outputfile, ref(goodevents)));

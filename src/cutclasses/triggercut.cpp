@@ -46,6 +46,6 @@ void triggercut::analyse(vector<treereader*> tree) {
     for(auto &t : th) t.join();
 
     int cutout = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
-    printf("\nTrigger Cut out %i Events %f %%\n", cutout,
+    printf("\nTrigger Cut out %i Events %f %%\n", goodevents.size()-cutout,
            100*(1-cutout/(double)goodevents.size()));
 }
