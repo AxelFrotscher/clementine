@@ -7,7 +7,7 @@
 
 using namespace std;
 
-thread higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
         &goodevents, std::vector<int> range) {
     // Step 1: Cloning histograms
     vector<vector<vector<TH2D>>> _culpritdiag;
@@ -80,7 +80,7 @@ thread higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     }
     // Step 3 rejoining the histogram
     unitemutex.lock();
-    printf("Thread %i now rejoining higherorder 2D Histograms...\n", threadno);
+    //printf("Thread %i now rejoining higherorder 2D Histograms...\n", threadno);
     for(uint i=0; i<culpritdiag.size();i++){
         for(uint j=0; j<culpritdiag.at(0).size();j++){
             for(uint k=0; k<culpritdiag.at(0).at(0).size();k++){
@@ -92,8 +92,18 @@ thread higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     unitemutex.unlock();
 }
 
-void higherorder::analyse(std::vector<treereader *> tree, TFile *output) {
-    threads = (int)tree.size();
+void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
+    vector<TChain*> chain;
+    for(int i=0; i<threads; i++){
+        chain.emplace_back(new TChain("tree"));
+        for(auto &h: input) chain.back()->Add(h.c_str());
+    }
+
+    vector<treereader*> tree;
+    for(auto *i:chain){
+        tree.emplace_back(new treereader(i));
+    }
+
     printf("Higher Order correction with %i threads.\n", threads);
 
     vector<string> keys{"F5X","F5A", "F3X", "F3A", "F9A", "F9X",

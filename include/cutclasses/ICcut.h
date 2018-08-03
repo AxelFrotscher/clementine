@@ -13,18 +13,18 @@
 
 class iccut{
 public:
-    std::thread innerloop(treereader *tree, std::vector<std::atomic<bool>>
+    void innerloop(treereader *tree, std::vector<std::atomic<bool>>
     &goodevents, std::vector<int> range);
-    void analyse(std::vector<treereader*> tree, TFile* output);
-    iccut(std::vector<treereader*> tree, std::vector<std::atomic<bool>>
+    void analyse(std::vector<std::string> input, TFile* output);
+    iccut(const std::vector<std::string> input, std::vector<std::atomic<bool>>
             &goodevents_, TFile* output):goodevents(goodevents_){
-            analyse(tree, output);
+            analyse(input, output);
     };
 
     std::vector<std::atomic<bool>> &goodevents;
 
 private:
-    int threads;
+    const int threads = 7;
     std::mutex unitemutex;
 
     const int numchannel = 6; // There are 6 channel per IC

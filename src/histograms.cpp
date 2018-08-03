@@ -299,7 +299,7 @@ void makepid(const vector<string> input, TFile *output,
 }
 
 void makehistograms(const vector<string> input) {
-    const int threadno = 10;
+    const int threadno = 2;
     cout << "Making " << threadno << " new Threads..." << endl;
 
     vector<TChain*> chain;
@@ -334,30 +334,13 @@ void makehistograms(const vector<string> input) {
         printf("!!! Analysing an empty target run !!!\n");
     }
 
-    triggercut(tree, goodevents);
-    ccsc(tree,goodevents,outputfile);
-    targetcut(tree,goodevents,outputfile);
-    plasticcut(tree, goodevents, outputfile);
-    iccut(tree,goodevents,outputfile);
-    ppaccut(tree, goodevents, outputfile);
-    higherorder(tree, goodevents, outputfile);
-
-    //vector<thread> th;
-    //th.emplace_back(thread(plastics, tree.at(0), outputfile, ref(goodevents)));
-    //th.emplace_back(thread(chargestatecut, tree.at(1), outputfile, ref(goodevents)));
-    //th.emplace_back(thread(ionisationchamber, tree.at(2), outputfile, ref(goodevents)));
-    //th.emplace_back(thread(ppacs, tree.at(4), outputfile, ref(goodevents)));
-    //th.emplace_back(thread(highordercorrection, tree.at(3), outputfile, ref(goodevents)));
-    //th.emplace_back(thread(targetcut,tree.at(5),outputfile, ref(goodevents)));
-    //th.emplace_back(thread(triggercut, tree.at(6),outputfile, ref(goodevents)));
-
-    //for(auto &i: th) i.join();
-
-    /*if(options.at(6)) chargestatecut(alt2dtree, outputfile, goodevents);
-    if (options.at(0)) plastics(alt2dtree, outputfile, goodevents);
-    if (options.at(2)) ionisationchamber(alt2dtree, outputfile, goodevents);
-    if (options.at(1)) ppacs(alt2dtree, outputfile, goodevents);
-    if (options.at(3)) highordercorrection(alt2dtree, outputfile, goodevents);*/
+    triggercut(input, goodevents);
+    ccsc(input,goodevents,outputfile);
+    targetcut(input,goodevents,outputfile);
+    plasticcut(input, goodevents, outputfile);
+    ppaccut(input, goodevents, outputfile);
+    iccut(input,goodevents,outputfile);
+    higherorder(input, goodevents, outputfile);
 
     // Get Z vs. A/Q
     makepid(input, outputfile, goodevents);

@@ -13,18 +13,18 @@
 
 class higherorder{
 public:
-    std::thread innerloop(treereader *tree, std::vector<std::atomic<bool>>
+    void innerloop(treereader *tree, std::vector<std::atomic<bool>>
     &goodevents, std::vector<int> range);
-    void analyse(std::vector<treereader*> tree, TFile* output);
-    higherorder(std::vector<treereader*> tree, std::vector<std::atomic<bool>>
+    void analyse(std::vector<std::string> input, TFile* output);
+    higherorder(const std::vector<std::string> input, std::vector<std::atomic<bool>>
             &goodevents_, TFile* output):goodevents(goodevents_){
-            analyse(tree, output);
+            analyse(input, output);
     };
 
     std::vector<std::atomic<bool>> &goodevents;
 
 private:
-    int threads;
+    const int threads = 7;
     std:: mutex unitemutex;
 
     const std::vector<int> beam{0,4}; // Evaluate Beam F3-7 (1st element)

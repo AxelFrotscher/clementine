@@ -7,7 +7,7 @@
 
 using namespace std;
 
-thread ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
+void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
                        std::vector<int> range) {
     // precious tight inner loop
     // Cloning histograms
@@ -20,9 +20,11 @@ thread ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodeve
     int i = range.at(0); // counting variable
     double brhoratio = 0;
 
+    //printf("Preparing Thread %i ranges %i, %i...\n", threadno, range.at(0), range.at(1));
     while(i<range.at(1)){
-        if(goodevents.at(i)){
+         if(goodevents.at(i)){
             tree->getevent(i);
+
             brhoratio = tree->BigRIPSBeam_brho[3]/tree->BigRIPSBeam_brho[2];
             _cschist.at(0).Fill(brhoratio, tree->BigRIPSBeam_brho[2]);
 
@@ -38,6 +40,7 @@ thread ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodeve
             progressbar(i-range.at(0), range.at(1)-range.at(0), threadno);
             consolemutex.unlock();
         }
+
     }
 
     // Step 3: rejoin the data
@@ -46,9 +49,19 @@ thread ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodeve
     unitemutex.unlock();
 }
 
-void ccsc::analyse(std::vector<treereader*> tree, TFile* output){
-    threads = (int)tree.size();
-    printf("now beginning with the CCSC. %i threads.\n", threads);
+void ccsc::analyse(const std::vector<std::string> input, TFile* output){
+    vector<TChain*> chain;
+    for(int i=0; i<threads; i++){
+        chain.emplace_back(new TChain("tree"));
+        for(auto h: input) chain.back()->Add(h.c_str());
+    }
+
+    vector<treereader*> tree;
+    for(auto *i:chain){
+        tree.emplace_back(new treereader(i));
+    }
+
+    printf("Beginning with the CCSC. %i threads.\n", threads);
 
     // Generate output histogram
     cschist.emplace_back(
@@ -89,7 +102,7 @@ void ccsc::analyse(std::vector<treereader*> tree, TFile* output){
                                ref(goodevents),ranges));
     }
 
-    for (auto &i: th) i.join();
+    for (auto &t: th) t.join();
 
     int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
 

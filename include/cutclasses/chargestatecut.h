@@ -13,18 +13,18 @@
 
 class ccsc{
 public:
-    std::thread innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
+    void innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
                           std::vector<int> range);
-    void analyse(std::vector<treereader*> tree, TFile* output);
-    ccsc(std::vector<treereader*> tree, std::vector<std::atomic<bool>> &goodevents_,
+    void analyse(std::vector<std::string> input, TFile* output);
+    ccsc(const std::vector<std::string> input, std::vector<std::atomic<bool>> &goodevents_,
             TFile* output):goodevents(goodevents_){
-            analyse(tree, output);
+            analyse(input, output);
     };
 
     std::vector<std::atomic<bool>> &goodevents;
 
 private:
-    int threads;
+    const int threads = 7;
     std::vector<TH2D> cschist;
 
     std::vector<TCutG*> mycut;

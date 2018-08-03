@@ -6,14 +6,14 @@
 
 using namespace std;
 
-thread targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                             &goodevents, std::vector<int> range) {
     //Step 1: Cloning histograms
     vector<TH2D> _tarhist;
     for(auto &i:tarhist) _tarhist.emplace_back(TH2D(i));
 
     //Step 2: preparing variables
-    const int downscale = (int)((range.at(1)-range.at(0))/100.);
+    const auto downscale = (int)((range.at(1)-range.at(0))/100.);
     int threadno = range.at(0)/(range.at(1)-range.at(0));
     int i = range.at(0); // counting variable
 
@@ -84,8 +84,18 @@ thread targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     unitemutex.unlock();
 }
 
-void targetcut::analyse(std::vector<treereader *> tree, TFile *output) {
-    threads = (int)tree.size();
+void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
+    vector<TChain*> chain;
+    for(int i=0; i<threads; i++){
+        chain.emplace_back(new TChain("tree"));
+        for(auto &h: input) chain.back()->Add(h.c_str());
+    }
+
+    vector<treereader*> tree;
+    for(auto *i:chain){
+        tree.emplace_back(new treereader(i));
+    }
+
     printf("Targetcut with %ix power!\n", threads);
 
     // Get relevant keys

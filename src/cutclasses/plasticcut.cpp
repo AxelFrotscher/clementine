@@ -6,7 +6,7 @@
 
 using namespace std;
 
-thread plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                              &goodevents, std::vector<int> range) {
     // Step 1: cloning histograms
     vector<TH1D> _qcorr;
@@ -69,8 +69,18 @@ thread plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     unitemutex.unlock();
 }
 
-void plasticcut::analyse(std::vector<treereader *> tree, TFile *output) {
-    threads = (int)tree.size();
+void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
+    vector<TChain*> chain;
+    for(int i=0; i<threads; i++){
+        chain.emplace_back(new TChain("tree"));
+        for(auto &h: input) chain.back()->Add(h.c_str());
+    }
+
+    vector<treereader*> tree;
+    for(auto *i:chain){
+        tree.emplace_back(new treereader(i));
+    }
+
     printf("Performing  Plastic Cut with %i threads.\n", threads);
 
     // Setting appropriate keys

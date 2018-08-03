@@ -15,16 +15,16 @@ class triggercut {
 public:
     std::vector<std::atomic<bool>> &goodevents;
 
-    std::thread innerloop(treereader* tree, std::vector<std::atomic<bool>> &goodevents,
+    void innerloop(treereader* tree, std::vector<std::atomic<bool>> &goodevents,
                    std::vector<int> range);
-    void analyse(std::vector<treereader*> tree);
-    triggercut(std::vector<treereader*> tree, std::vector<std::atomic<bool>> &goodevents_)
+    void analyse(std::vector<std::string> input);
+    triggercut(const std::vector<std::string> input, std::vector<std::atomic<bool>> &goodevents_)
             : goodevents(goodevents_){
-        analyse(tree);
+        analyse(input);
     };
 
 private:
-    TFile *output;
+    //TFile *output;
     const int badtrg = 6; // triggerbit to exclude (does not contain F7DS)
-    int threads;
+    const int threads = 7;
 };

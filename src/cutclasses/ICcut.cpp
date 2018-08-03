@@ -6,7 +6,7 @@
 
 using namespace std;
 
-thread iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                         &goodevents, std::vector<int> range) {
     //Step 1: Cloning histograms
     vector<vector<TH2D>> _comparediag;
@@ -62,8 +62,17 @@ thread iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     unitemutex.unlock();
 }
 
-void iccut::analyse(std::vector<treereader *> tree, TFile *output) {
-    threads = (int)tree.size();
+void iccut::analyse(const std::vector<std::string> input, TFile *output) {
+    vector<TChain*> chain;
+    for(int i=0; i<threads; i++){
+        chain.emplace_back(new TChain("tree"));
+        for(auto &h: input) chain.back()->Add(h.c_str());
+    }
+
+    vector<treereader*> tree;
+    for(auto *i:chain){
+        tree.emplace_back(new treereader(i));
+    }
     printf("Now beginning analysis of the IC's (Fpl 7 & 11)\n");
 
     vector <string> readoutkeys{"BigRIPSIC.nhitchannel", "BigRIPSIC.fADC[32]"};
