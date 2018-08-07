@@ -8,7 +8,7 @@
 using namespace std;
 
 void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
-                       std::vector<int> range) {
+                       std::vector<uint> range) {
     // precious tight inner loop
     // Cloning histograms
     vector<TH2D> _cschist;
@@ -96,8 +96,8 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
 
     vector<thread> th;
     for(uint i=0; i<threads; i++){
-        vector<int> ranges = {i*goodevents.size()/threads,
-                              (i+1)*goodevents.size()/threads-1};
+        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
+                               (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&ccsc::innerloop, this, tree.at(i),
                                ref(goodevents),ranges));
     }

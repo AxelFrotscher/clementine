@@ -16,7 +16,7 @@ public:
     std::vector<std::atomic<bool>> &goodevents;
 
     void innerloop(treereader* tree, std::vector<std::atomic<bool>> &goodevents,
-                   std::vector<int> range);
+                   std::vector<uint> range);
     void analyse(std::vector<std::string> input);
     triggercut(const std::vector<std::string> input, std::vector<std::atomic<bool>> &goodevents_)
             : goodevents(goodevents_){

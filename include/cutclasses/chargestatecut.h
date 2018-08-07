@@ -14,7 +14,7 @@
 class ccsc{
 public:
     void innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
-                          std::vector<int> range);
+                          std::vector<uint> range);
     void analyse(std::vector<std::string> input, TFile* output);
     ccsc(const std::vector<std::string> input, std::vector<std::atomic<bool>> &goodevents_,
             TFile* output):goodevents(goodevents_){

@@ -40,15 +40,15 @@ namespace nancy{
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
     const std::vector<double> incval{
-            2.7084, // center x
+            2.7125, // center x
             41.0,  // center y
             0.009, // radius x
             0.5    // radius y
     };
 
     const std::vector<double> targetval{
-            2.684, //2.750, // center x
-            40.96, //40.0, // center y
+            2.683, //2.750, // center x
+            41.0, //40.0, // center y
             incval.at(2),
             incval.at(3)
     };

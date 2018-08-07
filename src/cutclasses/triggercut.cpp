@@ -7,7 +7,7 @@
 using namespace std;
 
 void triggercut::innerloop(treereader *tree, std::vector <std::atomic<bool>> &goodevents,
-                                  const std::vector<int> range) {
+                                  const std::vector<uint> range) {
     int i = range.at(0);
     int threadno = range.at(0)/(range.at(1)-range.at(0));
     const int downscale = (range.at(1)-range.at(0))/100; // every percent
@@ -48,8 +48,8 @@ void triggercut::analyse(const vector<string> input){
 
     vector<thread> th;
     for(uint i=0; i<threads;i++){
-        vector<int> ranges = {i*goodevents.size()/threads,
-                                 (i+1)*goodevents.size()/threads-1};
+        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
+                              (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&triggercut::innerloop, this,
                                tree.at(i),ref(goodevents), ranges));
     }
@@ -57,6 +57,6 @@ void triggercut::analyse(const vector<string> input){
     for(auto &t : th) t.join();
 
     int cutout = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
-    printf("\nTrigger Cut out %i Events %f %%\n", goodevents.size()-cutout,
+    printf("\nTrigger Cut out %lu Events %f %%\n", goodevents.size()-cutout,
            100*(1-cutout/(double)goodevents.size()));
 }
