@@ -14,15 +14,19 @@ public:
     void analyse(std::vector<std::string> input, TFile* output);
     double offctrans();
     void crosssection(double transmission);
+    void reactionparameters();
+    void histogramsetup();
 
     PID(std::vector<std::string> input, std::vector<std::atomic<bool>>
-    &goodevents_, TFile* output):goodevents(goodevents_){
+    &goodevents_, TFile* output, const std::string reaction_):
+    goodevents(goodevents_),reaction(reaction_){
         analyse(input, output);
     };
 
     std::vector<std::atomic<bool>> &goodevents;
 private:
     const int threads= 20;
+    const std::string reaction;
 
     std::vector<std::vector<TH2D>> PIDplot;
     std::vector<TH1D> reactF5;
@@ -34,7 +38,8 @@ private:
     std::atomic<int> reactionpid1{0};
     std::atomic<int> reactionpid2{0};
 
-    const std::vector<double> acceptancerange{10.,70.}; // mm
-
+    std::vector<double> acceptancerange; // mm
     std::mutex unitemutex;
+    int binning;
+
 };

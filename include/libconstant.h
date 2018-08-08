@@ -9,6 +9,8 @@ namespace runinfo{
     const int transsize = 395267; // Runs containing this number are transmission
     const int emptysize = 513225; // Empty-target measurement
     const std::string prefix = "/d/d02-1/ag_ob/SEASTAR2_DATA/root/";
+    enum class Reaction{Nb111PPN,   // 111Nb(p,pn)110Nb
+                        Nb111PP2N};
 }
 
 namespace nancy{
@@ -39,18 +41,25 @@ namespace nancy{
                             cutval[1][0]);    // F11absF9X0
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
-    const std::vector<double> incval{
+    const std::vector<double> incval111NbPPN{
             2.7125, // center x
             41.0,  // center y
             0.009, // radius x
-            0.5    // radius y
+            0.6    // radius y
     };
 
-    const std::vector<double> targetval{
+    const std::vector<double> targetval111NbPPN{
             2.683, //2.750, // center x
             41.0, //40.0, // center y
-            incval.at(2),
-            incval.at(3)
+            incval111NbPPN.at(2),
+            incval111NbPPN.at(3)
+    };
+
+    const std::vector<double> targetval111NbPP2N{
+            2.66, //2.750, // center x
+            41.0, //40.0, // center y
+            incval111NbPPN.at(2),
+            incval111NbPPN.at(3)
     };
 }
 

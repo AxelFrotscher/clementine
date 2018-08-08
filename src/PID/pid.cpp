@@ -123,53 +123,11 @@ void PID::analyse(std::vector <std::string> input, TFile *output) {
                          "BigRIPSIC.fCalMeVSqSum"};
     for(auto &i:tree) i->setloopkeys(keys);
 
+    // Set Parameters according to reaction specified in string
+    PID::reactionparameters();
+
     //Constructing all the histograms
-    vector<TH2D> temp1, temp2;
-    temp1.emplace_back(TH2D("pidinc", "PID Incoming F3-F7",  300,2.45,2.9, 200,30,50));
-    temp1.emplace_back(TH2D("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,30,50));
-    temp1.emplace_back(TH2D("pidincut","PID Inc cut  F8-F11",300,2.45,2.9,200,30,50));
-    temp1.emplace_back(TH2D("pidincutout", "PID Out w/ in cut", 300,2.45,2.9,200,30,50));
-    temp2.emplace_back(TH2D("pidinccorr", "PID Incoming F3-F7",  300,2.45,2.9, 200,30,50));
-    temp2.emplace_back(TH2D("pidoutcorr", "PID Outgoing F8-F11", 300,2.45,2.9, 200,30,50));
-    temp2.emplace_back(TH2D("pidincutcorr","PID Inc cut  F8-F11",300,2.45,2.9,200,30,50));
-    temp2.emplace_back(TH2D("pidincutoutcorr", "PID Out w/ in cut", 300,2.45,2.9,200,30,50));
-    PIDplot.emplace_back(temp1);
-    PIDplot.emplace_back(temp2);
-
-    reactF5.emplace_back(TH1D("F5beam", "F5 beam profile", 100,-100,100));
-    reactF5.emplace_back(TH1D("F5react", "F5-position of reacted particles", 100,-100,100));
-
-    for (auto &elem: reactF5){
-        elem.GetXaxis()->SetTitle("x [mm]");
-        elem.GetYaxis()->SetTitle("N");
-    }
-
-    for(auto &elem: PIDplot){
-        for(auto &uelem: elem){
-            uelem.SetOption("colz");
-            uelem.GetXaxis()->SetTitle("A/Q");
-            uelem.GetYaxis()->SetTitle("Z");
-        }
-    }
-
-    // Setup cut values
-    switch(goodevents.size()){
-        case runinfo::transsize:{
-            incval = nancytrans::incval;
-            targetval = nancytrans::targetval;
-            break;
-        }
-        case runinfo::emptysize:{
-            incval = nancyempty::incval;
-            targetval = nancyempty::targetval;
-            break;
-        }
-        default:{
-            incval = nancy::incval;
-            targetval = nancy::targetval;
-            break;
-        }
-    }
+    PID::histogramsetup();
 
     //Making threads
 
@@ -187,7 +145,9 @@ void PID::analyse(std::vector <std::string> input, TFile *output) {
     double transmission = PID::offctrans();
     PID::crosssection(transmission);
 
-    vector<string> folders{"PID/Uncorrected","PID/Corrected","PID/investigate"};
+    vector<string> folders{"PID/"+reaction+"/Uncorrected",
+                           "PID/"+reaction+"/Corrected",
+                           "PID/"+reaction+"/investigate"};
     for (auto &i :folders) output->mkdir(i.c_str());
 
     for(uint i=0; i<folders.size(); i++){
@@ -266,4 +226,68 @@ void PID::crosssection(double transmission) {
     printf("Raw: in %u out %i ratio %.3f %%\n",reactionpid1.load(),
            reactionpid2.load(),
            100.*reactionpid2/reactionpid1.load());
+}
+
+void PID::reactionparameters() {
+    // Setup cut values
+    switch(goodevents.size()){
+        case runinfo::transsize:{
+            incval = nancytrans::incval;
+            targetval = nancytrans::targetval;
+            break;
+        }
+        case runinfo::emptysize:{
+            incval = nancyempty::incval;
+            targetval = nancyempty::targetval;
+            break;
+        }
+        default:{
+            if(reaction == "111NbPPN"){
+                incval = nancy::incval111NbPPN;
+                targetval = nancy::targetval111NbPPN;
+                binning = 50;
+                acceptancerange = vector<double>{0,70};
+            }
+            else if(reaction == "111NbPP2N"){
+                incval = nancy::incval111NbPPN;
+                targetval = nancy::targetval111NbPP2N;
+                binning = 50;
+                acceptancerange = vector<double>{15,70};
+            }
+            else __throw_invalid_argument("Invalid reaction !\n");
+
+            break;
+        }
+    }
+}
+
+void PID::histogramsetup() {
+    // Nasty histogram setup routine
+    vector<TH2D> temp1, temp2;
+    temp1.emplace_back(TH2D("pidinc", "PID Incoming F3-F7",  300,2.45,2.9, 200,30,50));
+    temp1.emplace_back(TH2D("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,30,50));
+    temp1.emplace_back(TH2D("pidincut","PID Inc cut  F8-F11",300,2.45,2.9,200,30,50));
+    temp1.emplace_back(TH2D("pidincutout", "PID Out w/ in cut", 300,2.45,2.9,200,30,50));
+    temp2.emplace_back(TH2D("pidinccorr", "PID Incoming F3-F7",  300,2.45,2.9, 200,30,50));
+    temp2.emplace_back(TH2D("pidoutcorr", "PID Outgoing F8-F11", 300,2.45,2.9, 200,30,50));
+    temp2.emplace_back(TH2D("pidincutcorr","PID Inc cut  F8-F11",300,2.45,2.9,200,30,50));
+    temp2.emplace_back(TH2D("pidincutoutcorr", "PID Out w/ in cut", 300,2.45,2.9,200,30,50));
+    PIDplot.emplace_back(temp1);
+    PIDplot.emplace_back(temp2);
+
+    reactF5.emplace_back(TH1D("F5beam", "F5 beam profile", binning,-100,100));
+    reactF5.emplace_back(TH1D("F5react", "F5-position of reacted particles", binning,-100,100));
+
+    for (auto &elem: reactF5){
+        elem.GetXaxis()->SetTitle("x [mm]");
+        elem.GetYaxis()->SetTitle("N");
+    }
+
+    for(auto &elem: PIDplot){
+        for(auto &uelem: elem){
+            uelem.SetOption("colz");
+            uelem.GetXaxis()->SetTitle("A/Q");
+            uelem.GetYaxis()->SetTitle("Z");
+        }
+    }
 }
