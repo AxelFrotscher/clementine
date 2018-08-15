@@ -10,8 +10,8 @@
 
 using namespace std;
 
-void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
-        std::vector<uint> range) {
+void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+                    &goodevents, std::vector<uint> range) {
     // Step 1: duplicate the data structure
     vector<TH1D> _reactF5;
     vector<vector<TH2D>> _PIDplot;
@@ -161,6 +161,7 @@ void PID::analyse(std::vector <std::string> input, TFile *output) {
 
 double PID::offctrans() {
     // Calculating off-center transmission
+    int threshold = 200; // 100cts for reacted beam
     double dividend = 0; // dividend/divisor
     double divisor = 0;
     int binlow  = reactF5.at(0).FindBin(acceptancerange.at(0));
@@ -199,11 +200,20 @@ double PID::offctrans() {
     reactF5.push_back(reactF5.at(0));
     reactF5.back().Scale(alpha);
     reactF5.back().SetTitle("F5 scaled beam profile");
-
-    printf("\n Scaling Factor: %f, with chisq/ndof %f, transmission: %f. Scaling factor from Area %f !\n",
-           alpha, chisq.at(0),reactF5.at(1).Integral()/reactF5.at(2).Integral(),
-           reactF5.at(1).Integral(binlow,binhigh)/reactF5.at(0).Integral(binlow,binhigh));
-    return reactF5.at(1).Integral()/reactF5.at(2).Integral();
+    // Off-center cut works only for sufficient statistics:
+    if(reactF5.at(1).Integral() > threshold){
+        printf("\n Scaling Factor: %f, with chisq/ndof %f, transmission: %f. "
+            "Scaling factor from Area %f !\n",
+            alpha, chisq.at(0),reactF5.at(1).Integral()/reactF5.at(2).Integral(),
+            reactF5.at(1).Integral(binlow,binhigh)/
+            reactF5.at(0).Integral(binlow,binhigh));
+        return reactF5.at(1).Integral()/reactF5.at(2).Integral();
+    }
+    else{
+        printf("Too low statistics for offcenter effects (%.1f)\n",
+                reactF5.at(1).Integral());
+        return 1;
+    }
 }
 
 void PID::crosssection(double transmission) {
@@ -243,16 +253,34 @@ void PID::reactionparameters() {
         }
         default:{
             if(reaction == "111NbPPN"){
-                incval = nancy::incval111NbPPN;
-                targetval = nancy::targetval111NbPPN;
+                incval = nancy::incval111Nb;
+                targetval = nancy::targetval110Nb;
                 binning = 50;
                 acceptancerange = vector<double>{0,70};
             }
             else if(reaction == "111NbPP2N"){
-                incval = nancy::incval111NbPPN;
-                targetval = nancy::targetval111NbPP2N;
+                incval = nancy::incval111Nb;
+                targetval = nancy::targetval109Nb;
                 binning = 50;
                 acceptancerange = vector<double>{15,70};
+            }
+            else if(reaction == "111NbP2P"){
+                incval    = nancy::incval111Nb;
+                targetval = nancy::targetval110Zr;
+                binning   = 40;
+                acceptancerange = vector<double>{-50,0};
+            }
+            else if(reaction == "110NbPPN"){
+                incval = nancy::incval110Nb;
+                targetval = nancy::targetval109Nb;
+                binning = 100;
+                acceptancerange = vector<double>{-10,70};
+            }
+            else if(reaction == "110NbP2P"){
+                incval = nancy::incval110Nb;
+                targetval = nancy::targetval109Zr;
+                binning = 40;
+                acceptancerange = vector<double>{-15,70};
             }
             else __throw_invalid_argument("Invalid reaction !\n");
 

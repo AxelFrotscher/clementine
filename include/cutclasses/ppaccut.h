@@ -11,20 +11,18 @@
 class ppaccut{
 public:
     void innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
-                          std::vector<int> range);
+                          std::vector<uint> range);
     void analyse(std::vector<std::string> input, TFile* output);
     ppaccut(const std::vector<std::string> input, std::vector<std::atomic<bool>> &goodevents_,
     TFile* output):goodevents(goodevents_){
         analyse(input, output);
     };
 
-    std::vector<std::atomic<bool>> &goodevents;
-
 private:
     const int threads = 10;
     const int numplane = 36;
     const int pl11position = 3; //Plastic at F11 is fourth in array
-
+    std::vector<std::atomic<bool>> &goodevents;
     std::vector<TH1D> effPPAC;
     std::vector<std::vector<TH2D>> sumdiffppac; // 1 X,Y 2 Sum,diff (2D NoPPAC, Quantity)
 

@@ -7,6 +7,7 @@
 #include "TFile.h"
 #include "histogram_cuts.hh"
 #include "MakeAllTree_78Ni.hh"
+#include "TThread.h"
 #include <atomic>
 #include <thread>
 

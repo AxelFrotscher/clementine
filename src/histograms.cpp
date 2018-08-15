@@ -91,6 +91,10 @@ void dalicalib(treereader *tree, TFile *output){
     // Get Z vs. A/Q
     PID(input,goodevents,outputfile, "111NbPPN");
     PID(input,goodevents,outputfile, "111NbPP2N");
+    PID(input,goodevents,outputfile, "111NbP2P");
+    PID(input, goodevents, outputfile, "110NbPPN");
+    PID(input, goodevents, outputfile, "110NbP2P");
+
     //makepid(input, outputfile, goodevents);
     printf("Made PID histograms in %s\n", output.c_str());
     //Get ADC Spectra for DALI

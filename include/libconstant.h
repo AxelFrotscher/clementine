@@ -41,26 +41,48 @@ namespace nancy{
                             cutval[1][0]);    // F11absF9X0
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
-    const std::vector<double> incval111NbPPN{
+    const std::vector<double> incval111Nb{
             2.7125, // center x
             41.0,  // center y
-            0.009, // radius x
+            0.007, // radius x
             0.6    // radius y
     };
 
-    const std::vector<double> targetval111NbPPN{
+    const std::vector<double> targetval110Nb{
             2.683, //2.750, // center x
-            41.0, //40.0, // center y
-            incval111NbPPN.at(2),
-            incval111NbPPN.at(3)
+            40.95, //40.0, // center y
+            incval111Nb.at(2),
+            incval111Nb.at(3)
     };
 
-    const std::vector<double> targetval111NbPP2N{
+    const std::vector<double> targetval109Nb{
             2.66, //2.750, // center x
-            41.0, //40.0, // center y
-            incval111NbPPN.at(2),
-            incval111NbPPN.at(3)
+            40.9, //40.0, // center y
+            incval111Nb.at(2),
+            incval111Nb.at(3)
     };
+
+    const std::vector<double> targetval110Zr{
+            2.75, //2.750, // center x
+            40.0, //40.0, // center y
+            0.01,
+            0.5
+    };
+
+    const std::vector<double> incval110Nb{
+            2.6882, // center x
+            40.9,  // center y
+            0.006, // radius x
+            0.6    // radius y
+    };
+
+    const std::vector<double> targetval109Zr{
+            2.725, //2.750, // center x
+            39.9, //40.0, // center y
+            0.01,
+            0.5
+    };
+
 }
 
 namespace nancytrans{
