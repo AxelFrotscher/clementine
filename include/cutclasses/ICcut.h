@@ -4,12 +4,7 @@
 
 #pragma once
 #include "treereader.hh"
-#include "TFile.h"
-#include "histogram_cuts.hh"
-#include "progress.h"
-#include <atomic>
-#include <thread>
-#include <string>
+#include "TH2D.h"
 
 class iccut{
 public:

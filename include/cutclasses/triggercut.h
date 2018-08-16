@@ -3,14 +3,7 @@
 //
 
 #pragma once
-#include "treereader.hh"
-#include "TFile.h"
-#include "histogram_cuts.hh"
-#include "progress.h"
-#include "TThread.h"
-#include <atomic>
-#include <thread>
-
+#include "treereader.hh"       // contains already many classes
 
 class triggercut {
 public:

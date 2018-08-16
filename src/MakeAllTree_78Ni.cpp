@@ -1,33 +1,26 @@
+#include <Rtypes.h>
 #include "MakeAllTree_78Ni.hh"
+
+#include "progress.h"
+#include "TArtStoreManager.hh"
+#include "TArtEventStore.hh"
+#include "TArtBigRIPSParameters.hh"
+#include "TArtCalibPID.hh"
+#include "TArtRecoPID.hh"
+#include "TArtCalibDALI.hh"
+#include "TVectorD.h"
+#include "TFile.h"
+#include "TArtPPAC.hh"
+#include "TArtCalibPPAC.hh"
+#include "TArtEventInfo.hh"
+#include "TArtCalibFocalPlane.hh"
+#include "TArtFocalPlane.hh"
+#include <iostream>
+#include <TArtDALIParameters.hh>
+
 R__LOAD_LIBRARY(libanacore.so)
 
 using namespace std;
-
-vector <int> currevt{0,0,0,0,0,0,0};
-const int constadd = 10;
-
-void progressbar(int currevent, int totevent, int offset ,int barwidth){
-    // This method displays a nice progress bar
-    if(offset<currevt.size()) currevt.at(offset) = currevent;
-    else return;
-
-    vector<int> pos; // position for each bar
-
-    for(uint i=0; i<currevt.size(); i++){ // Loop over each bar
-        pos.push_back((int)(i*(barwidth+constadd)+
-                            barwidth*(float)currevt.at(i)/totevent));
-        cout << "[";
-        for(int j=i*(barwidth+constadd); j<(i*(barwidth+constadd)+barwidth); j++){
-            // determine output for each bar
-            if(j<pos.at(i))        cout << "=";
-            else if (j==pos.at(i)) cout << ">";
-            else                   cout << " ";
-        }
-        cout << "] " << int(100.*currevt.at(i)/totevent) << "% ";
-    }
-    cout << "\r";
-    cout.flush();
-}
 
 void generatetree(const string infile, const string output){
     //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
@@ -199,8 +192,10 @@ void generatetree(const string infile, const string output){
 
     // Progress Bar setup
     int neve = 0; // counting variable
-    Long64_t totevents = 5000000;
+    uint totevents = 5000000;
     const int downscale = 500; // every n-th event
+
+    progressbar progress(totevents, 0);
 
     while(estore.GetNextEvent() && (neve < totevents)){ //&& neve < 100000
         //Making the BigRIPS tree calibration
@@ -313,10 +308,12 @@ void generatetree(const string infile, const string output){
         tree->Fill();
         neve++;
 
-        if(!(neve%downscale)) progressbar(neve,totevents,0);
+        progress.increaseevent();
+        if(!(neve%downscale)) progress.draw();
 
         // Add Graphical Feedback
     }
+    progress.reset();
     cout << "Writing the tree..."<<endl;
 
     fout.Write();

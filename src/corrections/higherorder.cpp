@@ -4,6 +4,10 @@
 
 #include "corrections/higherorder.h"
 #include "libconstant.h"
+#include "progress.h"
+#include "TProfile.h"
+#include "TF1.h"
+#include <thread>
 
 using namespace std;
 

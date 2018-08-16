@@ -4,6 +4,7 @@
 
 #include "cutclasses/chargestatecut.h"
 #include "libconstant.h"
+#include <thread>
 
 using namespace std;
 
@@ -15,7 +16,6 @@ void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevent
     for(auto &i: cschist) _cschist.emplace_back(TH2D(i));
 
     // Step 2: Preparing variables
-    const int downscale = (int)((range.at(1)-range.at(0))/100.);
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
     uint i = range.at(0); // counting variable
     double brhoratio = 0;

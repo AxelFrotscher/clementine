@@ -3,10 +3,7 @@
 //
 
 #include "histogram_cuts.hh"
-#include "MakeAllTree_78Ni.hh"
-#include "libconstant.h"
-#include "histograms.hh"
-#include "cutclasses/triggercut.h"
+#include "TMath.h"
 
 using namespace std;
 

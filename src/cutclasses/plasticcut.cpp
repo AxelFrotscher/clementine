@@ -3,6 +3,9 @@
 //
 
 #include "cutclasses/plasticcut.h"
+#include "progress.h"
+#include "TMath.h"
+#include <thread>
 
 using namespace std;
 

@@ -4,6 +4,8 @@
 
 #include "cutclasses/triggercut.h"
 #include "time.h"
+#include "progress.h"
+#include <thread>
 
 using namespace std;
 
@@ -33,7 +35,7 @@ void triggercut::analyse(const vector<string> input){
     vector<TChain*> chain;
     for(int i=0; i<threads; i++){
         chain.emplace_back(new TChain("tree"));
-        for(auto h: input) chain.back()->Add(h.c_str());
+        for(auto &h: input) chain.back()->Add(h.c_str());
     }
 
     vector<treereader*> tree;

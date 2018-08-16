@@ -3,6 +3,9 @@
 //
 
 #include "cutclasses/targetcut.h"
+#include "histogram_cuts.hh"
+#include "progress.h"
+#include <thread>
 
 using namespace std;
 

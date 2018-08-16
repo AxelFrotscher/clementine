@@ -3,6 +3,8 @@
 //
 
 #include "cutclasses/ppaccut.h"
+#include "progress.h"
+#include <thread>
 
 using namespace std;
 

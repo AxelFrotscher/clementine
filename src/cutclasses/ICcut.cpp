@@ -3,6 +3,8 @@
 //
 
 #include "cutclasses/ICcut.h"
+#include <thread>
+#include "progress.h"
 
 using namespace std;
 

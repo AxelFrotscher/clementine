@@ -1,6 +1,4 @@
-#include "MakeAllTree_78Ni.hh"
 #include "histograms.hh"
-#include "histogram_cuts.hh"
 #include "libconstant.h"
 #include "cutclasses/chargestatecut.h"
 #include "cutclasses/ICcut.h"
@@ -34,8 +32,7 @@ void dalicalib(treereader *tree, TFile *output){
 
     // Progress Bar setup
     int currevt=0; // counting variable
-    Long64_t totevents = tree->NumEntries();
-    const int downscale = 500; // every n-th event
+    uint totevents = tree->NumEntries();
 
     while(tree->singleloop()){
         numdet = tree->DALINaI_;
@@ -44,7 +41,6 @@ void dalicalib(treereader *tree, TFile *output){
                 tree->DALINaI_fADC[i]);
         }
         currevt++;
-        if(!(currevt%downscale)) progressbar(currevt,totevents,0);
     }
 
     output->mkdir("DALI");

@@ -4,10 +4,8 @@
 
 #pragma once
 #include "treereader.hh"
-#include "TFile.h"
-#include "histogram_cuts.hh"
-#include "progress.h"
-#include <thread>
+#include "TH1D.h"
+#include "TH2D.h"
 
 class ppaccut{
 public:

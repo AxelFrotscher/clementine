@@ -5,7 +5,7 @@
 #pragma once
 #include "treereader.hh"
 #include "TH2D.h"
-#include "atomic"
+#include <atomic>
 
 class PID {
 public:

@@ -4,8 +4,7 @@
 
 #include <libconstant.h>
 #include "PID/pid.h"
-#include "thread"
-#include "histogram_cuts.hh"
+#include <thread>
 #include "progress.h"
 
 using namespace std;

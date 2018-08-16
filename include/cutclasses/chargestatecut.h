@@ -4,12 +4,9 @@
 
 #pragma once
 #include "treereader.hh"
-#include "TFile.h"
-#include "histogram_cuts.hh"
+#include "TH2D.h"
+#include "TCutG.h"
 #include "progress.h"
-#include <atomic>
-#include <thread>
-#include <string>
 
 class ccsc{
 public:

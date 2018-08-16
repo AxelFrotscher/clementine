@@ -4,12 +4,8 @@
 
 #pragma once
 #include "treereader.hh"
-#include "TFile.h"
-#include "histogram_cuts.hh"
-#include "progress.h"
-#include <atomic>
-#include <thread>
-#include <string>
+#include "TH1D.h"
+#include "TH2D.h"
 
 class plasticcut {
 public:
