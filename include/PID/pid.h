@@ -23,10 +23,11 @@ public:
         analyse(input, output);
     };
 
-    std::vector<std::atomic<bool>> &goodevents;
 private:
     const int threads= 20;
-    const std::string reaction;
+    std::string reaction = "";
+
+    std::vector<std::atomic<bool>> &goodevents;
 
     std::vector<std::vector<TH2D>> PIDplot;
     std::vector<TH1D> reactF5;
@@ -38,8 +39,8 @@ private:
     std::atomic<int> reactionpid1{0};
     std::atomic<int> reactionpid2{0};
 
-    std::vector<double> acceptancerange; // mm
+    std::vector<double> acceptancerange{-50,70}; // mm
     std::mutex unitemutex;
-    int binning;
+    int binning = 100;
 
 };

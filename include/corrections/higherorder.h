@@ -6,7 +6,7 @@
 #include "treereader.hh"
 #include "TFile.h"
 #include "histogram_cuts.hh"
-#include "MakeAllTree_78Ni.hh"
+#include "progress.h"
 #include <atomic>
 #include <thread>
 #include <string>

@@ -49,5 +49,5 @@ extern std::mutex writemutex;
 
 double linfit(double *x, double *par);
 const bool closeness(const std::vector<double> &d, double sigma=0.1);
-
+const double slope(const std::vector<double> &x, const std::vector<double> &y);
 //void targetcut(treereader *tree, TFile *output, std::vector<std::atomic<bool>> &goodevents);

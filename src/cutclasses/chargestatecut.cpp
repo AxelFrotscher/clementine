@@ -16,9 +16,11 @@ void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevent
 
     // Step 2: Preparing variables
     const int downscale = (int)((range.at(1)-range.at(0))/100.);
-    int threadno = range.at(0)/(range.at(1)-range.at(0));
-    int i = range.at(0); // counting variable
+    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    uint i = range.at(0); // counting variable
     double brhoratio = 0;
+
+    progressbar progress(range.at(1)-range.at(0), threadno);
 
     //printf("Preparing Thread %i ranges %i, %i...\n", threadno, range.at(0), range.at(1));
     while(i<range.at(1)){
@@ -35,18 +37,15 @@ void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevent
         }
         i++;
 
-        if(!((i-range.at(0))%downscale)){
-            consolemutex.lock();
-            progressbar(i-range.at(0), range.at(1)-range.at(0), threadno);
-            consolemutex.unlock();
-        }
-
+        progress.increaseevent();
     }
 
     // Step 3: rejoin the data
     unitemutex.lock();
-    for(uint i=0; i<_cschist.size();i++) cschist.at(i).Add(new TH2D(_cschist.at(i)));
+    for(uint i=0; i<_cschist.size();i++)
+        cschist.at(i).Add(new TH2D(_cschist.at(i)));
     unitemutex.unlock();
+    progress.reset();
 }
 
 void ccsc::analyse(const std::vector<std::string> input, TFile* output){
@@ -65,7 +64,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
 
     // Generate output histogram
     cschist.emplace_back(
-            TH2D("csc", "Charged state change", 1000,0.8,1.2,1000,3,7));
+            TH2D("csc", "Charged state change", 500,0.9,1.1,1000,3,7));
     cschist.emplace_back(
             TH2D("csccut", "Charged state change cut", 500,0.95,1.05,1000,3,7));
 
@@ -82,7 +81,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     // Get Cut
     TFile cutfile("config/cut.root");
     if(!(cutfile.IsOpen())) __throw_invalid_argument("Could not open cut file "
-                                                     "at config/rhocut.root");
+                                                     "at config/rhocut.root\n");
 
     if(runinfo::transsize == goodevents.size())
         for(auto &i: tree) mycut.push_back((TCutG*)cutfile.Get("brhoempty"));
@@ -102,7 +101,11 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
                                ref(goodevents),ranges));
     }
 
-    for (auto &t: th) t.join();
+    for (auto &t: th) t.detach();
+
+    // Setup synchronization class
+    progressbar finishcondition;
+    while(finishcondition.ongoing()) finishcondition.draw();
 
     int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
 
@@ -113,5 +116,4 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     output->cd("CSC");
     for(auto hist: cschist) hist.Write();
     output->cd("");
-
 }

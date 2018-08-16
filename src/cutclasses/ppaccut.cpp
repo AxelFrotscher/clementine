@@ -21,12 +21,11 @@ void ppaccut::innerloop(treereader *tree,
     }
 
     // Step 2: Preparing variables
-    const int downscale = (int)((range.at(1)-range.at(0))/100.);
-    int threadno = range.at(0)/(range.at(1)-range.at(0));
-    int i = range.at(0); // counting variable
+    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    uint i = range.at(0); // counting variable
     vector<bool> temptruth(4, true); // variable for position checking
 
-    //printf("Hello from thread %i Start %i End %i\n", threadno, range.at(0),range.at(1));
+    progressbar progress(range.at(1)-range.at(0), threadno);
 
     // Step 3: glorious loop
     while(i<range.at(1)){
@@ -35,7 +34,7 @@ void ppaccut::innerloop(treereader *tree,
 
             // Get Efficiency relative to the last Plastic
             if (tree->BigRIPSPlastic_fTime[pl11position] >0){
-                for(int i=1; i<=numplane; i++){
+                for(uint i=1; i<=numplane; i++){
                     if(tree->BigRIPSPPAC_fFiredX[i-1])
                         _effPPAC.at(0).SetBinContent(i, _effPPAC.at(0).GetBinContent(i)+1);
                     if(tree->BigRIPSPPAC_fFiredY[i-1])
@@ -45,7 +44,7 @@ void ppaccut::innerloop(treereader *tree,
             }
 
             // Fill Sum and differences of time signals to check
-            for(int i=0; i<numplane;i++){
+            for(uint i=0; i<numplane;i++){
                 _sumdiffppac.at(0).at(0).Fill(i,tree->BigRIPSPPAC_fTSumX[i]);
                 _sumdiffppac.at(0).at(1).Fill(i,tree->BigRIPSPPAC_fTDiffX[i]);
                 _sumdiffppac.at(1).at(0).Fill(i,tree->BigRIPSPPAC_fTSumY[i]);
@@ -72,11 +71,7 @@ void ppaccut::innerloop(treereader *tree,
             if(!temp) goodevents.at(i).exchange(false);
         } // end of physics loop
         i++;
-        if(!((i-range.at(0))%downscale)){
-            consolemutex.lock();
-            progressbar(i-range.at(0), range.at(1)-range.at(0),threadno);
-            consolemutex.unlock();
-        }
+        progress.increaseevent();
     }
 
     // Step 4 reuniting the diagrams
@@ -90,6 +85,8 @@ void ppaccut::innerloop(treereader *tree,
         }
     }
     unitemutex.unlock();
+
+    progress.reset();
 }
 
 void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
@@ -159,7 +156,10 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
         th.emplace_back(thread(&ppaccut::innerloop, this, tree.at(i), ref(goodevents),ranges));
     }
 
-    for (auto &i: th) i.join();
+    for (auto &i: th) i.detach();
+
+    progressbar finishcondition;
+    while(finishcondition.ongoing()) finishcondition.draw();
 
     output->mkdir("PPAC/FiredEff");
     output->cd("PPAC/FiredEff");
@@ -182,7 +182,6 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
     }
 
     output->cd("");
-    printf("Finished Writing PPAC histogram!\n");
 
     int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
     printf("\nPPAC Cut out %i Events %f %%\n", cutpre-cutafter,

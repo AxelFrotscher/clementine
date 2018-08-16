@@ -7,14 +7,17 @@
 using namespace std;
 
 void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
-                            &goodevents, std::vector<int> range) {
+                            &goodevents, std::vector<uint> range) {
     //Step 1: Cloning histograms
     vector<TH2D> _tarhist;
     for(auto &i:tarhist) _tarhist.emplace_back(TH2D(i));
 
     //Step 2: preparing variables
     const auto downscale = (int)((range.at(1)-range.at(0))/100.);
-    int threadno = range.at(0)/(range.at(1)-range.at(0));
+    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+
+    progressbar progress(range.at(1)-range.at(0), threadno);
+
     int i = range.at(0); // counting variable
 
     vector<vector<double>> slopex(2,vector<double>(0)); //0:x,y 1:val, z
@@ -69,11 +72,7 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
         }
 
         i++;
-        if(!((i-range.at(0))%downscale)){
-            consolemutex.lock();
-            progressbar(i-range.at(0), range.at(1)-range.at(0),threadno);
-            consolemutex.unlock();
-        }
+        progress.increaseevent();
     }
 
     // Step 3: rejoining histograms
@@ -82,6 +81,7 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
         tarhist.at(i).Add(new TH2D(_tarhist.at(i)));
     }
     unitemutex.unlock();
+    progress.reset();
 }
 
 void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
@@ -115,13 +115,16 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
 
     vector<thread> th;
     for(uint i=0; i<threads; i++){
-        vector<int> ranges = {i*goodevents.size()/threads,
-                              (i+1)*goodevents.size()/threads-1};
+        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
+                              (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&targetcut::innerloop, this, tree.at(i),
                                ref(goodevents),ranges));
     }
 
-    for (auto &i: th) i.join();
+    for (auto &i: th) i.detach();
+
+    progressbar finishcondition;
+    while(finishcondition.ongoing()) finishcondition.draw();
 
     int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
 

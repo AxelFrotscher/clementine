@@ -6,7 +6,7 @@
 #include "treereader.hh"
 #include "TFile.h"
 #include "histogram_cuts.hh"
-#include "MakeAllTree_78Ni.hh"
+#include "progress.h"
 #include <atomic>
 #include <thread>
 #include <string>
@@ -14,7 +14,7 @@
 class targetcut{
 public:
     void innerloop(treereader *tree, std::vector<std::atomic<bool>>
-    &goodevents, std::vector<int> range);
+    &goodevents, std::vector<uint> range);
     void analyse(std::vector<std::string> input, TFile* output);
     targetcut(const std::vector<std::string> input, std::vector<std::atomic<bool>>
             &goodevents_, TFile* output):goodevents(goodevents_){

@@ -132,13 +132,13 @@ namespace nancyempty{
     // Cut Isotopes for higherorder correction, F3-7, and F8-11
     const std::vector<std::vector<double>> cutval{ // for corrections we use 85Ge
             {2.6429,       // center x
-                    41.91,         // center y
-                    0.008,        // radius x
-                    0.6     },    // radius y
+             41.91,        // center y
+             0.008,        // radius x
+             0.6     },    // radius y
             {2.6460,       // center x
-                    40.343,        // center y
-                    0.008,        // radius x
-                    0.5     }     // radius y
+             40.343,       // center y
+             0.008,        // radius x
+             0.5     }     // radius y
     };
 
     const calibpar hoparame(2.644,            // F7absF5X
@@ -162,9 +162,9 @@ namespace nancyempty{
     };
 
     const std::vector<double> targetval{
-            2.706, // center x
-            39.6, // center y
-            incval.at(2),
-            incval.at(3)
+            2.750, // center x
+            39.27, // center y
+            0.011,
+            0.6
     };
 }

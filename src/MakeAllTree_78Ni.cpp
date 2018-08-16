@@ -3,13 +3,6 @@ R__LOAD_LIBRARY(libanacore.so)
 
 using namespace std;
 
-// function to exit loop at keyboard interrupt. 
-bool stoploop = false;
-void stop_interrupt(){
-    printf("keyboard interrupt\n");
-    stoploop = true;
-}
-
 vector <int> currevt{0,0,0,0,0,0,0};
 const int constadd = 10;
 
@@ -20,33 +13,20 @@ void progressbar(int currevent, int totevent, int offset ,int barwidth){
 
     vector<int> pos; // position for each bar
 
-    for(int i=0; i<currevt.size(); i++){ // Loop over each bar
-        pos.push_back(i*(barwidth+constadd)+barwidth*(float)currevt.at(i)/totevent);
+    for(uint i=0; i<currevt.size(); i++){ // Loop over each bar
+        pos.push_back((int)(i*(barwidth+constadd)+
+                            barwidth*(float)currevt.at(i)/totevent));
         cout << "[";
         for(int j=i*(barwidth+constadd); j<(i*(barwidth+constadd)+barwidth); j++){
             // determine output for each bar
-            if(j<pos.at(i)) cout << "=";
+            if(j<pos.at(i))        cout << "=";
             else if (j==pos.at(i)) cout << ">";
-            else cout << " ";
+            else                   cout << " ";
         }
         cout << "] " << int(100.*currevt.at(i)/totevent) << "% ";
     }
     cout << "\r";
     cout.flush();
-}
-
-const double slope(const vector<double> &x, const vector<double> &y){
-    // Simple linear regression (explicit)
-    if(!(x.size())==y.size()) __throw_invalid_argument("Argument number mismatch!\n");
-    if(x.size()<2) __throw_invalid_argument("Slope points too few!\n");
-
-    const auto n= x.size();
-    const auto s_x = accumulate(x.begin(),x.end(), 0.0);
-    const auto s_y = accumulate(y.begin(),y.end(), 0.0);
-    const auto s_xx = inner_product(x.begin(),x.end(),x.begin(), 0.0);
-    const auto s_xy = inner_product(x.begin(),x.end(),y.begin(), 0.0);
-    const auto a = (n*s_xy-s_x*s_y)/(n*s_xx-s_x*s_x);
-    return a;
 }
 
 void generatetree(const string infile, const string output){
@@ -58,7 +38,7 @@ void generatetree(const string infile, const string output){
     auto * sman = TArtStoreManager::Instance();
     // Create EventStore to control the loop and get the EventInfo
     TArtEventStore estore;
-    estore.SetInterrupt(&stoploop); 
+    //estore.SetInterrupt(&stoploop);
     if(!estore.Open(infile.c_str())) __throw_invalid_argument(("Could not open"+
                                                                infile).c_str());
 
@@ -98,9 +78,9 @@ void generatetree(const string infile, const string output){
             {"config/matrix/F9F11_LargeAccAchr.mat", "D8"}};   // F9 - F11=> D8
 
     vector<TArtRIPS *> rips{
-            recopid.DefineNewRIPS(3, 5, &mfil[0][0][0], &mfil[0][1][0]),
-            recopid.DefineNewRIPS(5, 7, &mfil[1][0][0], &mfil[1][1][0]),
-            recopid.DefineNewRIPS(8, 9, &mfil[2][0][0], &mfil[2][1][0]),
+            recopid.DefineNewRIPS(3, 5,  &mfil[0][0][0], &mfil[0][1][0]),
+            recopid.DefineNewRIPS(5, 7,  &mfil[1][0][0], &mfil[1][1][0]),
+            recopid.DefineNewRIPS(8, 9,  &mfil[2][0][0], &mfil[2][1][0]),
             recopid.DefineNewRIPS(9, 11, &mfil[3][0][0], &mfil[3][1][0])};
 
     // Reconstruction of TOF DefineNewTOF(first plane,second plane, time offset)

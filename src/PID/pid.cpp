@@ -6,7 +6,7 @@
 #include "PID/pid.h"
 #include "thread"
 #include "histogram_cuts.hh"
-#include "MakeAllTree_78Ni.hh"
+#include "progress.h"
 
 using namespace std;
 
@@ -23,8 +23,8 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
         _PIDplot.emplace_back(temp);
     }
 
-    const int downscale = (int)((range.at(1)-range.at(0))/100.); // every n-th event
-    int threadno = range.at(0)/(range.at(1)-range.at(0));
+    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    progressbar progress(range.at(1)-range.at(0), threadno);
 
     vector<vector<double>> valinc;     // Store temporary beam values
 
@@ -81,14 +81,15 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     reactionpid2++;
                     // Investigate F7 position of (p,2p) ions (off center effects)
                     _reactF5.at(1).Fill(tree->F5X);
+
+                    //Check double cut particles
+                    _PIDplot.at(0).at(4).Fill(tree->BigRIPSBeam_aoq[4],
+                                              tree->BigRIPSBeam_zet[4]);
+                    _PIDplot.at(1).at(4).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
                 }
             }
         }
-        if(!((eventcounter-range.at(0))%downscale)){
-            consolemutex.lock();
-            progressbar(eventcounter-range.at(0),range.at(1)-range.at(0),threadno);
-            consolemutex.unlock();
-        }
+        progress.increaseevent();
     }
 
     // Step 3: rejoining data structure
@@ -101,16 +102,29 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     }
     unitemutex.unlock();
 
+    progress.reset();
 }
 
 void PID::analyse(std::vector <std::string> input, TFile *output) {
-    // Progress Bar setup
+    // Set Parameters according to reaction specified in string
+    PID::reactionparameters();
+
+    // Generate folder names and check for previous analysises
+    vector<string> folders{"PID/"+reaction+"/Uncorrected",
+                           "PID/"+reaction+"/Corrected",
+                           "PID/"+reaction+"/investigate"};
+    for (auto &i :folders){
+        // Do not analyse the same thing twice
+        if (output->GetDirectory(i.c_str())) return;
+        output->mkdir(i.c_str());
+    }
+
     printf("Making PID with %i threads now...\n", threads);
 
     vector<TChain*> chain;
     for(int i=0; i<threads; i++){
         chain.emplace_back(new TChain("tree"));
-        for(auto h: input) chain.back()->Add(h.c_str());
+        for(auto &h: input) chain.back()->Add(h.c_str());
     }
 
     vector<treereader*> tree;
@@ -122,9 +136,6 @@ void PID::analyse(std::vector <std::string> input, TFile *output) {
                          "F5X", "F5A", "F9X", "F9A", "F11X", "F11A",
                          "BigRIPSIC.fCalMeVSqSum"};
     for(auto &i:tree) i->setloopkeys(keys);
-
-    // Set Parameters according to reaction specified in string
-    PID::reactionparameters();
 
     //Constructing all the histograms
     PID::histogramsetup();
@@ -139,16 +150,14 @@ void PID::analyse(std::vector <std::string> input, TFile *output) {
                                tree.at(i),ref(goodevents), ranges));
     }
 
-    for(auto &t : th) t.join();
+    for(auto &t : th) t.detach();
+
+    progressbar finishcondition;
+    while(finishcondition.ongoing()) finishcondition.draw();
 
     // Calculate the transmission and the crosssection
     double transmission = PID::offctrans();
     PID::crosssection(transmission);
-
-    vector<string> folders{"PID/"+reaction+"/Uncorrected",
-                           "PID/"+reaction+"/Corrected",
-                           "PID/"+reaction+"/investigate"};
-    for (auto &i :folders) output->mkdir(i.c_str());
 
     for(uint i=0; i<folders.size(); i++){
         output->cd(folders.at(i).c_str());
@@ -201,7 +210,12 @@ double PID::offctrans() {
     reactF5.back().Scale(alpha);
     reactF5.back().SetTitle("F5 scaled beam profile");
     // Off-center cut works only for sufficient statistics:
-    if(reactF5.at(1).Integral() > threshold){
+    if((goodevents.size() == runinfo::emptysize) ||
+            (goodevents.size() == runinfo::transsize)){
+        printf("Not doing off-center transmission. No physics run.\n");
+        return 1;
+    }
+    else if(reactF5.at(1).Integral() > threshold){
         printf("\n Scaling Factor: %f, with chisq/ndof %f, transmission: %f. "
             "Scaling factor from Area %f !\n",
             alpha, chisq.at(0),reactF5.at(1).Integral()/reactF5.at(2).Integral(),
@@ -244,11 +258,13 @@ void PID::reactionparameters() {
         case runinfo::transsize:{
             incval = nancytrans::incval;
             targetval = nancytrans::targetval;
+            reaction = "transmission";
             break;
         }
         case runinfo::emptysize:{
             incval = nancyempty::incval;
             targetval = nancyempty::targetval;
+            reaction = "empty";
             break;
         }
         default:{
@@ -296,10 +312,12 @@ void PID::histogramsetup() {
     temp1.emplace_back(TH2D("pidout", "PID Outgoing F8-F11", 300,2.45,2.9, 200,30,50));
     temp1.emplace_back(TH2D("pidincut","PID Inc cut  F8-F11",300,2.45,2.9,200,30,50));
     temp1.emplace_back(TH2D("pidincutout", "PID Out w/ in cut", 300,2.45,2.9,200,30,50));
+    temp1.emplace_back(TH2D("pidincutoutcut", "PID Out cut w/ in cut", 300,2.45,2.9,200,30,50));
     temp2.emplace_back(TH2D("pidinccorr", "PID Incoming F3-F7",  300,2.45,2.9, 200,30,50));
     temp2.emplace_back(TH2D("pidoutcorr", "PID Outgoing F8-F11", 300,2.45,2.9, 200,30,50));
     temp2.emplace_back(TH2D("pidincutcorr","PID Inc cut  F8-F11",300,2.45,2.9,200,30,50));
     temp2.emplace_back(TH2D("pidincutoutcorr", "PID Out w/ in cut", 300,2.45,2.9,200,30,50));
+    temp2.emplace_back(TH2D("pidincutoutcutcorr", "PID Out cut w/ in cut", 300,2.45,2.9,200,30,50));
     PIDplot.emplace_back(temp1);
     PIDplot.emplace_back(temp2);
 

@@ -22,9 +22,10 @@ void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     }
 
     // Step 2: Preparing Variables
-    const int downscale = (int)((range.at(1)-range.at(0))/100.);
-    int threadno = range.at(0)/(range.at(1)-range.at(0));
-    int i = range.at(0); // counting variable
+    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    uint i = range.at(0); // counting variable
+
+    progressbar progress(range.at(1)-range.at(0), threadno);
 
     vector<vector<double>> fillvals(2,vector<double>(9,0)); // Fill dependent variable and
 
@@ -72,11 +73,7 @@ void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             }
         }
         i++;
-        if(!((i-range.at(0))%downscale)){
-            consolemutex.lock();
-            progressbar(i-range.at(0),range.at(1)-range.at(0),threadno);
-            consolemutex.unlock();
-        }
+        progress.increaseevent();
     }
     // Step 3 rejoining the histogram
     unitemutex.lock();
@@ -90,6 +87,8 @@ void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
         }
     }
     unitemutex.unlock();
+
+    progress.reset();
 }
 
 void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
@@ -160,7 +159,10 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
                                ref(goodevents),ranges));
     }
 
-    for(auto &i: th) i.join();
+    for(auto &i: th) i.detach();
+
+    progressbar finishcondition;
+    while(finishcondition.ongoing()) finishcondition.draw();
 
     // After analysis get correlations represented by a linear fit
     auto corrlinfit = new TF1("Linear Fit", linfit, cutval[0][1]-cutfrac*cutval[0][3],

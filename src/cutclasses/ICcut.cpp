@@ -17,10 +17,10 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     }
 
     //Step 2: Preparing Variables
-    const int downscale = (int)((range.at(1)-range.at(0))/100.);
-    int threadno = range.at(0)/(range.at(1)-range.at(0));
-    int i = range.at(0); // counting variable
+    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    uint i = range.at(0); // counting variable
 
+    progressbar progress(range.at(1)-range.at(0),threadno);
 
     while(i < range.at(1)){
         if(goodevents.at(i)){
@@ -33,7 +33,7 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             }
             if((tree->BigRIPSIC_fADC[0][0] <0) ||
                (tree->BigRIPSIC_fADC[1][0] <0)) continue;
-            for(int i=0; i<(numchannel-1);i++){
+            for(uint i=0; i<(numchannel-1);i++){
                 if(tree->BigRIPSIC_fADC[0][i] >0)
                     _comparediag.at(i).at(0).Fill(
                             tree->BigRIPSIC_fADC[0][0],
@@ -45,11 +45,7 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             }
         }
         i++;
-        if(!((i-range.at(0))%downscale)){
-            consolemutex.lock();
-            progressbar(i-range.at(0),range.at(1)-range.at(0),threadno);
-            consolemutex.unlock();
-        }
+        progress.increaseevent();
     }
 
     //Step 3: rejoin data histograms
@@ -60,6 +56,8 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
         }
     }
     unitemutex.unlock();
+
+    progress.reset();
 }
 
 void iccut::analyse(const std::vector<std::string> input, TFile *output) {
@@ -105,7 +103,10 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
                                ref(goodevents),ranges));
     }
 
-    for (auto &i: th) i.join();
+    for (auto &i: th) i.detach();
+
+    progressbar finishcondition;
+    while(finishcondition.ongoing()) finishcondition.draw();
 
     int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
 

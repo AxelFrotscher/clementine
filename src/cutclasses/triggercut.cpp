@@ -3,14 +3,17 @@
 //
 
 #include "cutclasses/triggercut.h"
+#include "time.h"
 
 using namespace std;
 
 void triggercut::innerloop(treereader *tree, std::vector <std::atomic<bool>> &goodevents,
                                   const std::vector<uint> range) {
-    int i = range.at(0);
-    int threadno = range.at(0)/(range.at(1)-range.at(0));
-    const int downscale = (range.at(1)-range.at(0))/100; // every percent
+    uint i = range.at(0);
+    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+
+    // Construct progressbar object
+    progressbar progress(range.at(1)-range.at(0),threadno);
 
     while(i<range.at(1)){
         if(goodevents.at(i)){
@@ -20,12 +23,10 @@ void triggercut::innerloop(treereader *tree, std::vector <std::atomic<bool>> &go
             }
         }
         i++;
-        if(!((i-range.at(0))%downscale)){
-            consolemutex.lock();
-            progressbar(i-range.at(0), range.at(1)-range.at(0),threadno);
-            consolemutex.unlock();
-        }
+        progress.increaseevent();
     }
+
+    progress.reset();
 }
 
 void triggercut::analyse(const vector<string> input){
@@ -54,7 +55,11 @@ void triggercut::analyse(const vector<string> input){
                                tree.at(i),ref(goodevents), ranges));
     }
 
-    for(auto &t : th) t.join();
+    for(auto &t : th) t.detach();
+
+    // Setup synchronization class
+    progressbar finishcondition;
+    while(finishcondition.ongoing()) finishcondition.draw();
 
     int cutout = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
     printf("\nTrigger Cut out %lu Events %f %%\n", goodevents.size()-cutout,

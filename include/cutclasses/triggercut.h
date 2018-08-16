@@ -6,7 +6,7 @@
 #include "treereader.hh"
 #include "TFile.h"
 #include "histogram_cuts.hh"
-#include "MakeAllTree_78Ni.hh"
+#include "progress.h"
 #include "TThread.h"
 #include <atomic>
 #include <thread>
@@ -27,5 +27,5 @@ public:
 private:
     //TFile *output;
     const int badtrg = 6; // triggerbit to exclude (does not contain F7DS)
-    const int threads = 7;
+    const int threads = 10;
 };

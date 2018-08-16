@@ -18,9 +18,10 @@ void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     for(auto &i : tqcorr2D) _tqcorr2D.emplace_back(TH2D(i));
 
     // Step 2: Preparing Variables
-    const int downscale = (int)((range.at(1)-range.at(0))/100.);
-    int threadno = range.at(0)/(range.at(1)-range.at(0));
-    int i = range.at(0); // counting variable
+    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    uint i = range.at(0); // counting variable
+
+    progressbar progress(range.at(1)-range.at(0), threadno);
 
     while(i < range.at(1)){
         if(goodevents.at(i)){
@@ -54,11 +55,7 @@ void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
 
         }
         i++;
-        if(!((i-range.at(0))%downscale)){
-            consolemutex.lock();
-            progressbar(i-range.at(0),range.at(1)-range.at(0), threadno);
-            consolemutex.unlock();
-        }
+        progress.increaseevent();
     }
 
     // Step 3 reuniting the diagrams
@@ -67,6 +64,8 @@ void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     for(uint i=0;i<_qcorr2D.size();i++) qcorr2D.at(i).Add(new TH2D(_qcorr2D.at(i)));
     for(uint i=0;i<_tqcorr2D.size();i++) tqcorr2D.at(i).Add(new TH2D(_tqcorr2D.at(i)));
     unitemutex.unlock();
+
+    progress.reset();
 }
 
 void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
@@ -147,7 +146,10 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
                                ref(goodevents),ranges));
     }
 
-    for (auto &i: th) i.join();
+    for (auto &i: th) i.detach();
+
+    progressbar finishcondition;
+    while(finishcondition.ongoing()) finishcondition.draw();
 
     int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
 
@@ -155,7 +157,7 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
            100*(cutpre-cutafter)/(double)goodevents.size());
 
     vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr"};
-    for (auto str:folders) output->mkdir(str.c_str());
+    for (auto &str:folders) output->mkdir(str.c_str());
 
     output->cd("Plastics/2D");
     for(auto histo: qcorr2D) histo.Write();
