@@ -83,6 +83,19 @@ namespace nancy{
             0.5
     };
 
+    const std::vector<double> incval111Mo{
+            2.6482, // center x
+            41.9,  // center y
+            0.006, // radius x
+            0.6    // radius y
+    };
+
+    const std::vector<double> incval112Mo{
+            2.672, // center x
+            41.9,  // center y
+            0.006, // radius x
+            0.6    // radius y
+    };
 }
 
 namespace nancytrans{

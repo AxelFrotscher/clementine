@@ -1,13 +1,14 @@
 #include "histograms.hh"
 #include "libconstant.h"
-#include "cutclasses/chargestatecut.h"
-#include "cutclasses/ICcut.h"
-#include "cutclasses/plasticcut.h"
-#include "cutclasses/ppaccut.h"
-#include "cutclasses/targetcut.h"
-#include "cutclasses/triggercut.h"
-#include "corrections/higherorder.h"
+#include "chargestatecut.h"
+#include "ICcut.h"
+#include "plasticcut.h"
+#include "ppaccut.h"
+#include "targetcut.h"
+#include "triggercut.h"
+#include "higherorder.h"
 #include "PID/pid.h"
+#include "txtwriter.h"
 
 using namespace std;
 
@@ -51,16 +52,19 @@ void dalicalib(treereader *tree, TFile *output){
 }
 
  void makehistograms(const vector<string> input) {
-
-    TChain chain("tree");
-    for(auto &i:input) chain.Add(i.c_str());
-
     // Generating an outputfile that matches names with the input file
     string output = "build/output/" + input.at(0).substr(34,9) + "hist" +
                     to_string(input.size()) + ".root";
+    string txtout = "build/output/" + input.at(0).substr(34,9) + "hist" +
+                    to_string(input.size()) + ".txt";
 
+    // Initialize ROOT and txt outputfile
     auto outputfile = new TFile(output.c_str(), "RECREATE");
     if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
+    txtwriter writetotxt(txtout); // Writer class
+
+    TChain chain("tree");
+    for(auto &i:input) chain.Add(i.c_str());
 
     cout << "Beginning reconstruction of " << chain.GetEntries()
          << " Elements." << endl;
@@ -85,16 +89,19 @@ void dalicalib(treereader *tree, TFile *output){
     higherorder(input, goodevents, outputfile);
 
     // Get Z vs. A/Q
-    PID(input,goodevents,outputfile, "111NbPPN");
-    PID(input,goodevents,outputfile, "111NbPP2N");
+    //PID(input,goodevents,outputfile, "111NbPPN");
+    //PID(input,goodevents,outputfile, "111NbPP2N");
     PID(input,goodevents,outputfile, "111NbP2P");
-    PID(input, goodevents, outputfile, "110NbPPN");
+    //PID(input, goodevents, outputfile, "110NbPPN");
     PID(input, goodevents, outputfile, "110NbP2P");
+    PID(input, goodevents, outputfile, "111MoP3P");
+    PID(input, goodevents, outputfile, "112MoP3P");
 
     //makepid(input, outputfile, goodevents);
     printf("Made PID histograms in %s\n", output.c_str());
     //Get ADC Spectra for DALI
     //dalicalib(alt4dtree, outputfile);
+    writetotxt.writetofile();
 
     cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
                           /goodevents.size() << " % valid Elements" << endl;

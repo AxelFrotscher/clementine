@@ -5,6 +5,7 @@
 #include <libconstant.h>
 #include "PID/pid.h"
 #include "histogram_cuts.hh"
+#include "txtwriter.h"
 #include <thread>
 #include "progress.h"
 #include "TF1.h"
@@ -189,12 +190,12 @@ void PID::offctrans() {
             divisor  += pow(reactF5.at(0).GetBinContent(i),2)/
                         (double)reactF5.at(1).GetBinContent(i);
         }
-    }*/
+    }
 
     //double alpha =dividend/divisor; // Scaling factor F5(beam) F5(reacted)
 
     // Calculating corresponding chi-square, and test minimum
-    /*for(int i=binlow; i<binhigh; i++)
+    for(int i=binlow; i<binhigh; i++)
         if(reactF5.at(1).GetBinContent(i)) {
             double e = 0.05; // testvalue
             chisq.at(0) += pow(alpha * reactF5.at(0).GetBinContent(i) -
@@ -206,11 +207,11 @@ void PID::offctrans() {
             chisq.at(2) += pow((1+e)*alpha * reactF5.at(0).GetBinContent(i) -
                                reactF5.at(1).GetBinContent(i), 2) /
                            (double) reactF5.at(1).GetBinContent(i);
-        }*/
+        }
 
     // Pushing out the new scaled beam values
     //for(auto &i: chisq) i /= binhigh - binlow -1;
-    /*reactF5.push_back(reactF5.at(0));
+    reactF5.push_back(reactF5.at(0));
     reactF5.back().Scale(alpha);
     reactF5.back().SetTitle("F5 scaled beam profile");*/
 
@@ -220,6 +221,12 @@ void PID::offctrans() {
     reactF5.back().Divide(new TH1D(reactF5.at(0)));
     reactF5.back().SetTitle("F5 beam profile ratio");
     reactF5.back().SetName("F5ratio");
+
+    if((goodevents.size() == runinfo::emptysize) ||
+       (goodevents.size() == runinfo::transsize)){
+        printf("Not doing off-center transmission. No physics run.\n");
+        return;
+    }
 
     // New fit method
     const int minrange =6;
@@ -239,8 +246,15 @@ void PID::offctrans() {
         }
         fitstyle.push_back(temp);
     }
+
+    if(reactF5.at(1).Integral() < 75){
+        printf("Not doing off-center transmission. Lack of statistics %.2f cts\n",
+                reactF5.at(1).Integral());
+        return;
+    }
+
     // Get best Fit
-    for(uint i= (uint)(fitplot.GetNbinsY()-1); i>minrange; i--){
+    for(uint i= (uint)(fitplot.GetNbinsY()-1); i>=minrange; i--){
         for(uint j=startbin; j<fitplot.GetNbinsX(); j++){
             if((fitplot.GetBinContent(j,i) > 0) &&
                (fitplot.GetBinContent(j,i) < maxchisq)){
@@ -250,7 +264,8 @@ void PID::offctrans() {
                 reactF5.back().SetTitle("F5 scaled beam profile");
 
                 // Write off center trans, it cannot exceed 1 however
-                offcentertransmission = min(reactF5.at(1).Integral()/reactF5.back().Integral(),1.);
+                offcentertransmission = min(reactF5.at(1).Integral()/
+                                            reactF5.back().Integral(),1.);
 
                 offcentertransmissionerror =
                         fitstyle.at(j-startbin).at(i-minrange)->GetParError(0)/
@@ -293,8 +308,8 @@ void PID::crosssection() {
     // Calculate the final crosssection for this run
     const double numberdensity = 0.433; // atoms/cm2 for 10cm LH2
     const double numberdensityerror = 0.00924; // relative error
-    const double tottransmission = 0.7754; // empty target transmission for centered beam
-    const double tottransmissionerror = 0.01874; // associated relative error
+    const double tottransmission = 0.7839; // empty target transmission for centered beam
+    const double tottransmissionerror = 0.01865; // associated relative error
 
     const double crosssection = 1./numberdensity*reactionpid2/
                           reactionpid1/tottransmission/offcentertransmission;
@@ -304,13 +319,28 @@ void PID::crosssection() {
                          pow(tottransmissionerror,2)+
                          pow(numberdensityerror,2), 0.5);  // Error on Transm.
 
-    printf("Inclusive N=%.2f Z=%.2f to N=%.2f Z=%.2f sigma is: %f +- %f b\n",
-           incval.at(0)*incval.at(1), incval.at(1), targetval.at(0)*targetval.at(1),
-           targetval.at(1), crosssection, cserror);
+    // make cross section string:
+    auto format = "N=%.1f Z=%.1f to N=%.1f Z=%.1f sigma: %.5f +- %.5fb Offc. Trans %.3f +- %.3f";
+    auto size = snprintf(nullptr, 0, format,  incval.at(0)*incval.at(1),
+                         incval.at(1), targetval.at(0)*targetval.at(1),
+                         targetval.at(1), crosssection, cserror,
+                         offcentertransmission, offcentertransmissionerror);
+    string crossstr(size, '\0');
+    sprintf(&crossstr[0], format, incval.at(0)*incval.at(1),
+            incval.at(1), targetval.at(0)*targetval.at(1),
+            targetval.at(1), crosssection, cserror,
+            offcentertransmission, offcentertransmissionerror);
 
-    printf("Raw: in %u out %i ratio %.3f %%\n",reactionpid1.load(),
-           reactionpid2.load(),
-           100.*reactionpid2/reactionpid1.load());
+    cout << crossstr << endl;
+    txtwriter txt;
+    txt.addline(crossstr);
+    /*printf("Inclusive N=%.2f Z=%.2f to N=%.2f Z=%.2f sigma is: %f +- %f b\n",
+           incval.at(0)*incval.at(1), incval.at(1), targetval.at(0)*targetval.at(1),
+           targetval.at(1), crosssection, cserror); */
+
+    cout << "Raw: In " << reactionpid1.load() << " out " << reactionpid2.load()
+         << " ratio " << 100.*reactionpid2/reactionpid1.load() << "% " << endl;
+
 }
 
 void PID::reactionparameters() {
@@ -333,31 +363,36 @@ void PID::reactionparameters() {
                 incval = nancy::incval111Nb;
                 targetval = nancy::targetval110Nb;
                 binning = 50;
-                acceptancerange = vector<double>{0,70};
             }
             else if(reaction == "111NbPP2N"){
                 incval = nancy::incval111Nb;
                 targetval = nancy::targetval109Nb;
                 binning = 50;
-                acceptancerange = vector<double>{15,70};
             }
             else if(reaction == "111NbP2P"){
                 incval    = nancy::incval111Nb;
                 targetval = nancy::targetval110Zr;
                 binning   = 40;
-                acceptancerange = vector<double>{-50,0};
             }
             else if(reaction == "110NbPPN"){
                 incval = nancy::incval110Nb;
                 targetval = nancy::targetval109Nb;
                 binning = 100;
-                acceptancerange = vector<double>{-10,70};
             }
             else if(reaction == "110NbP2P"){
                 incval = nancy::incval110Nb;
                 targetval = nancy::targetval109Zr;
                 binning = 40;
-                acceptancerange = vector<double>{-15,40};
+            }
+            else if(reaction == "111MoP3P"){
+                incval = nancy::incval111Mo;
+                targetval = nancy::targetval109Zr;
+                binning = 50;
+            }
+            else if(reaction == "112MoP3P"){
+                incval = nancy::incval112Mo;
+                targetval = nancy::targetval110Zr;
+                binning = 50;
             }
             else __throw_invalid_argument("Invalid reaction !\n");
 

@@ -46,7 +46,7 @@ private:
     TH2D fitplot;
     std::vector<std::vector<TF1*>> fitstyle; // off-center 2D matrix fits
 
-    const double maxchisq = 1.15;
+    double maxchisq = 1.15;
 
     double offcentertransmission = 1;
     double offcentertransmissionerror = 0;
