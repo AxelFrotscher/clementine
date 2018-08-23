@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "treereader.hh"
+#include "helper/treereader.hh"
 #include "TH2D.h"
 #include <atomic>
 
@@ -12,8 +12,8 @@ public:
     void innerloop(treereader *tree, std::vector<std::atomic<bool>>
     &goodevents, std::vector<uint> range);
     void analyse(std::vector<std::string> input, TFile* output);
-    double offctrans();
-    void crosssection(double transmission);
+    void offctrans();
+    void crosssection();
     void reactionparameters();
     void histogramsetup();
 
@@ -43,4 +43,11 @@ private:
     std::mutex unitemutex;
     int binning = 100;
 
+    TH2D fitplot;
+    std::vector<std::vector<TF1*>> fitstyle; // off-center 2D matrix fits
+
+    const double maxchisq = 1.15;
+
+    double offcentertransmission = 1;
+    double offcentertransmissionerror = 0;
 };

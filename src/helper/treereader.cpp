@@ -1,5 +1,5 @@
 #define treereader_cxx
-#include "treereader.hh"
+#include "helper/treereader.hh"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>

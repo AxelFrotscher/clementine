@@ -43,7 +43,7 @@ void triggercut::analyse(const vector<string> input){
         tree.emplace_back(new treereader(i));
     }
 
-    printf("Now performing the Trigger cut with %i threads.", threads);
+    printf("Now performing the Trigger cut with %i threads.\n", threads);
 
     // This method aims at analysing the trigger bits
     vector<string> keys{"EventInfo.fBit"};

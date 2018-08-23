@@ -185,7 +185,7 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
         projections.push_back(proftemp2d);
     }
 
-    // Generate root file structure and then write out al histograms
+    // Generate root file structure and then write out all histograms
     for (auto &i_fold: folders) for(auto &j: i_fold) output->mkdir(j.c_str());
 
     for(uint i=0; i<projections.size();i++){  // Pre, Post

@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "treereader.hh"       // contains already many classes
+#include "helper/treereader.hh"       // contains already many classes
 
 class triggercut {
 public:

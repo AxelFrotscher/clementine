@@ -116,7 +116,7 @@ namespace nancytrans{
             2.706, // center x
             41.0,  // center y
             0.009, // radius x
-            0.5    // radius y
+            0.6    // radius y
     };
 
     const std::vector<double> targetval{

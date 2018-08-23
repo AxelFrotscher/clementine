@@ -25,6 +25,12 @@ double linfit(double *x, double *par){
     return par[0] + par[1]*x[0];
 }
 
+double constfit(double *x, double *par){
+    // Linear fit function
+    if (!x[0]) return 0;
+    return par[0];
+}
+
 const double slope(const vector<double> &x, const vector<double> &y){
     // Simple linear regression (explicit)
     if(!(x.size())==y.size())
