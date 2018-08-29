@@ -168,6 +168,7 @@ void PID::analyse(std::vector <std::string> input, TFile *output) {
         else {
             for (auto &elem: reactF5) elem.Write();
             fitplot.Write();
+            if(bestfit) bestfit->Write();
         }
         output->cd("");
     }
@@ -253,8 +254,8 @@ void PID::offctrans() {
             auto corrfit = new TF1(Form("Fit %i-%i", i,j),constfit,
                     reactF5.back().GetBinCenter(i),
                     reactF5.back().GetBinCenter(j),1);
-            reactF5.back().Fit(corrfit, "RQ");
-            if(corrfit->GetNDF() >= (minrange - 1) && corrfit->GetParameter(0) > 0.75*mean)
+            reactF5.back().Fit(corrfit, "NRQ");
+            if(corrfit->GetNDF() >= (minrange - 1) && corrfit->GetParameter(0) > 0.95*mean)
                 fitplot.SetBinContent(i,j-i,corrfit->GetChisquare()/
                                             corrfit->GetNDF());
             temp.push_back(corrfit);
@@ -263,7 +264,7 @@ void PID::offctrans() {
     }
 
     // Write out mean to histogram
-    reactF5.back().SetTitle(Form("F5 beam profile ratio [mean %.3f (E-3)]",
+    reactF5.back().SetTitle(Form("F5 beam profile ratio [mean %.4f (E-3)]",
                             1E3*mean));
 
     // Get best Fit
@@ -286,6 +287,7 @@ void PID::offctrans() {
                 reactF5.push_back(reactF5.at(0));
                 reactF5.back().Scale(fitstyle.at(j-startbin).at(i-minrange)->GetParameter(0));
                 reactF5.back().SetTitle("F5 scaled beam profile");
+                bestfit = fitstyle.at(j-startbin).at(i-minrange);
 
                 // Write off center trans, it cannot exceed 1 however
                 offcentertransmission = min(reactF5.at(1).Integral()/
@@ -317,6 +319,8 @@ void PID::offctrans() {
     reactF5.push_back(reactF5.at(0));
     reactF5.back().Scale(fitstyle.at(backupfit[0]-startbin).at(backupfit[1]-minrange)->GetParameter(0));
     reactF5.back().SetTitle("F5 scaled beam profile");
+
+    bestfit = fitstyle.at(backupfit[0]-startbin).at(backupfit[1]-minrange);
 
     // Write off center trans, it cannot exceed 1 however
     offcentertransmission = min(reactF5.at(1).Integral()/

@@ -47,6 +47,7 @@ private:
     std::vector<std::vector<TF1*>> fitstyle; // off-center 2D matrix fits
 
     double maxchisq = 1.15;
+    TF1* bestfit = nullptr;
 
     double offcentertransmission = 1;
     double offcentertransmissionerror = 0;

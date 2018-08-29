@@ -278,7 +278,7 @@ void generatetree(const string infile, const string output){
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         //Making MINOS
-        /* minoscalib->ClearData();
+         minoscalib->ClearData();
         minosanalyzed->ClearData();
         minostrack->ClearData();
         minosvertex->ClearData();
