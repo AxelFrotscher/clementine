@@ -9,6 +9,7 @@
 #include "higherorder.h"
 #include "PID/pid.h"
 #include "txtwriter.h"
+#include <numeric>
 
 using namespace std;
 
@@ -80,7 +81,7 @@ void dalicalib(treereader *tree, TFile *output){
         printf("!!! Analysing an empty target run !!!\n");
     }
 
-    triggercut(input, goodevents);
+    //triggercut(input, goodevents);
     ccsc(input,goodevents,outputfile);
     targetcut(input,goodevents,outputfile);
     plasticcut(input, goodevents, outputfile);
@@ -94,8 +95,13 @@ void dalicalib(treereader *tree, TFile *output){
     PID(input,goodevents,outputfile, "111NbP2P");
     //PID(input, goodevents, outputfile, "110NbPPN");
     PID(input, goodevents, outputfile, "110NbP2P");
+    PID(input, goodevents, outputfile, "110MoP3P");
     PID(input, goodevents, outputfile, "111MoP3P");
     PID(input, goodevents, outputfile, "112MoP3P");
+    PID(input, goodevents, outputfile, "113MoP3P");
+    PID(input, goodevents, outputfile, "112TcP3P");
+    PID(input, goodevents, outputfile, "113TcP3P");
+    PID(input, goodevents, outputfile, "114TcP3P");
 
     //makepid(input, outputfile, goodevents);
     printf("Made PID histograms in %s\n", output.c_str());

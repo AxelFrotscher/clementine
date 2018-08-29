@@ -5,6 +5,7 @@
 #include "cutclasses/ppaccut.h"
 #include "progress.h"
 #include <thread>
+#include <numeric>
 
 using namespace std;
 

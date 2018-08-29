@@ -96,6 +96,69 @@ namespace nancy{
             0.006, // radius x
             0.6    // radius y
     };
+
+    const std::vector<double> incval113Tc{
+            2.6334, // center x
+            42.86,  // center y
+            0.004, // radius x
+            0.6    // radius y
+    };
+
+    const std::vector<double> incval112Tc{
+            2.6103, // center x
+            42.9,  // center y
+            0.004, // radius x
+            0.6    // radius y
+    };
+
+    const std::vector<double> incval114Tc{
+            2.65676, // center x
+            42.882,  // center y
+            0.004, // radius x
+            0.5    // radius y
+    };
+
+    const std::vector<double> targetval111Nb{
+            2.707, //2.750, // center x
+            40.9, //40.0, // center y
+            0.01,
+            0.5
+    };
+
+    const std::vector<double> targetval112Nb{
+            2.729, //2.750, // center x
+            41.0, //40.0, // center y
+            0.01,
+            0.5
+    };
+
+    const std::vector<double> incval110Mo{
+            2.6247, // center x
+            41.9,  // center y
+            0.006, // radius x
+            0.6    // radius y
+    };
+
+    const std::vector<double> targetval108Zr{
+            2.6992, //2.750, // center x
+            39.91, //40.0, // center y
+            0.01,
+            0.4
+    };
+
+    const std::vector<double> incval113Mo{
+            2.696, // center x
+            41.92,  // center y
+            0.004, // radius x
+            0.6    // radius y
+    };
+
+    const std::vector<double> targetval111Zr{
+            2.775, //2.750, // center x
+            40, //40.0, // center y
+            0.01,
+            0.4
+    };
 }
 
 namespace nancytrans{

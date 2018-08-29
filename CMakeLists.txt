@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(clementine)
 
 set(CMAKE_CXX_FLAGS "-DCMAKE_BUILD_TYPE=Release")
+set(CMAKE_CXX_STANDARD 14)
 
 #Find ROOT installation
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
@@ -12,7 +13,8 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 
 #Define useful functions
 include(${ROOT_USE_FILE})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
+include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
         /home/afrotscher/soft/anaroot/anarootv4.5.36/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/cutclasses
         ${CMAKE_CURRENT_SOURCE_DIR}/include/corrections

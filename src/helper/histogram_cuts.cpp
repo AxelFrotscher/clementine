@@ -4,6 +4,7 @@
 
 #include "histogram_cuts.hh"
 #include "TMath.h"
+#include <numeric>
 
 using namespace std;
 

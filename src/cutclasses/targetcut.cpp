@@ -6,6 +6,7 @@
 #include "histogram_cuts.hh"
 #include "progress.h"
 #include <thread>
+#include <numeric>
 
 using namespace std;
 

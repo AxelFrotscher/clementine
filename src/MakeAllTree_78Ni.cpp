@@ -16,7 +16,7 @@
 #include "TArtCalibFocalPlane.hh"
 #include "TArtFocalPlane.hh"
 #include <iostream>
-#include <TArtDALIParameters.hh>
+#include "TArtDALIParameters.hh"
 
 R__LOAD_LIBRARY(libanacore.so)
 

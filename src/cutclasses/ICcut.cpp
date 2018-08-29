@@ -5,6 +5,7 @@
 #include "cutclasses/ICcut.h"
 #include <thread>
 #include "progress.h"
+#include <numeric>
 
 using namespace std;
 

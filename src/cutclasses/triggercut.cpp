@@ -6,6 +6,7 @@
 #include "time.h"
 #include "progress.h"
 #include <thread>
+#include <numeric>
 
 using namespace std;
 

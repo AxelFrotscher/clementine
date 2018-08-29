@@ -6,6 +6,7 @@
 #include "progress.h"
 #include "TMath.h"
 #include <thread>
+#include <numeric>
 
 using namespace std;
 

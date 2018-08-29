@@ -5,6 +5,7 @@
 #include "cutclasses/chargestatecut.h"
 #include "libconstant.h"
 #include <thread>
+#include <numeric>
 
 using namespace std;
 

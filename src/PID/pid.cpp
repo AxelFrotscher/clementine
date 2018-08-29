@@ -219,7 +219,6 @@ void PID::offctrans() {
     reactF5.push_back(reactF5.at(1));
     for (auto &i:reactF5) i.Sumw2();
     reactF5.back().Divide(new TH1D(reactF5.at(0)));
-    reactF5.back().SetTitle("F5 beam profile ratio");
     reactF5.back().SetName("F5ratio");
 
     if((goodevents.size() == runinfo::emptysize) ||
@@ -228,18 +227,34 @@ void PID::offctrans() {
         return;
     }
 
+    if(reactF5.at(1).Integral() < 75){
+        printf("Not doing off-center transmission. Lack of statistics %.2f cts\n",
+               reactF5.at(1).Integral());
+        return;
+    }
+
+    // Get weighted mean of ratio:
+    const int startbin = (uint)(reactF5.back().FindFirstBinAbove(0));
+    const int stopbin = (uint)(reactF5.back().FindLastBinAbove(0));
+    double sum =0, totalweight =0;
+    for(int i=startbin; i<stopbin;i++){
+        if(reactF5.back().GetBinContent(i)) {
+            sum += reactF5.back().GetBinContent(i) / pow(reactF5.back().GetBinError(i), 2);
+            totalweight += pow(reactF5.back().GetBinError(i), -2);
+        }
+    }
+
     // New fit method
-    const int minrange =6;
-    const uint startbin = (uint)(reactF5.back().FindFirstBinAbove(0));
-    const uint stopbin = (uint)(reactF5.back().FindLastBinAbove(0));
-    for(uint i=startbin; i<=stopbin; i++){ // Startbin loop
+    const int minrange = 4;
+    const double mean = sum/totalweight;
+    for(int i=startbin; i<=stopbin; i++){ // Startbin loop
         vector<TF1*> temp;
-        for(uint j=i+minrange; j<=stopbin; j++){ // Length loop
+        for(int j=i+minrange; j<=stopbin; j++){ // Length loop
             auto corrfit = new TF1(Form("Fit %i-%i", i,j),constfit,
                     reactF5.back().GetBinCenter(i),
                     reactF5.back().GetBinCenter(j),1);
-            reactF5.back().Fit(corrfit, "RQE");
-            if(corrfit->GetNDF() >= (minrange - 1))
+            reactF5.back().Fit(corrfit, "RQ");
+            if(corrfit->GetNDF() >= (minrange - 1) && corrfit->GetParameter(0) > 0.75*mean)
                 fitplot.SetBinContent(i,j-i,corrfit->GetChisquare()/
                                             corrfit->GetNDF());
             temp.push_back(corrfit);
@@ -247,15 +262,24 @@ void PID::offctrans() {
         fitstyle.push_back(temp);
     }
 
-    if(reactF5.at(1).Integral() < 75){
-        printf("Not doing off-center transmission. Lack of statistics %.2f cts\n",
-                reactF5.at(1).Integral());
-        return;
-    }
+    // Write out mean to histogram
+    reactF5.back().SetTitle(Form("F5 beam profile ratio [mean %.3f (E-3)]",
+                            1E3*mean));
 
     // Get best Fit
-    for(uint i= (uint)(fitplot.GetNbinsY()-1); i>=minrange; i--){
-        for(uint j=startbin; j<fitplot.GetNbinsX(); j++){
+    vector<int> backupfit{0,0};
+    double minchisq = 10E8; // current minimum chi-sq.
+
+    for(int i= (fitplot.GetNbinsY()-1); i>=minrange; i--){
+        for(int j=startbin; j<fitplot.GetNbinsX(); j++){
+            //Backup preparation:
+            if((fitplot.GetBinContent(j,i) < minchisq) &&
+                    (fitplot.GetBinContent(j,i) > 0)){
+               minchisq =  fitplot.GetBinContent(j,i);
+               backupfit = vector<int>{j,i};
+            }
+
+            // Main sequence
             if((fitplot.GetBinContent(j,i) > 0) &&
                (fitplot.GetBinContent(j,i) < maxchisq)){
 
@@ -281,6 +305,32 @@ void PID::offctrans() {
             }
         }
     }
+
+    // In case there was no sufficient fit, the lowest chisq is taken...
+    printf("Only bad fits available, using lowest chisq. %f\n", minchisq);
+
+    if(!backupfit.at(0)){
+        printf("Fuck this shit. Not a single chisq. fit was ok. skipping. Mean %f\n",mean);
+        return;
+    }
+
+    reactF5.push_back(reactF5.at(0));
+    reactF5.back().Scale(fitstyle.at(backupfit[0]-startbin).at(backupfit[1]-minrange)->GetParameter(0));
+    reactF5.back().SetTitle("F5 scaled beam profile");
+
+    // Write off center trans, it cannot exceed 1 however
+    offcentertransmission = min(reactF5.at(1).Integral()/
+                                reactF5.back().Integral(),1.);
+
+    offcentertransmissionerror =
+            fitstyle.at(backupfit[0]-startbin).at(backupfit[1]-minrange)->GetParError(0)/
+            fitstyle.at(backupfit[0]-startbin).at(backupfit[1]-minrange)->GetParameter(0)*
+            offcentertransmission;
+
+    cout << fitstyle.at(backupfit[0]-startbin).at(backupfit[1]-minrange)->GetName()
+         << " Chisq: " << fitplot.GetBinContent(backupfit[0],backupfit[1])
+         << " Offcentertransmission: " << offcentertransmission
+         << " +- " << offcentertransmissionerror << endl;
 
     // Off-center cut works only for sufficient statistics:
     /*if((goodevents.size() == runinfo::emptysize) ||
@@ -320,16 +370,14 @@ void PID::crosssection() {
                          pow(numberdensityerror,2), 0.5);  // Error on Transm.
 
     // make cross section string:
-    auto format = "N=%.1f Z=%.1f to N=%.1f Z=%.1f sigma: %.5f +- %.5fb Offc. Trans %.3f +- %.3f";
-    auto size = snprintf(nullptr, 0, format,  incval.at(0)*incval.at(1),
-                         incval.at(1), targetval.at(0)*targetval.at(1),
-                         targetval.at(1), crosssection, cserror,
-                         offcentertransmission, offcentertransmissionerror);
+    auto format = "%s sigma: %.3f +- %.3fmb Offc. Trans %.3f +- %.3f CTS: %.0f";
+    auto size = snprintf(nullptr, 0, format, &reaction[0], 1E3*crosssection,
+                         1E3*cserror, offcentertransmission,
+                         offcentertransmissionerror, reactF5.at(1).Integral());
     string crossstr(size, '\0');
-    sprintf(&crossstr[0], format, incval.at(0)*incval.at(1),
-            incval.at(1), targetval.at(0)*targetval.at(1),
-            targetval.at(1), crosssection, cserror,
-            offcentertransmission, offcentertransmissionerror);
+    sprintf(&crossstr[0], format, &reaction[0], 1E3*crosssection, 1E3*cserror,
+            offcentertransmission, offcentertransmissionerror,
+            reactF5.at(1).Integral());
 
     cout << crossstr << endl;
     txtwriter txt;
@@ -384,6 +432,11 @@ void PID::reactionparameters() {
                 targetval = nancy::targetval109Zr;
                 binning = 40;
             }
+            else if(reaction == "110MoP3P"){
+                incval = nancy::incval110Mo;
+                targetval = nancy::targetval108Zr;
+                binning = 50;
+            }
             else if(reaction == "111MoP3P"){
                 incval = nancy::incval111Mo;
                 targetval = nancy::targetval109Zr;
@@ -392,6 +445,26 @@ void PID::reactionparameters() {
             else if(reaction == "112MoP3P"){
                 incval = nancy::incval112Mo;
                 targetval = nancy::targetval110Zr;
+                binning = 50;
+            }
+            else if(reaction == "113TcP3P"){
+                incval = nancy::incval113Tc;
+                targetval = nancy::targetval111Nb;
+                binning = 50;
+            }
+            else if(reaction == "112TcP3P"){
+                incval = nancy::incval112Tc;
+                targetval = nancy::targetval110Nb;
+                binning = 50;
+            }
+            else if(reaction == "114TcP3P"){
+                incval = nancy::incval114Tc;
+                targetval = nancy::targetval112Nb;
+                binning = 50;
+            }
+            else if(reaction == "113MoP3P"){
+                incval = nancy::incval113Mo;
+                targetval = nancy::targetval111Zr;
                 binning = 50;
             }
             else __throw_invalid_argument("Invalid reaction !\n");

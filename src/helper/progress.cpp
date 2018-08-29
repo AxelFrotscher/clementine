@@ -41,7 +41,6 @@ void progressbar::draw(){
     cout.flush();
 
     this_thread::__sleep_for(chrono::seconds((long)updateinterval), chrono::nanoseconds(0));
-
 }
 
 void progressbar::reset() {
