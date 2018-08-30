@@ -386,9 +386,6 @@ void PID::crosssection() {
     cout << crossstr << endl;
     txtwriter txt;
     txt.addline(crossstr);
-    /*printf("Inclusive N=%.2f Z=%.2f to N=%.2f Z=%.2f sigma is: %f +- %f b\n",
-           incval.at(0)*incval.at(1), incval.at(1), targetval.at(0)*targetval.at(1),
-           targetval.at(1), crosssection, cserror); */
 
     cout << "Raw: In " << reactionpid1.load() << " out " << reactionpid2.load()
          << " ratio " << 100.*reactionpid2/reactionpid1.load() << "% " << endl;
@@ -506,8 +503,7 @@ void PID::histogramsetup() {
     fitplot.GetXaxis()->SetTitle("Starting Bin");
     fitplot.GetYaxis()->SetTitle("Number of Bins");
     fitplot.SetOption("colz");
-    fitplot.SetMaximum(maxchisq);
-
+    fitplot.SetMaximum(2.*maxchisq);
 
     for (auto &elem: reactF5){
         elem.GetXaxis()->SetTitle("x [mm]");
