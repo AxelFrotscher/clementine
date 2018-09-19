@@ -271,8 +271,8 @@ void PID::offctrans() {
     vector<int> backupfit{0,0};
     double minchisq = 10E8; // current minimum chi-sq.
 
-    for(int i= (fitplot.GetNbinsY()-1); i>=minrange; i--){
-        for(int j=startbin; j<fitplot.GetNbinsX(); j++){
+    for(int j=startbin; j<fitplot.GetNbinsX(); j++){ // switch for effect
+        for(int i= (fitplot.GetNbinsY()-1); i>=minrange; i--){
             //Backup preparation:
             if((fitplot.GetBinContent(j,i) < minchisq) &&
                     (fitplot.GetBinContent(j,i) > 0)){
@@ -389,7 +389,6 @@ void PID::crosssection() {
 
     cout << "Raw: In " << reactionpid1.load() << " out " << reactionpid2.load()
          << " ratio " << 100.*reactionpid2/reactionpid1.load() << "% " << endl;
-
 }
 
 void PID::reactionparameters() {
@@ -421,7 +420,7 @@ void PID::reactionparameters() {
             else if(reaction == "111NbP2P"){
                 incval    = nancy::incval111Nb;
                 targetval = nancy::targetval110Zr;
-                binning   = 40;
+                binning   = 80;
             }
             else if(reaction == "110NbPPN"){
                 incval = nancy::incval110Nb;
@@ -468,7 +467,7 @@ void PID::reactionparameters() {
                 targetval = nancy::targetval111Zr;
                 binning = 50;
             }
-            else __throw_invalid_argument("Invalid reaction !\n");
+            else __throw_invalid_argument(Form("Invalid reaction %s!\n", &reaction[0]));
 
             break;
         }

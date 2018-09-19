@@ -54,15 +54,20 @@ void dalicalib(treereader *tree, TFile *output){
 
  void makehistograms(const vector<string> input) {
     // Generating an outputfile that matches names with the input file
-    string output = "build/output/" + input.at(0).substr(34,9) + "hist" +
+    auto gentxt = [input](auto suffix){ // lambda to generate expression
+        return "build/output/" + input.at(0).substr(34,9) + "hist" +
+               to_string(input.size()) + suffix;
+    };
+
+    /*string output = "build/output/" + input.at(0).substr(34,9) + "hist" +
                     to_string(input.size()) + ".root";
     string txtout = "build/output/" + input.at(0).substr(34,9) + "hist" +
-                    to_string(input.size()) + ".txt";
+                    to_string(input.size()) + ".txt"; */
 
     // Initialize ROOT and txt outputfile
-    auto outputfile = new TFile(output.c_str(), "RECREATE");
+    auto outputfile = new TFile(gentxt(".root").c_str(), "RECREATE");
     if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
-    txtwriter writetotxt(txtout); // Writer class
+    txtwriter writetotxt(gentxt(".txt")); // Writer class
 
     TChain chain("tree");
     for(auto &i:input) chain.Add(i.c_str());
@@ -90,21 +95,14 @@ void dalicalib(treereader *tree, TFile *output){
     higherorder(input, goodevents, outputfile);
 
     // Get Z vs. A/Q
-    //PID(input,goodevents,outputfile, "111NbPPN");
-    //PID(input,goodevents,outputfile, "111NbPP2N");
-    PID(input,goodevents,outputfile, "111NbP2P");
-    //PID(input, goodevents, outputfile, "110NbPPN");
-    PID(input, goodevents, outputfile, "110NbP2P");
-    PID(input, goodevents, outputfile, "110MoP3P");
-    PID(input, goodevents, outputfile, "111MoP3P");
-    PID(input, goodevents, outputfile, "112MoP3P");
-    PID(input, goodevents, outputfile, "113MoP3P");
-    PID(input, goodevents, outputfile, "112TcP3P");
-    PID(input, goodevents, outputfile, "113TcP3P");
-    PID(input, goodevents, outputfile, "114TcP3P");
+    const vector<string> reactionmodes{"111NbP2P","110NbP2P","110MoP3P",
+                                       "111MoP3P","112MoP3P","113MoP3P",
+                                       "112TcP3P","113TcP3P","114TcP3P"};
+    // 111NbPPN, 111NbPP2N, 110NbPPN
+    for(auto &i: reactionmodes) PID(input,goodevents,outputfile,i);
 
     //makepid(input, outputfile, goodevents);
-    printf("Made PID histograms in %s\n", output.c_str());
+    printf("Made PID histograms in %s\n", gentxt(".root").c_str());
     //Get ADC Spectra for DALI
     //dalicalib(alt4dtree, outputfile);
     writetotxt.writetofile();

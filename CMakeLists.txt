@@ -21,8 +21,8 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include/helper)
 
 add_executable(${PROJECT_NAME} main.cpp
-      ./src/MakeAllTree_78Ni.cpp
-      ./src/histograms.cpp
+        src/MakeAllTree_78Ni.cpp
+        src/histograms.cpp
         src/helper/treereader.cpp
         src/helper/histogram_cuts.cpp
         src/cutclasses/triggercut.cpp

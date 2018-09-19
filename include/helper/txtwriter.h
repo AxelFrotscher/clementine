@@ -9,7 +9,7 @@
 
 class txtwriter{
 public:
-    explicit txtwriter(std::string &filename_){
+    explicit txtwriter(std::string filename_){
         filename = filename_;
         begin = std::chrono::system_clock::now();
     };

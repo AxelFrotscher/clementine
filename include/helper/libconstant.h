@@ -6,8 +6,8 @@
 #include "histogram_cuts.hh"
 
 namespace runinfo{
-    const int transsize = 395267; // Runs containing this number are transmission
-    const int emptysize = 513225; // Empty-target measurement
+    const int transsize = 395'267; // Runs containing this number are transmission
+    const int emptysize = 513'225; // Empty-target measurement
     const std::string prefix = "/d/d02-1/ag_ob/SEASTAR2_DATA/root/";
     enum class Reaction{Nb111PPN,   // 111Nb(p,pn)110Nb
                         Nb111PP2N};
@@ -30,12 +30,12 @@ namespace nancy{
 
     const calibpar hoparame(2.644,            // F7absF5X
                             -1.453E-5,        // F7linF5X
-                            -0.0002528,       // F7linF5A
-                            0.000103,         // F7linF3X
+                            -0.000'252'8,     // F7linF5A
+                            0.000'103,        // F7linF3X
                             cutval[0][0],     // F7absF5X0
                             2.647,            // F11absF9X
                             -5.871E-5,        // F11linF9X
-                            0.0002905,        // F11linF9A
+                            0.000'290'5,      // F11linF9A
                             0,                // F11linF11X
                             8.052E-5,         // F11linF11A
                             cutval[1][0]);    // F11absF9X0
@@ -177,12 +177,12 @@ namespace nancytrans{
 
     const calibpar hoparame(2.644,            // F7absF5X
                             -1.453E-5,        // F7linF5X
-                            -0.0002528,       // F7linF5A
-                            0.000103,         // F7linF3X
+                            -0.000'252'8,       // F7linF5A
+                            0.000'103,         // F7linF3X
                             cutval[0][0],     // F7absF5X0
                             2.647,            // F11absF9X
                             -5.871E-5,        // F11linF9X
-                            0.0002905,        // F11linF9A
+                            0.000'290'5,        // F11linF9A
                             0,                // F11linF11X
                             8.052E-5,         // F11linF11A
                             cutval[1][0]);    // F11absF9X0
@@ -219,12 +219,12 @@ namespace nancyempty{
 
     const calibpar hoparame(2.644,            // F7absF5X
                             -1.453E-5,        // F7linF5X
-                            -0.0002528,       // F7linF5A
-                            0.000103,         // F7linF3X
+                            -0.000'252'8,     // F7linF5A
+                            0.000'103,        // F7linF3X
                             cutval[0][0],     // F7absF5X0
                             2.647,            // F11absF9X
                             -5.871E-5,        // F11linF9X
-                            0.0002905,        // F11linF9A
+                            0.000'290'5,      // F11linF9A
                             0,                // F11linF11X
                             8.052E-5,         // F11linF11A
                             cutval[1][0]);    // F11absF9X0

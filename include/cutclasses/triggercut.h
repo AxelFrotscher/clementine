@@ -19,6 +19,6 @@ public:
 
 private:
     //TFile *output;
-    const int badtrg = 6; // triggerbit to exclude (does not contain F7DS)
+    const int badtrg = 0b110; // triggerbit to exclude (does not contain F7DS)
     const int threads = 10;
 };
