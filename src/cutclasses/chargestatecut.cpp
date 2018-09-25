@@ -18,13 +18,12 @@ void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevent
 
     // Step 2: Preparing variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
-    uint i = range.at(0); // counting variable
     double brhoratio = 0;
 
     progressbar progress(range.at(1)-range.at(0), threadno);
 
     //printf("Preparing Thread %i ranges %i, %i...\n", threadno, range.at(0), range.at(1));
-    while(i<range.at(1)){
+    for(int i=range.at(0); i<range.at(1); i++){
          if(goodevents.at(i)){
             tree->getevent(i);
 
@@ -36,7 +35,6 @@ void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevent
             }
             else goodevents.at(i).exchange(false);
         }
-        i++;
 
         progress.increaseevent();
     }
@@ -53,7 +51,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     vector<TChain*> chain;
     for(int i=0; i<threads; i++){
         chain.emplace_back(new TChain("tree"));
-        for(auto h: input) chain.back()->Add(h.c_str());
+        for(auto &h: input) chain.back()->Add(h.c_str());
     }
 
     vector<treereader*> tree;

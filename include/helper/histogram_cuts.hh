@@ -8,8 +8,7 @@
 #include <vector>
 
 struct calibpar{
-    calibpar(){
-    }
+    calibpar() = default;
     calibpar(double d, double e, double f, double g, double h, double i,
              double j, double k, double l, double m, double n) :
             F7absF5X(d), F7linF5X(e), F7linF5A(f), F7linF3X(g), F7absF5X0(h),
@@ -33,8 +32,6 @@ struct calibpar{
 
 // Definition of global variables here. Keep as short as possible!
 extern calibpar p1;
-extern std::mutex consolemutex;
-extern std::mutex writemutex;
 
 double linfit(double *x, double *par);
 const bool closeness(const std::vector<double> &d, double sigma=0.1);

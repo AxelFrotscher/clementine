@@ -24,12 +24,12 @@ bool treereader::Loop()
 //
 //       To read only selected branches, Insert statements like:
 // METHOD1:
-    fChain->SetBranchStatus("*",0);  // disable all branches
-    fChain->SetBranchStatus("BigRIPSIC.fADC[32]",1);  // activate branchname
+    fChain->SetBranchStatus("*", false);  // disable all branches
+    fChain->SetBranchStatus("BigRIPSIC.fADC[32]", true);  // activate branchname
 // METHOD2: replace line
 //    fChain->GetEntry(jentry);       //read all branches
 //by  b_branchname->GetEntry(ientry); //read only this branch
-   if (fChain == 0) return false;
+   if (fChain == nullptr) return false;
 
    Long64_t nentries = fChain->GetEntriesFast();
 
@@ -70,10 +70,10 @@ void treereader::setloopkeys(std::vector <std::string> Vals){
     if(!fChain) __throw_exception_again;
 
     fChain->SetBranchStatus("*",false);
-    for(auto name : Vals)
+    for(auto &name : Vals)
         fChain->SetBranchStatus(name.c_str(),true);
 
-    Long64_t nentries = fChain->GetEntriesFast();
+    //Long64_t nentries = fChain->GetEntriesFast();
 }
 
 Long64_t treereader::NumEntries(){

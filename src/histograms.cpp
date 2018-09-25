@@ -14,8 +14,6 @@
 using namespace std;
 
 calibpar p1;
-mutex consolemutex;
-mutex writemutex;
 
 void dalicalib(treereader *tree, TFile *output){
     // This Method aims to calibrate the 187 detectors of DALI
@@ -34,7 +32,6 @@ void dalicalib(treereader *tree, TFile *output){
 
     // Progress Bar setup
     int currevt=0; // counting variable
-    uint totevents = tree->NumEntries();
 
     while(tree->singleloop()){
         numdet = tree->DALINaI_;
@@ -58,11 +55,6 @@ void dalicalib(treereader *tree, TFile *output){
         return "build/output/" + input.at(0).substr(34,9) + "hist" +
                to_string(input.size()) + suffix;
     };
-
-    /*string output = "build/output/" + input.at(0).substr(34,9) + "hist" +
-                    to_string(input.size()) + ".root";
-    string txtout = "build/output/" + input.at(0).substr(34,9) + "hist" +
-                    to_string(input.size()) + ".txt"; */
 
     // Initialize ROOT and txt outputfile
     auto outputfile = new TFile(gentxt(".root").c_str(), "RECREATE");
@@ -101,7 +93,6 @@ void dalicalib(treereader *tree, TFile *output){
     // 111NbPPN, 111NbPP2N, 110NbPPN
     for(auto &i: reactionmodes) PID(input,goodevents,outputfile,i);
 
-    //makepid(input, outputfile, goodevents);
     printf("Made PID histograms in %s\n", gentxt(".root").c_str());
     //Get ADC Spectra for DALI
     //dalicalib(alt4dtree, outputfile);

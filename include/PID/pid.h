@@ -11,14 +11,14 @@ class PID {
 public:
     void innerloop(treereader *tree, std::vector<std::atomic<bool>>
     &goodevents, std::vector<uint> range);
-    void analyse(std::vector<std::string> input, TFile* output);
+    void analyse(const std::vector<std::string> &input, TFile* output);
     void offctrans();
     void crosssection();
     void reactionparameters();
     void histogramsetup();
 
-    PID(std::vector<std::string> input, std::vector<std::atomic<bool>>
-    &goodevents_, TFile* output, const std::string reaction_):
+    PID(const std::vector<std::string> &input, std::vector<std::atomic<bool>>
+    &goodevents_, TFile* output, const std::string &reaction_):
     goodevents(goodevents_),reaction(reaction_){
         analyse(input, output);
     };
@@ -39,7 +39,7 @@ private:
     std::atomic<int> reactionpid1{0};
     std::atomic<int> reactionpid2{0};
 
-    std::vector<double> acceptancerange{-50,70}; // mm
+    //std::vector<double> acceptancerange{-50,70}; // mm
     std::mutex unitemutex;
     int binning = 100;
 

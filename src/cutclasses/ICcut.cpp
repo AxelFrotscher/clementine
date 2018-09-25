@@ -21,11 +21,10 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
 
     //Step 2: Preparing Variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
-    uint i = range.at(0); // counting variable
 
     progressbar progress(range.at(1)-range.at(0),threadno);
 
-    while(i < range.at(1)){
+    for(int i=range.at(0); i < range.at(1); i++){
         if(goodevents.at(i)){
             // Determine cut only on good events
             tree->getevent(i);
@@ -36,18 +35,17 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             }
             if((tree->BigRIPSIC_fADC[0][0] <0) ||
                (tree->BigRIPSIC_fADC[1][0] <0)) continue;
-            for(uint i=0; i<(numchannel-1);i++){
-                if(tree->BigRIPSIC_fADC[0][i] >0)
-                    _comparediag.at(i).at(0).Fill(
+            for(uint j=0; j<(numchannel-1); j++){
+                if(tree->BigRIPSIC_fADC[0][j] >0)
+                    _comparediag.at(j).at(0).Fill(
                             tree->BigRIPSIC_fADC[0][0],
-                            tree->BigRIPSIC_fADC[0][i+1]- tree->BigRIPSIC_fADC[0][0]);
-                if(tree->BigRIPSIC_fADC[1][i] >0)
-                    _comparediag.at(i).at(1).Fill(
+                            tree->BigRIPSIC_fADC[0][j+1]- tree->BigRIPSIC_fADC[0][0]);
+                if(tree->BigRIPSIC_fADC[1][j] >0)
+                    _comparediag.at(j).at(1).Fill(
                             tree->BigRIPSIC_fADC[1][0],
-                            tree->BigRIPSIC_fADC[1][i+1]-tree->BigRIPSIC_fADC[1][0]);
+                            tree->BigRIPSIC_fADC[1][j+1]-tree->BigRIPSIC_fADC[1][0]);
             }
         }
-        i++;
         progress.increaseevent();
     }
 

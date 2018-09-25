@@ -25,33 +25,32 @@ void ppaccut::innerloop(treereader *tree,
 
     // Step 2: Preparing variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
-    uint i = range.at(0); // counting variable
     vector<bool> temptruth(4, true); // variable for position checking
 
     progressbar progress(range.at(1)-range.at(0), threadno);
 
     // Step 3: glorious loop
-    while(i<range.at(1)){
+    for(int i=range.at(0); i<range.at(1); i++){
         if(goodevents.at(i)){  // analyse good events only
             tree->getevent(i);
 
             // Get Efficiency relative to the last Plastic
             if (tree->BigRIPSPlastic_fTime[pl11position] >0){
-                for(uint i=1; i<=numplane; i++){
-                    if(tree->BigRIPSPPAC_fFiredX[i-1])
-                        _effPPAC.at(0).SetBinContent(i, _effPPAC.at(0).GetBinContent(i)+1);
-                    if(tree->BigRIPSPPAC_fFiredY[i-1])
-                        _effPPAC.at(1).SetBinContent(i, _effPPAC.at(1).GetBinContent(i)+1);
+                for(uint j=1; j<=numplane; j++){
+                    if(tree->BigRIPSPPAC_fFiredX[j-1])
+                        _effPPAC.at(0).SetBinContent(j, _effPPAC.at(0).GetBinContent(j)+1);
+                    if(tree->BigRIPSPPAC_fFiredY[j-1])
+                        _effPPAC.at(1).SetBinContent(j, _effPPAC.at(1).GetBinContent(j)+1);
                 }
                 efficiencytotal++;
             }
 
             // Fill Sum and differences of time signals to check
-            for(uint i=0; i<numplane;i++){
-                _sumdiffppac.at(0).at(0).Fill(i,tree->BigRIPSPPAC_fTSumX[i]);
-                _sumdiffppac.at(0).at(1).Fill(i,tree->BigRIPSPPAC_fTDiffX[i]);
-                _sumdiffppac.at(1).at(0).Fill(i,tree->BigRIPSPPAC_fTSumY[i]);
-                _sumdiffppac.at(1).at(1).Fill(i,tree->BigRIPSPPAC_fTDiffY[i]);
+            for(uint j=0; j<numplane;j++){
+                _sumdiffppac.at(0).at(0).Fill(j,tree->BigRIPSPPAC_fTSumX[j]);
+                _sumdiffppac.at(0).at(1).Fill(j,tree->BigRIPSPPAC_fTDiffX[j]);
+                _sumdiffppac.at(1).at(0).Fill(j,tree->BigRIPSPPAC_fTSumY[j]);
+                _sumdiffppac.at(1).at(1).Fill(j,tree->BigRIPSPPAC_fTDiffY[j]);
             }
 
             // Make Cut conditions: each focal Plane needs to have one valid entry
@@ -69,11 +68,11 @@ void ppaccut::innerloop(treereader *tree,
                     if(temptruth.at(j)) break; // We got our nice event at this F-point
                 }
                 // Recursively check each focal plane for at least 1 good Signal
-                temp = temp*accumulate(temptruth.begin(), temptruth.end(),0);
+                temp *= accumulate(temptruth.begin(), temptruth.end(),0);
+                if(!temp) break;
             }
             if(!temp) goodevents.at(i).exchange(false);
         } // end of physics loop
-        i++;
         progress.increaseevent();
     }
 

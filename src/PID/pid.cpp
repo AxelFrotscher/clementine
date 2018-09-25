@@ -108,7 +108,7 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     progress.reset();
 }
 
-void PID::analyse(std::vector <std::string> input, TFile *output) {
+void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     // Set Parameters according to reaction specified in string
     PID::reactionparameters();
 
@@ -175,47 +175,6 @@ void PID::analyse(std::vector <std::string> input, TFile *output) {
 }
 
 void PID::offctrans() {
-    // Calculating off-center transmission
-    //int threshold = 200; // 100cts for reacted beam
-    /*double dividend = 0; // dividend/divisor
-    double divisor = 0;
-    int binlow  = reactF5.at(0).FindBin(acceptancerange.at(0));
-    int binhigh = reactF5.at(0).FindBin(acceptancerange.at(1));
-    //printf("Chisqure minimization from bin %i to bin %i\n", binlow, binhigh);
-    vector<double> chisq ={0,0,0};
-
-    // Calculating scaling factor alpha
-    for(int i=binlow; i < binhigh; i++){
-        if(reactF5.at(1).GetBinContent(i)){
-            dividend += reactF5.at(0).GetBinContent(i);
-            divisor  += pow(reactF5.at(0).GetBinContent(i),2)/
-                        (double)reactF5.at(1).GetBinContent(i);
-        }
-    }
-
-    //double alpha =dividend/divisor; // Scaling factor F5(beam) F5(reacted)
-
-    // Calculating corresponding chi-square, and test minimum
-    for(int i=binlow; i<binhigh; i++)
-        if(reactF5.at(1).GetBinContent(i)) {
-            double e = 0.05; // testvalue
-            chisq.at(0) += pow(alpha * reactF5.at(0).GetBinContent(i) -
-                               reactF5.at(1).GetBinContent(i), 2) /
-                           (double) reactF5.at(1).GetBinContent(i);
-            chisq.at(1) += pow((1-e)*alpha * reactF5.at(0).GetBinContent(i) -
-                               reactF5.at(1).GetBinContent(i), 2) /
-                           (double) reactF5.at(1).GetBinContent(i);
-            chisq.at(2) += pow((1+e)*alpha * reactF5.at(0).GetBinContent(i) -
-                               reactF5.at(1).GetBinContent(i), 2) /
-                           (double) reactF5.at(1).GetBinContent(i);
-        }
-
-    // Pushing out the new scaled beam values
-    //for(auto &i: chisq) i /= binhigh - binlow -1;
-    reactF5.push_back(reactF5.at(0));
-    reactF5.back().Scale(alpha);
-    reactF5.back().SetTitle("F5 scaled beam profile");*/
-
     // Calculating raw beam ratio:
     reactF5.push_back(reactF5.at(1));
     for (auto &i:reactF5) i.Sumw2();
@@ -239,7 +198,7 @@ void PID::offctrans() {
     const int stopbin = (uint)(reactF5.back().FindLastBinAbove(0));
     double sum =0, totalweight =0;
     for(int i=startbin; i<stopbin;i++){
-        if(reactF5.back().GetBinContent(i)) {
+        if((bool)reactF5.back().GetBinContent(i)) {
             sum += reactF5.back().GetBinContent(i) / pow(reactF5.back().GetBinError(i), 2);
             totalweight += pow(reactF5.back().GetBinError(i), -2);
         }
@@ -335,27 +294,6 @@ void PID::offctrans() {
          << " Chisq: " << fitplot.GetBinContent(backupfit[0],backupfit[1])
          << " Offcentertransmission: " << offcentertransmission
          << " +- " << offcentertransmissionerror << endl;
-
-    // Off-center cut works only for sufficient statistics:
-    /*if((goodevents.size() == runinfo::emptysize) ||
-            (goodevents.size() == runinfo::transsize)){
-        printf("Not doing off-center transmission. No physics run.\n");
-        return;
-    }
-    else if(reactF5.at(1).Integral() > threshold){
-        printf("\n Scaling Factor: %f, with chisq/ndof %f, transmission: %f. "
-            "Scaling factor from Area %f !\n",
-            alpha, chisq.at(0),reactF5.at(1).Integral()/reactF5.at(2).Integral(),
-            reactF5.at(1).Integral(binlow,binhigh)/
-            reactF5.at(0).Integral(binlow,binhigh));
-        offcentertransmission = reactF5.at(1).Integral()/reactF5.at(2).Integral();
-        return;
-    }
-    else{
-        printf("Too low statistics for offcenter effects (%.1f)\n",
-                reactF5.at(1).Integral());
-        return;
-    }*/
 }
 
 void PID::crosssection() {

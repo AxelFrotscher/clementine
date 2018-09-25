@@ -27,13 +27,12 @@ void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
 
     // Step 2: Preparing Variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
-    uint i = range.at(0); // counting variable
 
     progressbar progress(range.at(1)-range.at(0), threadno);
 
     vector<vector<double>> fillvals(2,vector<double>(9,0)); // Fill dependent variable and
 
-    while(i<range.at(1)){
+    for(int i=range.at(0); i<range.at(1); i++){
         if(goodevents.at(i)) { // We absolutely need CCSC cuts for HOC
             tree->getevent(i);
             fillvals.at(0).at(0) = tree->F3X;
@@ -76,7 +75,6 @@ void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                 }
             }
         }
-        i++;
         progress.increaseevent();
     }
     // Step 3 rejoining the histogram

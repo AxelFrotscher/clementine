@@ -23,28 +23,27 @@ void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
 
     // Step 2: Preparing Variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
-    uint i = range.at(0); // counting variable
 
     progressbar progress(range.at(1)-range.at(0), threadno);
 
-    while(i < range.at(1)){
+    for(int i=range.at(0);i < range.at(1);i++){
         if(goodevents.at(i)){
             tree->getevent(i);
             if(sqrt(tree->BigRIPSPlastic_fQLRaw[F7pos]*
                     tree->BigRIPSPlastic_fQRRaw[F7pos])> threshhold) // F7-cut
-                for(uint i=0; i<numplastic; i++){              // plastic loop
-                    if((tree->BigRIPSPlastic_fQLRaw[i] >0 )&&
-                       (tree->BigRIPSPlastic_fQRRaw[i] >0)){   // 0 charge veto
-                        qcorr2D.at(i).Fill(tree->BigRIPSPlastic_fQLRaw[i],
-                                           tree->BigRIPSPlastic_fQRRaw[i]);
-                        qcorr.at(i).Fill(sqrt(tree->BigRIPSPlastic_fQLRaw[i]*
-                                              tree->BigRIPSPlastic_fQRRaw[i]));
-                        if((tree->BigRIPSPlastic_fTLRaw[i] >0) &&
-                           (tree->BigRIPSPlastic_fTRRaw[i] >0) ){ // 0 time veto
-                            tqcorr2D.at(i).Fill(tree->BigRIPSPlastic_fTLRaw[i]-
-                                                tree->BigRIPSPlastic_fTRRaw[i],
-                                      TMath::Log(tree->BigRIPSPlastic_fQLRaw[i]/
-                                       (double)tree->BigRIPSPlastic_fQRRaw[i]));
+                for(uint j=0; j<numplastic; j++){              // plastic loop
+                    if((tree->BigRIPSPlastic_fQLRaw[j] >0 )&&
+                       (tree->BigRIPSPlastic_fQRRaw[j] >0)){   // 0 charge veto
+                        qcorr2D.at(j).Fill(tree->BigRIPSPlastic_fQLRaw[j],
+                                           tree->BigRIPSPlastic_fQRRaw[j]);
+                        qcorr.at(j).Fill(sqrt(tree->BigRIPSPlastic_fQLRaw[j]*
+                                              tree->BigRIPSPlastic_fQRRaw[j]));
+                        if((tree->BigRIPSPlastic_fTLRaw[j] >0) &&
+                           (tree->BigRIPSPlastic_fTRRaw[j] >0) ){ // 0 time veto
+                            tqcorr2D.at(j).Fill(tree->BigRIPSPlastic_fTLRaw[j]-
+                                                tree->BigRIPSPlastic_fTRRaw[j],
+                                      TMath::Log(tree->BigRIPSPlastic_fQLRaw[j]/
+                                       (double)tree->BigRIPSPlastic_fQRRaw[j]));
                         }
                     }
                 }
@@ -58,7 +57,6 @@ void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             if(!temp) goodevents.at(i).exchange(false);
 
         }
-        i++;
         progress.increaseevent();
     }
 
@@ -171,5 +169,4 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
     for(auto histo: tqcorr2D) histo.Write();
     output->cd("");
     printf("Finished writing plastic histograms!\n");
-
 }

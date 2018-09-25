@@ -17,12 +17,9 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     for(auto &i:tarhist) _tarhist.emplace_back(TH2D(i));
 
     //Step 2: preparing variables
-    const auto downscale = (int)((range.at(1)-range.at(0))/100.);
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     progressbar progress(range.at(1)-range.at(0), threadno);
-
-    int i = range.at(0); // counting variable
 
     vector<vector<double>> slopex(2,vector<double>(0)); //0:x,y 1:val, z
     vector<vector<double>> slopey(2,vector<double>(0)); //0:x,y 1:val, z
@@ -30,19 +27,19 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     // Get temporary mean value:
     double meanx = 0, meany = 0, meanxz=0, meanyz =0, fXTar=0, fYTar=0;
 
-    while(i < range.at(1)){
+    for(int i =range.at(0); i < range.at(1); i++){
         if(goodevents.at(i)){
             // Determine cut only on good events
             tree->getevent(i);
             // 1. Fill valid events
-            for(uint i =ppacoffset; i<(ppacoffset+f8ppac); i++) {
-                if (abs(tree->BigRIPSPPAC_fX[i] - magnum) > 1){
-                    slopex.at(0).push_back(tree->BigRIPSPPAC_fX[i]);
-                    slopex.at(1).push_back(f8z.at(i-ppacoffset).at(0));
+            for(int j =ppacoffset; j<(ppacoffset+f8ppac); j++) {
+                if (abs(tree->BigRIPSPPAC_fX[j] - magnum) > 1){
+                    slopex.at(0).push_back(tree->BigRIPSPPAC_fX[j]);
+                    slopex.at(1).push_back(f8z.at(j-ppacoffset).at(0));
                 }
-                if (abs(tree->BigRIPSPPAC_fY[i] - magnum) > 1){
-                    slopey.at(0).push_back(tree->BigRIPSPPAC_fY[i]);
-                    slopey.at(1).push_back(f8z.at(i-ppacoffset).at(1));
+                if (abs(tree->BigRIPSPPAC_fY[j] - magnum) > 1){
+                    slopey.at(0).push_back(tree->BigRIPSPPAC_fY[j]);
+                    slopey.at(1).push_back(f8z.at(j-ppacoffset).at(1));
                 }
             }
             if((slopex.at(0).size() < 2) || (slopey.at(0).size() <2)){
@@ -74,8 +71,6 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             slopex.at(1).clear();
             slopey.at(1).clear();
         }
-
-        i++;
         progress.increaseevent();
     }
 

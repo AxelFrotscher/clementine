@@ -34,9 +34,9 @@ double constfit(double *x, double *par){
 
 const double slope(const vector<double> &x, const vector<double> &y){
     // Simple linear regression (explicit)
-    if(!(x.size())==y.size())
+    if(x.size() != y.size())
         __throw_invalid_argument("Argument number mismatch!\n");
-    if(x.size()<2) __throw_invalid_argument("Slope points too few!\n");
+    if(x.size()<2) __throw_invalid_argument("Too few Slope points!\n");
 
     const auto n= x.size();
     const auto s_x = accumulate(x.begin(),x.end(), 0.0);
