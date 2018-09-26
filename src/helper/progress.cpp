@@ -21,7 +21,7 @@ atomic<bool> progressbar::ongoinganalysis;
 
 void progressbar::draw(){
     // Worker Instances must not draw anything
-    if(worker) return;
+    if(worker && (currentthreads>1)) return;
 
     vector<int> pos; // position for each bar
 
@@ -40,7 +40,7 @@ void progressbar::draw(){
     cout << "\r";
     cout.flush();
 
-    this_thread::__sleep_for(chrono::seconds((long)updateinterval), chrono::nanoseconds(0));
+    if(currentthreads>1) this_thread::__sleep_for(chrono::seconds((long)updateinterval), chrono::nanoseconds(0));
 }
 
 void progressbar::reset() {

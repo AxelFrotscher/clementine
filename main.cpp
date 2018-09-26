@@ -1,5 +1,6 @@
 #include "histograms.hh"
 #include "MakeAllTree_78Ni.hh"
+#include "zdssetting.h"
 #include <iostream>
 #include <algorithm>
 #include <thread>
@@ -35,30 +36,29 @@ int main(int argc, char**argv){
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
     // Step 1: analyse the raw data
-    const vector<uint> analysedfile{57}; // 57 Index of analysed file (first, offset)
+    //const uint analysedfile = 57; // 57 Index of analysed file (first, offset)
     const vector<string> input = getlist("config/minosridf.txt");
 
-    // Define good runs
-    const vector<uint> goodruns{1,3,4,5,7,8,9,10,11,13,14,19,26,29,32,33,35,37,
-                                       38,40,41,42,46,49,50,51,52,54,57,58,59};
-
-    const vector<uint> transmissionrun{54};
-    const vector<uint> emptyrun{52,53};
+    printf("Which Setting do you want to analyse?\n"
+           "[0] 110Nb \n[1] 88Ge \n[2] 94Se \n[3] 100Kr\n");
+    int set = 0;
+    if(!(cin >> set)) throw invalid_argument("That's no setting!");
+    auto s = setting(set);
 
     vector<string> output;
-    for(auto run : goodruns) {
+    for(auto run : s.goodruns) {
         output.push_back(runinfo::prefix +
-                         input.at(analysedfile.at(0)+run).substr(34, 9)
+                         input.at(s.analysedfile+run).substr(34, 9)
                          + ".root");
     }
 
     vector<string> transmissionout;
-    for(auto run: transmissionrun)
+    for(auto run: s.transmissionrun)
         transmissionout.push_back(runinfo::prefix + input.at(run).substr(34,9)
                                   + ".root");
 
     vector<string> emptyout;
-    for(auto run: emptyrun)
+    for(auto run: s.emptyrun)
         emptyout.push_back(runinfo::prefix + input.at(run).substr(34,9) + ".root");
 
     switch(analyse_raw){
@@ -70,26 +70,28 @@ int main(int argc, char**argv){
 
             switch(i){
                 case 0:{
-                    cout << "Which emptyrun? [0-1] " << endl;
+                    cout << "Which emptyrun? [0-" << s.emptyrun.size()-1 << "] "
+                         << endl;
                     if(!(cin >> i)) throw invalid_argument("WTH");
                     cout << "(Empty) Analyzing SEASTAR:"
-                         << input.at(emptyrun.at(i)) << endl;
-                    generatetree(input.at(emptyrun.at(i)),
+                         << input.at(s.emptyrun.at(i)) << endl;
+                    generatetree(input.at(s.emptyrun.at(i)),
                                  emptyout.at(i));
                     break;
                 }
                 case 1:{
                     cout << "(Trans) Analyzing SEASTAR:"
-                         << input.at(transmissionrun.at(0)) << endl;
-                    generatetree(input.at(transmissionrun.at(0)), transmissionout.at(0));
+                         << input.at(s.transmissionrun.at(0)) << endl;
+                    generatetree(input.at(s.transmissionrun.at(0)), transmissionout.at(0));
                     break;
                 }
                 case 2:{
-                    cout << "Which physicsrun? [0-30] " << endl;
+                    cout << "Which physicsrun? [0-"<< s.goodruns.size()-1
+                         <<"] " << endl;
                     if(!(cin >> i)) throw invalid_argument("WTH");
                     cout << "(Empty) Analyzing SEASTAR:"
-                         << input.at(analysedfile.at(0)+goodruns.at(i)) << endl;
-                    generatetree(input.at(analysedfile.at(0)+goodruns.at(i)),
+                         << input.at(s.analysedfile+s.goodruns.at(i)) << endl;
+                    generatetree(input.at(s.analysedfile+s.goodruns.at(i)),
                                  output.at(i));
                     break;
                 }

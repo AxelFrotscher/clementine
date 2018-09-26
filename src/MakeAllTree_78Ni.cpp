@@ -193,7 +193,7 @@ void generatetree(const string infile, const string output){
     // Progress Bar setup
     int neve = 0; // counting variable
     uint totevents = 5000000;
-    const int downscale = 500; // every n-th event
+    const int downscale = 5000; // every n-th event
 
     progressbar progress(totevents, 0);
 
