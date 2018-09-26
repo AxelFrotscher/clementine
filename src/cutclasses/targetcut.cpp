@@ -106,8 +106,8 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
 
     for(auto &histo: tarhist){
         histo.SetOption("colz");
-        histo.GetYaxis()->SetTitle("x [mm]");
-        histo.GetXaxis()->SetTitle("y [mm]");
+        histo.GetYaxis()->SetTitle("y [mm]");
+        histo.GetXaxis()->SetTitle("x [mm]");
     }
 
     int cutpre = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);

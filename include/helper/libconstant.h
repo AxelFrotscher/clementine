@@ -9,13 +9,10 @@ namespace runinfo{
     const int transsize = 395'267; // Runs containing this number are transmission
     const int emptysize = 513'225; // Empty-target measurement
     const std::string prefix = "/d/d02-1/ag_ob/SEASTAR2_DATA/root/";
-    enum class Reaction{Nb111PPN,   // 111Nb(p,pn)110Nb
-                        Nb111PP2N};
 }
 
 namespace nancy{
     //Variables and constants used for 111Nb->110Zr setting
-
     // Cut Isotopes for higherorder correction, F3-7, and F8-11
     const std::vector<std::vector<double>> cutval{ // for corrections we use 85Ge
         {2.6449,       // center x

@@ -31,6 +31,7 @@ private:
 
     std::vector<std::vector<TH2D>> PIDplot;
     std::vector<TH1D> reactF5;
+    std::vector<TH2D> reactF7PPAC;
 
     std::vector<double> incval; // cut on incoming particles (F7)
     std::vector<double> targetval; // second cut to detected particles (F11)

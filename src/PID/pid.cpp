@@ -17,9 +17,11 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     &goodevents, std::vector<uint> range) {
     // Step 1: duplicate the data structure
     vector<TH1D> _reactF5;
+    vector<TH2D> _reactF7PPAC;
     vector<vector<TH2D>> _PIDplot;
 
     for(auto &i: reactF5) _reactF5.emplace_back(TH1D(i));
+    for(auto &i: reactF7PPAC) _reactF7PPAC.emplace_back(TH2D(i));
     for(auto &i: PIDplot){
         vector<TH2D> temp;
         for(auto &j:i) temp.emplace_back(TH2D(j));
@@ -89,6 +91,16 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     _PIDplot.at(0).at(4).Fill(tree->BigRIPSBeam_aoq[4],
                                               tree->BigRIPSBeam_zet[4]);
                     _PIDplot.at(1).at(4).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
+
+                    // Fill Information to the beam profile/shape/energy
+                    // 17 == F7PPAC-2B
+                    _reactF7PPAC.at(0).Fill(tree->BigRIPSPPAC_fX[17],
+                                            tree->BigRIPSPPAC_fY[17]);
+                    _reactF7PPAC.at(1).Fill(
+                        1E3*atan((tree->BigRIPSPPAC_fX[17]-tree->BigRIPSPPAC_fX[16])/37.4),
+                        1E3*atan((tree->BigRIPSPPAC_fY[17]-tree->BigRIPSPPAC_fY[16])/20.2));
+                    _reactF7PPAC.at(2).Fill(tree->BigRIPSIC_fCalMeVSqSum[0],
+                                            tree->BigRIPSIC_fCalMeVSqSum[1]);
                 }
             }
         }
@@ -98,6 +110,7 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     // Step 3: rejoining data structure
     unitemutex.lock();
     for(uint i=0;i<reactF5.size();i++) reactF5.at(i).Add(new TH1D(_reactF5.at(i)));
+    for(uint i=0;i<reactF7PPAC.size();i++) reactF7PPAC.at(i).Add(new TH2D(_reactF7PPAC.at(i)));
     for(uint i=0;i<PIDplot.size();i++){
         for(uint j=0;j<PIDplot.at(0).size();j++){
             PIDplot.at(i).at(j).Add(new TH2D(_PIDplot.at(i).at(j)));
@@ -137,7 +150,8 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     vector<string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
                          "F5X", "F5A", "F9X", "F9A", "F11X", "F11A",
-                         "BigRIPSIC.fCalMeVSqSum"};
+                         "BigRIPSIC.fCalMeVSqSum", "BigRIPSPPAC.fX",
+                         "BigRIPSPPAC.fY"};
     for(auto &i:tree) i->setloopkeys(keys);
 
     //Constructing all the histograms
@@ -166,8 +180,9 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         output->cd(folders.at(i).c_str());
         if (i < 2) for (auto &elem: PIDplot.at(i)) elem.Write();
         else {
-            for (auto &elem: reactF5) elem.Write();
+            for(auto &elem: reactF5) elem.Write();
             fitplot.Write();
+            for(auto &elem: reactF7PPAC) elem.Write();
             if(bestfit) bestfit->Write();
         }
         output->cd("");
@@ -436,6 +451,10 @@ void PID::histogramsetup() {
     reactF5.emplace_back(TH1D("F5beam", "F5 beam profile", binning,-100,100));
     reactF5.emplace_back(TH1D("F5react", "F5-position of reacted particles", binning,-100,100));
 
+    reactF7PPAC.emplace_back(TH2D("F7pos", "PID F7 beamshape", 200,-40,40,200,-40,40));
+    reactF7PPAC.emplace_back(TH2D("F7ang", "PID F7 beam angular shape", 100,-100,100,100,-100,100));
+    reactF7PPAC.emplace_back(TH2D("F7en", "PID F7 energy distribution", 200,700,900,200,200,400));
+
     fitplot = TH2D("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,binning, binning-1,1,binning);
     fitplot.GetXaxis()->SetTitle("Starting Bin");
     fitplot.GetYaxis()->SetTitle("Number of Bins");
@@ -454,4 +473,13 @@ void PID::histogramsetup() {
             uelem.GetYaxis()->SetTitle("Z");
         }
     }
+
+    reactF7PPAC.at(0).GetXaxis()->SetTitle("F7X [mm]");
+    reactF7PPAC.at(0).GetYaxis()->SetTitle("F7Y [mm]");
+    reactF7PPAC.at(1).GetXaxis()->SetTitle("F7A [mrad]");
+    reactF7PPAC.at(1).GetYaxis()->SetTitle("F7B [mrad]");
+    reactF7PPAC.at(2).GetXaxis()->SetTitle("E|F7 [MeV]");
+    reactF7PPAC.at(2).GetYaxis()->SetTitle("E|F11 [MeV]");
+
+    for(auto &i: reactF7PPAC) i.SetOption("colz");
 }
