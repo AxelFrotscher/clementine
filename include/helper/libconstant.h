@@ -29,6 +29,13 @@ namespace runinfo{
 
     const std::vector<std::vector<uint>> pidZrange{
         {200,36,46},{200,28,38},{0,0,0},{0,0,0}}; // y boundaries
+
+    const std::vector<std::vector<std::string>> reactionmodes{
+        {"111NbP2P","110NbP2P","110MoP3P","111MoP3P","112MoP3P",
+         "113MoP3P","112TcP3P","113TcP3P","114TcP3P"},
+        {"90SeP2P"},
+        {},
+        {}};
 }
 
 namespace nancy{
@@ -98,117 +105,35 @@ namespace nancy{
             0.6    // radius y
     };
 
-    const std::vector<double> targetval110Nb{
-            2.683, //2.750, // center x
-            40.95, //40.0, // center y
-            incval111Nb.at(2),
-            incval111Nb.at(3)
-    };
+    const std::vector<double> targetval110Nb{2.683, 40.95, incval111Nb.at(2),
+                                             incval111Nb.at(3)};
+    const std::vector<double> targetval109Nb{2.66, 40.9, incval111Nb.at(2),
+                                             incval111Nb.at(3)};
+    const std::vector<double> targetval110Zr{2.75, 40.0, 0.01, 0.5};
+    const std::vector<double> incval110Nb{2.6882, 40.9, 0.006, 0.6};
 
-    const std::vector<double> targetval109Nb{
-            2.66, //2.750, // center x
-            40.9, //40.0, // center y
-            incval111Nb.at(2),
-            incval111Nb.at(3)
-    };
+    const std::vector<double> targetval109Zr{2.725, 39.9, 0.01, 0.5};
 
-    const std::vector<double> targetval110Zr{
-            2.75, //2.750, // center x
-            40.0, //40.0, // center y
-            0.01,
-            0.5
-    };
+    const std::vector<double> incval111Mo{2.6482, 41.9, 0.006, 0.6};
+    const std::vector<double> incval112Mo{2.672, 41.9, 0.006, 0.6};
+    const std::vector<double> incval113Tc{2.6334, 42.86, 0.004, 0.6};
+    const std::vector<double> incval112Tc{2.6103, 42.9, 0.004, 0.6};
+    const std::vector<double> incval114Tc{2.65676, 42.882, 0.004, 0.5};
 
-    const std::vector<double> incval110Nb{
-            2.6882, // center x
-            40.9,  // center y
-            0.006, // radius x
-            0.6    // radius y
-    };
+    const std::vector<double> targetval111Nb{2.707, 40.9, 0.01, 0.5};
+    const std::vector<double> targetval112Nb{2.729, 41.0, 0.01, 0.5};
 
-    const std::vector<double> targetval109Zr{
-            2.725, //2.750, // center x
-            39.9, //40.0, // center y
-            0.01,
-            0.5
-    };
+    const std::vector<double> incval110Mo{2.6247, 41.9, 0.006, 0.6};
 
-    const std::vector<double> incval111Mo{
-            2.6482, // center x
-            41.9,  // center y
-            0.006, // radius x
-            0.6    // radius y
-    };
+    const std::vector<double> targetval108Zr{2.6992, 39.91, 0.01, 0.4};
 
-    const std::vector<double> incval112Mo{
-            2.672, // center x
-            41.9,  // center y
-            0.006, // radius x
-            0.6    // radius y
-    };
+    const std::vector<double> incval113Mo{2.696, 41.92, 0.004, 0.6};
 
-    const std::vector<double> incval113Tc{
-            2.6334, // center x
-            42.86,  // center y
-            0.004, // radius x
-            0.6    // radius y
-    };
+    const std::vector<double> targetval111Zr{2.775, 40, 0.01, 0.4};
 
-    const std::vector<double> incval112Tc{
-            2.6103, // center x
-            42.9,  // center y
-            0.004, // radius x
-            0.6    // radius y
-    };
 
-    const std::vector<double> incval114Tc{
-            2.65676, // center x
-            42.882,  // center y
-            0.004, // radius x
-            0.5    // radius y
-    };
-
-    const std::vector<double> targetval111Nb{
-            2.707, //2.750, // center x
-            40.9, //40.0, // center y
-            0.01,
-            0.5
-    };
-
-    const std::vector<double> targetval112Nb{
-            2.729, //2.750, // center x
-            41.0, //40.0, // center y
-            0.01,
-            0.5
-    };
-
-    const std::vector<double> incval110Mo{
-            2.6247, // center x
-            41.9,  // center y
-            0.006, // radius x
-            0.6    // radius y
-    };
-
-    const std::vector<double> targetval108Zr{
-            2.6992, //2.750, // center x
-            39.91, //40.0, // center y
-            0.01,
-            0.4
-    };
-
-    const std::vector<double> incval113Mo{
-            2.696, // center x
-            41.92,  // center y
-            0.004, // radius x
-            0.6    // radius y
-    };
-
-    const std::vector<double> targetval111Zr{
-            2.775, //2.750, // center x
-            40, //40.0, // center y
-            0.01,
-            0.4
-    };
+    const std::vector<double> incval90Se{2.651, 34.0, 0.006, 0.6};
+    const std::vector<double> targetval89As{2.711, 32.3, 0.01, 0.4};
 }
 
 namespace nancytrans{
@@ -238,18 +163,19 @@ namespace nancytrans{
                             cutval[1][0]);    // F11absF9X0
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
-    const std::vector<double> incval{
-            2.706, // center x
-            41.0,  // center y
-            0.009, // radius x
-            0.6    // radius y
+    // center x centery radius x radius y
+    const std::vector<std::vector<double>> incval{
+        {2.706, 41.0, 0.009, 0.6},
+        {0.,0.,0.,0.},
+        {0.,0.,0.,0.},
+        {0.,0.,0.,0.}
     };
 
-    const std::vector<double> targetval{
-            2.706, // center x
-            41.0, // center y
-            incval.at(2),
-            incval.at(3)
+    const std::vector<std::vector<double>> targetval{
+        {2.706, 41.0, incval.at(0).at(2), incval.at(0).at(3)},
+        {0, 0, incval.at(1).at(2), incval.at(1).at(3)},
+        {0, 0, incval.at(2).at(2), incval.at(2).at(3)},
+        {0, 0, incval.at(3).at(2), incval.at(3).at(3)},
     };
 }
 
@@ -280,17 +206,17 @@ namespace nancyempty{
                             cutval[1][0]);    // F11absF9X0
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
-    const std::vector<double> incval{
-            2.706, // center x
-            41.0,  // center y
-            0.009, // radius x
-            0.5    // radius y
+    const std::vector<std::vector<double>> incval{
+            {2.706, 41.0, 0.009, 0.5},
+            {0.,0.,0.,0.},
+            {0.,0.,0.,0.},
+            {0.,0.,0.,0.}
     };
 
-    const std::vector<double> targetval{
-            2.750, // center x
-            39.27, // center y
-            0.011,
-            0.6
+    const std::vector<std::vector<double>> targetval{
+            {2.750, 39.27, 0.011, 0.6},
+            {0.,0.,0.,0.},
+            {0.,0.,0.,0.},
+            {0.,0.,0.,0.}
     };
 }

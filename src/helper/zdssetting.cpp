@@ -119,3 +119,30 @@ const vector<uint> setting::getZrange() {
     // Getting the correct Z Range for the settings
     return runinfo::pidZrange.at(settingnumber);
 }
+
+const vector<std::string> setting::getreactions() {
+    // Determine the reactions to calculate for the settings
+    return runinfo::reactionmodes.at(settingnumber);
+}
+
+const vector<double> setting::getPIDincutvalue() {
+    // return cut particle for incoming beam (trans/empty only)
+    if(!setting::isemptyortrans()) std::__throw_invalid_argument("Run in not empty or transmision run!\n");
+
+    if(istransmissionrun) return nancytrans::incval.at(settingnumber);
+    if(isemptyrun) return nancyempty::incval.at(settingnumber);
+}
+
+const vector<double> setting::getPIDoutcutvalue() {
+    // return cut particle for incoming beam (trans/empty only)
+    if(!setting::isemptyortrans()) std::__throw_invalid_argument("Run in not empty or transmision run!\n");
+
+    if(istransmissionrun) return nancytrans::targetval.at(settingnumber);
+    if(isemptyrun) return nancyempty::targetval.at(settingnumber);
+}
+
+const std::string setting::getmodename() {
+    if(istransmissionrun) return "transmission";
+    if(isemptyrun) return "empty";
+    return "data";
+}

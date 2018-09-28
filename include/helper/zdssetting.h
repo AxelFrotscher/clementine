@@ -30,6 +30,11 @@ public:
     TCutG* getbrhocut();
     const std::vector<std::vector<int>> getPlasticRange();
     const std::vector<uint> getZrange();
+    const std::vector<std::string> getreactions();
+    const bool isemptyortrans(){return isemptyrun || istransmissionrun;}
+    const std::vector<double> getPIDincutvalue();
+    const std::vector<double> getPIDoutcutvalue();
+    const std::string getmodename();
     std::vector<uint> goodruns;
     std::vector<uint> transmissionrun;
     std::vector<uint> emptyrun;

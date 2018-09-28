@@ -347,85 +347,82 @@ void PID::crosssection() {
 
 void PID::reactionparameters() {
     // Setup cut values
-    switch(goodevents.size()){
-        case 395'267:{ // transsize.at(0)
-            incval = nancytrans::incval;
-            targetval = nancytrans::targetval;
-            reaction = "transmission";
-            break;
-        }
-        case 513'225:{ // emptysize.at(0)
-            incval = nancyempty::incval;
-            targetval = nancyempty::targetval;
-            reaction = "empty";
-            break;
-        }
-        default:{
-            if(reaction == "111NbPPN"){
-                incval = nancy::incval111Nb;
-                targetval = nancy::targetval110Nb;
-                binning = 50;
-            }
-            else if(reaction == "111NbPP2N"){
-                incval = nancy::incval111Nb;
-                targetval = nancy::targetval109Nb;
-                binning = 50;
-            }
-            else if(reaction == "111NbP2P"){
-                incval    = nancy::incval111Nb;
-                targetval = nancy::targetval110Zr;
-                binning   = 80;
-            }
-            else if(reaction == "110NbPPN"){
-                incval = nancy::incval110Nb;
-                targetval = nancy::targetval109Nb;
-                binning = 100;
-            }
-            else if(reaction == "110NbP2P"){
-                incval = nancy::incval110Nb;
-                targetval = nancy::targetval109Zr;
-                binning = 40;
-            }
-            else if(reaction == "110MoP3P"){
-                incval = nancy::incval110Mo;
-                targetval = nancy::targetval108Zr;
-                binning = 50;
-            }
-            else if(reaction == "111MoP3P"){
-                incval = nancy::incval111Mo;
-                targetval = nancy::targetval109Zr;
-                binning = 50;
-            }
-            else if(reaction == "112MoP3P"){
-                incval = nancy::incval112Mo;
-                targetval = nancy::targetval110Zr;
-                binning = 50;
-            }
-            else if(reaction == "113TcP3P"){
-                incval = nancy::incval113Tc;
-                targetval = nancy::targetval111Nb;
-                binning = 50;
-            }
-            else if(reaction == "112TcP3P"){
-                incval = nancy::incval112Tc;
-                targetval = nancy::targetval110Nb;
-                binning = 50;
-            }
-            else if(reaction == "114TcP3P"){
-                incval = nancy::incval114Tc;
-                targetval = nancy::targetval112Nb;
-                binning = 50;
-            }
-            else if(reaction == "113MoP3P"){
-                incval = nancy::incval113Mo;
-                targetval = nancy::targetval111Zr;
-                binning = 50;
-            }
-            else __throw_invalid_argument(Form("Invalid reaction %s!\n", &reaction[0]));
+    setting set;
+    if(set.isemptyortrans()){
+        incval = set.getPIDincutvalue();
+        targetval = set.getPIDoutcutvalue();
+        reaction = set.getmodename();
 
-            break;
-        }
+        return;
     }
+
+    if(reaction == "111NbPPN"){
+        incval = nancy::incval111Nb;
+        targetval = nancy::targetval110Nb;
+        binning = 50;
+    }
+    else if(reaction == "111NbPP2N"){
+        incval = nancy::incval111Nb;
+        targetval = nancy::targetval109Nb;
+        binning = 50;
+    }
+    else if(reaction == "111NbP2P"){
+        incval    = nancy::incval111Nb;
+        targetval = nancy::targetval110Zr;
+        binning   = 80;
+    }
+    else if(reaction == "110NbPPN"){
+        incval = nancy::incval110Nb;
+        targetval = nancy::targetval109Nb;
+        binning = 100;
+    }
+    else if(reaction == "110NbP2P"){
+        incval = nancy::incval110Nb;
+        targetval = nancy::targetval109Zr;
+        binning = 40;
+    }
+    else if(reaction == "110MoP3P"){
+        incval = nancy::incval110Mo;
+        targetval = nancy::targetval108Zr;
+        binning = 50;
+    }
+    else if(reaction == "111MoP3P"){
+        incval = nancy::incval111Mo;
+        targetval = nancy::targetval109Zr;
+        binning = 50;
+    }
+    else if(reaction == "112MoP3P"){
+        incval = nancy::incval112Mo;
+        targetval = nancy::targetval110Zr;
+        binning = 50;
+    }
+    else if(reaction == "113TcP3P"){
+        incval = nancy::incval113Tc;
+        targetval = nancy::targetval111Nb;
+        binning = 50;
+    }
+    else if(reaction == "112TcP3P"){
+        incval = nancy::incval112Tc;
+        targetval = nancy::targetval110Nb;
+        binning = 50;
+    }
+    else if(reaction == "114TcP3P"){
+        incval = nancy::incval114Tc;
+        targetval = nancy::targetval112Nb;
+        binning = 50;
+    }
+    else if(reaction == "113MoP3P"){
+        incval = nancy::incval113Mo;
+        targetval = nancy::targetval111Zr;
+        binning = 50;
+    }
+    else if(reaction == "90SeP2P"){
+        incval = nancy::incval90Se;
+        targetval = nancy::targetval89As;
+        binning = 50;
+    }
+    else __throw_invalid_argument(Form("Invalid reaction %s!\n", &reaction[0]));
+
 }
 
 void PID::histogramsetup() {

@@ -84,9 +84,8 @@ void dalicalib(treereader *tree, TFile *output){
     higherorder(input, goodevents, outputfile);
 
     // Get Z vs. A/Q
-    const vector<string> reactionmodes{"111NbP2P","110NbP2P","110MoP3P",
-                                       "111MoP3P","112MoP3P","113MoP3P",
-                                       "112TcP3P","113TcP3P","114TcP3P"};
+    const vector<string> reactionmodes = set.getreactions();
+
     // 111NbPPN, 111NbPP2N, 110NbPPN
     for(auto &i: reactionmodes) PID(input,goodevents,outputfile,i);
 
