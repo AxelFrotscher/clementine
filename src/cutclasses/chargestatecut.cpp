@@ -4,6 +4,7 @@
 
 #include "cutclasses/chargestatecut.h"
 #include "libconstant.h"
+#include "zdssetting.h"
 #include <thread>
 #include <numeric>
 
@@ -22,7 +23,6 @@ void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevent
 
     progressbar progress(range.at(1)-range.at(0), threadno);
 
-    //printf("Preparing Thread %i ranges %i, %i...\n", threadno, range.at(0), range.at(1));
     for(int i=range.at(0); i<range.at(1); i++){
          if(goodevents.at(i)){
             tree->getevent(i);
@@ -77,18 +77,9 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     vector<string> keys{"BigRIPSBeam.brho"};
     for(auto &i: tree) i->setloopkeys(keys);
 
-    // Get Cut
-    TFile cutfile("config/cut.root");
-    if(!(cutfile.IsOpen())) __throw_invalid_argument("Could not open cut file "
-                                                     "at config/rhocut.root\n");
-
-    if(runinfo::transsize == goodevents.size())
-        for(auto &i: tree) mycut.push_back((TCutG*)cutfile.Get("brhoempty"));
-    else if(runinfo::emptysize == goodevents.size()){
-        for(auto &i: tree) mycut.push_back((TCutG*)cutfile.Get("emptybrhocut"));
-    }
-    else for(auto &i: tree) mycut.push_back((TCutG*)cutfile.Get("brhocut"));
-    if(!mycut.at(0)) __throw_invalid_argument("Could not load cut from file!\n");
+    // Get Cut from right setting | mode
+    setting set;
+    for(auto &i: tree) mycut.push_back(set.getbrhocut());
 
     int cutpre = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
 

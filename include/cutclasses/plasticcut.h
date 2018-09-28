@@ -6,6 +6,7 @@
 #include "helper/treereader.hh"
 #include "TH1D.h"
 #include "TH2D.h"
+#include "zdssetting.h"
 
 class plasticcut {
 public:
@@ -14,7 +15,9 @@ public:
     void analyse(std::vector<std::string> input, TFile* output);
     plasticcut(const std::vector<std::string> input, std::vector<std::atomic<bool>>
                &goodevents_, TFile* output):goodevents(goodevents_){
-            analyse(input, output);
+        setting set;
+        acceptance_range = set.getPlasticRange();
+        analyse(input, output);
     };
 
     std::vector<std::atomic<bool>> &goodevents;
@@ -34,8 +37,7 @@ private:
     const int threshhold = 450; // random noise suppresion value
 
     // To avoid multihit-triggers we define a range of acceptance
-    std::vector<std::vector<int>> acceptance_range{{480,620},{700,920},
-                                                   {220,330},{270,1510}};
+    std::vector<std::vector<int>> acceptance_range;
 
 };
 

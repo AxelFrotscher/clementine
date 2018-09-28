@@ -103,7 +103,7 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
         tree.emplace_back(new treereader(i));
     }
 
-    printf("now beginning with the reconstruction of the ppac's. %i threads.\n", threads);
+    printf("Reconstruction of PPAC's. %i threads.\n", threads);
 
     // Generate List of all Keys that are to be used
     vector<string> keys{"BigRIPSPlastic.fTime", "BigRIPSPPAC.fFiredX",

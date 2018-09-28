@@ -8,6 +8,7 @@
 #include "TProfile.h"
 #include "TF1.h"
 #include <thread>
+#include "zdssetting.h"
 
 using namespace std;
 
@@ -113,18 +114,9 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
     for(auto &i: tree) i->setloopkeys(keys);
 
     // Decide which cut to use based on total event number
-    if(runinfo::transsize == goodevents.size()){
-        cutval = nancytrans::cutval;
-        p1 = nancytrans::hoparame;
-    }
-    else if(runinfo::emptysize == goodevents.size()){
-        cutval = nancyempty::cutval;
-        p1 = nancyempty::hoparame;
-    }
-    else {
-        cutval = nancy::cutval;
-        p1 = nancy::hoparame;
-    }
+    setting set;
+    cutval = set.getHOcutval();
+    p1 = set.getHOparameters();
 
     // Initialize all the diagrams
     for(uint i=0; i<arrname.size();i++){ // Loop F7, F11

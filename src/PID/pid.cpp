@@ -10,6 +10,7 @@
 #include "progress.h"
 #include "TF1.h"
 #include <algorithm>
+#include "zdssetting.h"
 
 using namespace std;
 
@@ -196,8 +197,8 @@ void PID::offctrans() {
     reactF5.back().Divide(new TH1D(reactF5.at(0)));
     reactF5.back().SetName("F5ratio");
 
-    if((goodevents.size() == runinfo::emptysize) ||
-       (goodevents.size() == runinfo::transsize)){
+    if((goodevents.size() == runinfo::emptysize.at(0)) ||
+       (goodevents.size() == runinfo::transsize.at(0))){
         printf("Not doing off-center transmission. No physics run.\n");
         return;
     }
@@ -347,13 +348,13 @@ void PID::crosssection() {
 void PID::reactionparameters() {
     // Setup cut values
     switch(goodevents.size()){
-        case runinfo::transsize:{
+        case 395'267:{ // transsize.at(0)
             incval = nancytrans::incval;
             targetval = nancytrans::targetval;
             reaction = "transmission";
             break;
         }
-        case runinfo::emptysize:{
+        case 513'225:{ // emptysize.at(0)
             incval = nancyempty::incval;
             targetval = nancyempty::targetval;
             reaction = "empty";
@@ -429,7 +430,8 @@ void PID::reactionparameters() {
 
 void PID::histogramsetup() {
     // Nasty histogram setup routine
-    const vector<uint> y{200,36,46}; // y boundaries
+    setting set;
+    const vector<uint> y = set.getZrange(); // y boundaries
     const uint xbin = 400; // number of x-bins
     const vector<double> x{2.55,2.85};
 

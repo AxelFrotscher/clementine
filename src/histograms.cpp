@@ -10,6 +10,7 @@
 #include "PID/pid.h"
 #include "txtwriter.h"
 #include <numeric>
+#include "zdssetting.h"
 
 using namespace std;
 
@@ -71,12 +72,8 @@ void dalicalib(treereader *tree, TFile *output){
     for(auto &i:goodevents) i.exchange(true);
 
     // Determine run type:
-    if(runinfo::transsize == chain.GetEntries()){
-        printf("!!! Analysing an transmission run !!!\n");
-    }
-    if(runinfo::emptysize == chain.GetEntries()){
-        printf("!!! Analysing an empty target run !!!\n");
-    }
+    setting set;
+    set.setcountno((int)chain.GetEntries());
 
     //triggercut(input, goodevents);
     ccsc(input,goodevents,outputfile);

@@ -6,18 +6,39 @@
 
 #include <vector>
 #include <zconf.h>
+#include "libconstant.h"
+#include "TCutG.h"
 
 class setting{
 public:
-    setting(int i){
+    // This class aims to deliver the right numbers for each setting, by just
+    // setting it once
+    explicit setting(int i){
+        settingnumber = i;
         loadnumbers(i);
     }
+    explicit setting(){;};
     void loadnumbers(int i);
+    void setcountno(int i){
+        eventcounts = i;
+        checkphysicsrun();
+    };
+    void checkphysicsrun();
+
+    const std::vector<std::vector<double>> getHOcutval();
+    const calibpar getHOparameters();
+    TCutG* getbrhocut();
+    const std::vector<std::vector<int>> getPlasticRange();
+    const std::vector<uint> getZrange();
     std::vector<uint> goodruns;
     std::vector<uint> transmissionrun;
     std::vector<uint> emptyrun;
     uint analysedfile = 0;
 
 private:
-
+    static int settingnumber;
+    static int eventcounts;
+    static bool istransmissionrun;
+    static bool isemptyrun;
+    static const std::vector<std::string> setname;
 };
