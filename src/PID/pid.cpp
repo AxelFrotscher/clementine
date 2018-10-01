@@ -421,8 +421,37 @@ void PID::reactionparameters() {
         targetval = nancy::targetval89As;
         binning = 50;
     }
+    else if(reaction == "90SeP3P"){
+        incval = nancy::incval90Se;
+        targetval = nancy::targetval88Ge;
+        binning = 50;
+    }
+    else if(reaction == "89SeP2P"){
+        incval = nancy::incval89Se;
+        targetval = nancy::targetval88As;
+        binning = 50;
+    }
+    else if(reaction == "89SeP3P"){
+        incval = nancy::incval89Se;
+        targetval = nancy::targetval87Ge;
+        binning = 50;
+    }
+    else if(reaction == "88AsP2P"){
+        incval = nancy::incval88As;
+        targetval = nancy::targetval87Ge;
+        binning = 50;
+    }
+    else if(reaction == "89AsP2P"){
+        incval = nancy::incval89As;
+        targetval = nancy::targetval88Ge;
+        binning = 50;
+    }
+    else if(reaction == "89AsP3P"){
+        incval = nancy::incval89As;
+        targetval = nancy::targetval87Ga;
+        binning = 50;
+    }
     else __throw_invalid_argument(Form("Invalid reaction %s!\n", &reaction[0]));
-
 }
 
 void PID::histogramsetup() {

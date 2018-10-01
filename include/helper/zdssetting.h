@@ -35,6 +35,7 @@ public:
     const std::vector<double> getPIDincutvalue();
     const std::vector<double> getPIDoutcutvalue();
     const std::string getmodename();
+    std::string getsetname(){return setname.at(settingnumber);};
     std::vector<uint> goodruns;
     std::vector<uint> transmissionrun;
     std::vector<uint> emptyrun;

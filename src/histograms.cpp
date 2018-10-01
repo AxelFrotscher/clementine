@@ -52,9 +52,13 @@ void dalicalib(treereader *tree, TFile *output){
 
  void makehistograms(const vector<string> input) {
     // Generating an outputfile that matches names with the input file
-    auto gentxt = [input](auto suffix){ // lambda to generate expression
-        return "build/output/" + input.at(0).substr(34,9) + "hist" +
-               to_string(input.size()) + suffix;
+     // Determine run type:
+     setting set;
+    const string settingname = set.getsetname();
+
+    auto gentxt = [input, settingname](auto suffix){ // lambda to generate expression
+        return "build/output/"+ settingname +"/" + input.at(0).substr(34,9) +
+               "hist" + to_string(input.size()) + suffix;
     };
 
     // Initialize ROOT and txt outputfile
@@ -70,9 +74,6 @@ void dalicalib(treereader *tree, TFile *output){
     // Store events that cannot be used
     vector<atomic<bool>> goodevents((uint)chain.GetEntries());
     for(auto &i:goodevents) i.exchange(true);
-
-    // Determine run type:
-    setting set;
     set.setcountno((int)chain.GetEntries());
 
     //triggercut(input, goodevents);
