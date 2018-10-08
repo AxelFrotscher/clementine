@@ -38,8 +38,8 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
         if(goodevents.at(eventcounter)){
             tree->getevent(eventcounter);
             double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
-                                 (p1.F7absF5X+tree->F5X*p1.F7linF5X) +
-                                 tree->F5A*p1.F7linF5A +
+                                 (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
+                                 tree->F5A*p1.F7linF5A -
                                  tree->F3X*p1.F7linF3X;
             //cout << "Thread: " << id << " Cor AOQ: " << beamaoqcorr << endl;
             double beamaoqcorr2 = tree->BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
@@ -246,8 +246,8 @@ void PID::offctrans() {
     vector<int> backupfit{0,0};
     double minchisq = 10E8; // current minimum chi-sq.
 
-    for(int j=startbin; j<fitplot.GetNbinsX(); j++){ // switch for effect
-        for(int i= (fitplot.GetNbinsY()-1); i>=minrange; i--){
+    for(int i= (fitplot.GetNbinsY()-1); i>=minrange; i--){ // switch for effect (current normal)
+        for(int j=startbin; j<fitplot.GetNbinsX(); j++){
             //Backup preparation:
             if((fitplot.GetBinContent(j,i) < minchisq) &&
                     (fitplot.GetBinContent(j,i) > 0)){
@@ -356,101 +356,151 @@ void PID::reactionparameters() {
         return;
     }
 
+    binning = 50;
     if(reaction == "111NbPPN"){
         incval = nancy::incval111Nb;
-        targetval = nancy::targetval110Nb;
-        binning = 50;
-    }
+        targetval = nancy::targetval110Nb; }
     else if(reaction == "111NbPP2N"){
         incval = nancy::incval111Nb;
-        targetval = nancy::targetval109Nb;
-        binning = 50;
-    }
+        targetval = nancy::targetval109Nb; }
     else if(reaction == "111NbP2P"){
         incval    = nancy::incval111Nb;
         targetval = nancy::targetval110Zr;
-        binning   = 80;
-    }
+        binning   = 80; }
     else if(reaction == "110NbPPN"){
         incval = nancy::incval110Nb;
         targetval = nancy::targetval109Nb;
-        binning = 100;
-    }
+        binning = 100; }
     else if(reaction == "110NbP2P"){
         incval = nancy::incval110Nb;
         targetval = nancy::targetval109Zr;
-        binning = 40;
-    }
+        binning = 40; }
     else if(reaction == "110MoP3P"){
         incval = nancy::incval110Mo;
-        targetval = nancy::targetval108Zr;
-        binning = 50;
-    }
+        targetval = nancy::targetval108Zr; }
     else if(reaction == "111MoP3P"){
         incval = nancy::incval111Mo;
-        targetval = nancy::targetval109Zr;
-        binning = 50;
-    }
+        targetval = nancy::targetval109Zr; }
     else if(reaction == "112MoP3P"){
         incval = nancy::incval112Mo;
-        targetval = nancy::targetval110Zr;
-        binning = 50;
-    }
+        targetval = nancy::targetval110Zr; }
     else if(reaction == "113TcP3P"){
         incval = nancy::incval113Tc;
-        targetval = nancy::targetval111Nb;
-        binning = 50;
-    }
+        targetval = nancy::targetval111Nb; }
     else if(reaction == "112TcP3P"){
         incval = nancy::incval112Tc;
-        targetval = nancy::targetval110Nb;
-        binning = 50;
-    }
+        targetval = nancy::targetval110Nb; }
     else if(reaction == "114TcP3P"){
         incval = nancy::incval114Tc;
-        targetval = nancy::targetval112Nb;
-        binning = 50;
-    }
+        targetval = nancy::targetval112Nb; }
     else if(reaction == "113MoP3P"){
         incval = nancy::incval113Mo;
-        targetval = nancy::targetval111Zr;
-        binning = 50;
-    }
+        targetval = nancy::targetval111Zr; }
     else if(reaction == "90SeP2P"){
         incval = nancy::incval90Se;
-        targetval = nancy::targetval89As;
-        binning = 50;
-    }
+        targetval = nancy::targetval89As; }
     else if(reaction == "90SeP3P"){
         incval = nancy::incval90Se;
-        targetval = nancy::targetval88Ge;
-        binning = 50;
-    }
+        targetval = nancy::targetval88Ge; }
     else if(reaction == "89SeP2P"){
         incval = nancy::incval89Se;
-        targetval = nancy::targetval88As;
-        binning = 50;
-    }
+        targetval = nancy::targetval88As; }
     else if(reaction == "89SeP3P"){
         incval = nancy::incval89Se;
-        targetval = nancy::targetval87Ge;
-        binning = 50;
-    }
+        targetval = nancy::targetval87Ge; }
     else if(reaction == "88AsP2P"){
         incval = nancy::incval88As;
-        targetval = nancy::targetval87Ge;
-        binning = 50;
-    }
+        targetval = nancy::targetval87Ge; }
     else if(reaction == "89AsP2P"){
         incval = nancy::incval89As;
-        targetval = nancy::targetval88Ge;
-        binning = 50;
-    }
+        targetval = nancy::targetval88Ge; }
     else if(reaction == "89AsP3P"){
         incval = nancy::incval89As;
-        targetval = nancy::targetval87Ga;
-        binning = 50;
-    }
+        targetval = nancy::targetval87Ga; }
+    else if(reaction == "93BrP2P"){
+        incval = nancy::incval93Br;
+        targetval = nancy::targetval92Se; }
+    else if(reaction == "93BrP3P"){
+        incval = nancy::incval93Br;
+        targetval = nancy::targetval91As; }
+    else if(reaction == "94BrP2P"){
+        incval = nancy::incval94Br;
+        targetval = nancy::targetval93Se; }
+    else if(reaction == "94BrP3P"){
+        incval = nancy::incval94Br;
+        targetval = nancy::targetval92As; }
+    else if(reaction == "95BrP2P"){
+        incval = nancy::incval95Br;
+        targetval = nancy::targetval94Se; }
+    else if(reaction == "95BrP3P"){
+        incval = nancy::incval95Br;
+        targetval = nancy::targetval93As; }
+    else if(reaction == "94KrP2P"){
+        incval = nancy::incval94Kr;
+        targetval = nancy::targetval93Br; }
+    else if(reaction == "94KrP3P"){
+        incval = nancy::incval94Kr;
+        targetval = nancy::targetval92Se; }
+    else if(reaction == "95KrP2P"){
+        incval = nancy::incval95Kr;
+        targetval = nancy::targetval94Br; }
+    else if(reaction == "95KrP3P"){
+        incval = nancy::incval95Kr;
+        targetval = nancy::targetval93Se; }
+    else if(reaction == "96KrP2P"){
+        incval = nancy::incval96Kr;
+        targetval = nancy::targetval95Br; }
+    else if(reaction == "96KrP3P"){
+        incval = nancy::incval96Kr;
+        targetval = nancy::targetval94Se; }
+    else if(reaction == "97RbP2P"){
+        incval = nancy::incval97Rb;
+        targetval = nancy::targetval96Kr; }
+    else if(reaction == "97RbP3P"){
+        incval = nancy::incval97Rb;
+        targetval = nancy::targetval95Br; }
+    else if(reaction == "99RbP2P"){                            // fourth Setting
+        incval = nancy::incval99Rb;
+        targetval = nancy::targetval98Kr; }
+    else if(reaction == "99RbP3P"){
+        incval = nancy::incval99Rb;
+        targetval = nancy::targetval97Br; }
+    else if(reaction == "100RbP2P"){
+        incval = nancy::incval100Rb;
+        targetval = nancy::targetval99Kr; }
+    else if(reaction == "100RbP3P"){
+        incval = nancy::incval100Rb;
+        targetval = nancy::targetval98Br; }
+    else if(reaction == "100SrP2P"){
+        incval = nancy::incval100Sr;
+        targetval = nancy::targetval99Rb; }
+    else if(reaction == "100SrP3P"){
+        incval = nancy::incval100Sr;
+        targetval = nancy::targetval98Kr; }
+    else if(reaction == "101SrP2P"){
+        incval = nancy::incval101Sr;
+        targetval = nancy::targetval100Rb; }
+    else if(reaction == "101SrP3P"){
+        incval = nancy::incval101Sr;
+        targetval = nancy::targetval99Kr; }
+    else if(reaction == "102SrP2P"){
+        incval = nancy::incval102Sr;
+        targetval = nancy::targetval101Rb; }
+    else if(reaction == "102SrP3P"){
+        incval = nancy::incval102Sr;
+        targetval = nancy::targetval100Kr; }
+    else if(reaction == "102YP2P"){
+        incval = nancy::incval102Y;
+        targetval = nancy::targetval101Sr; }
+    else if(reaction == "102YP3P"){
+        incval = nancy::incval102Y;
+        targetval = nancy::targetval100Rb; }
+    else if(reaction == "103YP2P"){
+        incval = nancy::incval103Y;
+        targetval = nancy::targetval102Sr; }
+    else if(reaction == "103YP3P"){
+        incval = nancy::incval103Y;
+        targetval = nancy::targetval101Rb; }
     else __throw_invalid_argument(Form("Invalid reaction %s!\n", &reaction[0]));
 }
 

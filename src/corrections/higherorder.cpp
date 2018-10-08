@@ -48,8 +48,8 @@ void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             // Fill corrected Values
             fillvals.at(0).at(6) = tree->BigRIPSBeam_aoq[beam.at(0)] + p1.F7absF5X0 -
                                    (p1.F7absF5X + tree->F5X * p1.F7linF5X);
-            fillvals.at(0).at(7) = fillvals.at(0).at(6) + tree->F5A * p1.F7linF5A;
-            fillvals.at(0).at(8) = fillvals.at(0).at(7) + tree->F3X * p1.F7linF3X;
+            fillvals.at(0).at(7) = fillvals.at(0).at(6) - tree->F5A * p1.F7linF5A;
+            fillvals.at(0).at(8) = fillvals.at(0).at(7) - tree->F3X * p1.F7linF3X;
 
             fillvals.at(1).at(6) = tree->BigRIPSBeam_aoq[beam.at(1)] + p1.F11absF9X0 -
                                    (p1.F11absF9X + tree->F9X * p1.F11linF9X);

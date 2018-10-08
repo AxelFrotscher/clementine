@@ -5,6 +5,7 @@
 #include "cutclasses/triggercut.h"
 #include "time.h"
 #include "progress.h"
+#include "zdssetting.h"
 #include <thread>
 #include <numeric>
 
@@ -33,6 +34,12 @@ void triggercut::innerloop(treereader *tree, std::vector <std::atomic<bool>> &go
 }
 
 void triggercut::analyse(const vector<string> input){
+    setting set;
+    if(!set.isemptyortrans()){
+        cout << "Physics Run. Omitting trigger cut to gain statistics" << endl;
+        return;
+    }
+
     vector<TChain*> chain;
     for(int i=0; i<threads; i++){
         chain.emplace_back(new TChain("tree"));

@@ -37,7 +37,7 @@ private:
     static const int constadd = 10;
     static const int barwidth = 30;
     static const int displaythreads = 7;
-    static constexpr double updateinterval = 1; // s
+    static const int updateinterval = 1; // s
     static std::atomic<int> currentthreads;  // current working (displayed) threads
     static std::mutex currevtmutex;
     bool worker = true ; // Defines a thread to be displayed

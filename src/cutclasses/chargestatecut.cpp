@@ -100,7 +100,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
 
     printf("\nCCSC Cut out %i Events %f %%\n", cutpre-cutafter,
-           100*(cutpre-cutafter)/(double)goodevents.size());
+           100.*(cutpre-cutafter)/(double)goodevents.size());
 
     output->mkdir("CSC");
     output->cd("CSC");

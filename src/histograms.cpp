@@ -52,13 +52,24 @@ void dalicalib(treereader *tree, TFile *output){
 
  void makehistograms(const vector<string> input) {
     // Generating an outputfile that matches names with the input file
-     // Determine run type:
-     setting set;
-    const string settingname = set.getsetname();
+    // Determine run type:
+    TChain chain("tree");
+    for(auto &i:input) chain.Add(i.c_str());
 
-    auto gentxt = [input, settingname](auto suffix){ // lambda to generate expression
+     cout << "Beginning reconstruction of " << chain.GetEntries()
+          << " Elements." << endl;
+     // Store events that cannot be used
+     vector<atomic<bool>> goodevents((uint)chain.GetEntries());
+     for(auto &i:goodevents) i.exchange(true);
+
+    setting set;
+    set.setcountno((int)chain.GetEntries());
+    const string settingname = set.getsetname();
+    const string modename = set.getmodename();
+
+    auto gentxt = [input, settingname, modename](auto suffix){ // lambda to generate expression
         return "build/output/"+ settingname +"/" + input.at(0).substr(34,9) +
-               "hist" + to_string(input.size()) + suffix;
+               "hist" + to_string(input.size()) + modename + suffix;
     };
 
     // Initialize ROOT and txt outputfile
@@ -66,17 +77,7 @@ void dalicalib(treereader *tree, TFile *output){
     if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
     txtwriter writetotxt(gentxt(".txt")); // Writer class
 
-    TChain chain("tree");
-    for(auto &i:input) chain.Add(i.c_str());
-
-    cout << "Beginning reconstruction of " << chain.GetEntries()
-         << " Elements." << endl;
-    // Store events that cannot be used
-    vector<atomic<bool>> goodevents((uint)chain.GetEntries());
-    for(auto &i:goodevents) i.exchange(true);
-    set.setcountno((int)chain.GetEntries());
-
-    //triggercut(input, goodevents);
+    triggercut(input, goodevents);
     ccsc(input,goodevents,outputfile);
     targetcut(input,goodevents,outputfile);
     plasticcut(input, goodevents, outputfile);

@@ -29,17 +29,17 @@ void setting::loadnumbers(int i) {
         }
         case 1:{ // 88Ge
             analysedfile = 119;
-            goodruns = vector<uint>{3,8,9,10,11,12};
+            goodruns = vector<uint>{0,3,8,9,10,11,12};
             transmissionrun = vector<uint>{118};
-            emptyrun = vector<uint>{119};
+            emptyrun = vector<uint>{}; // 119 is not an empty run
             break;
         }
         case 2:{ // 94Se
             analysedfile = 131;
-            goodruns = vector<uint>{4,5,8,19,21,22,23,24,25,26,27,28,29,30,31,
-                                    32,33,34,35,36,39,40,45,46,47,48};
+            goodruns = vector<uint>{27,28,29,30,31, 4,5,8,19,21,22,23,24,25,26,
+                                    32,33,34,35,36,39,40,45,46,47}; // 48
             transmissionrun = vector<uint>{132};
-            emptyrun = vector<uint>{151};
+            emptyrun = vector<uint>{};
             break;
         }
         case 3:{ // 100Kr
@@ -76,15 +76,15 @@ void setting::checkphysicsrun() {
 
 const std::vector<std::vector<double>> setting::getHOcutval() {
     // Get the right cut values to perform a linear correction
-    if (istransmissionrun) return nancytrans::cutval;
-    if (isemptyrun) return nancyempty::cutval;
+    if (istransmissionrun) return nancytrans::cutval.at(settingnumber);
+    if (isemptyrun) return nancyempty::cutval.at(settingnumber);
     return nancy::cutval.at(settingnumber);
 }
 
 const calibpar setting::getHOparameters() {
     // Get the right linear parameters
-    if (istransmissionrun) return nancytrans::hoparame;
-    if (isemptyrun) return nancytrans::hoparame;
+    if (istransmissionrun) return nancytrans::hoparame.at(settingnumber);
+    if (isemptyrun) return nancyempty::hoparame.at(settingnumber);
     return nancy::hoparame.at(settingnumber);
 }
 
@@ -94,7 +94,7 @@ TCutG* setting::getbrhocut() {
         return "brhocut" + str + setname.at(settingnumber);};
 
     // Get Cut
-    TFile cutfile("config/test.root");
+    TFile cutfile("config/cut.root");
     if(!(cutfile.IsOpen())) std::__throw_invalid_argument(
             "Could not open cut file at config/cut.root\n");
 
