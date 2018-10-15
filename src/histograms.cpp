@@ -68,8 +68,8 @@ void dalicalib(treereader *tree, TFile *output){
     const string modename = set.getmodename();
 
     auto gentxt = [input, settingname, modename](auto suffix){ // lambda to generate expression
-        return "build/output/"+ settingname +"/" + input.at(0).substr(34,9) +
-               "hist" + to_string(input.size()) + modename + suffix;
+        return "build/output/"+ settingname + "_" + modename + "_" +
+               input.at(0).substr(34,9) + "hist" + to_string(input.size()) + suffix;
     };
 
     // Initialize ROOT and txt outputfile

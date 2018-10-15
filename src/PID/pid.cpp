@@ -11,6 +11,7 @@
 #include "TF1.h"
 #include <algorithm>
 #include "zdssetting.h"
+#include <sstream>
 
 using namespace std;
 
@@ -309,7 +310,7 @@ void PID::offctrans() {
     cout << fitstyle.at(backupfit[0]-startbin).at(backupfit[1]-minrange)->GetName()
          << " Chisq: " << fitplot.GetBinContent(backupfit[0],backupfit[1])
          << " Offcentertransmission: " << offcentertransmission
-         << " +- " << offcentertransmissionerror << endl;
+         << " \u00b1 " << offcentertransmissionerror << endl;
 }
 
 void PID::crosssection() {
@@ -328,18 +329,18 @@ void PID::crosssection() {
                          pow(numberdensityerror,2), 0.5);  // Error on Transm.
 
     // make cross section string:
-    auto format = "%s sigma: %.3f +- %.3fmb Offc. Trans %.3f +- %.3f CTS: %.0f";
-    auto size = snprintf(nullptr, 0, format, &reaction[0], 1E3*crosssection,
-                         1E3*cserror, offcentertransmission,
-                         offcentertransmissionerror, reactF5.at(1).Integral());
-    string crossstr(size, '\0');
-    sprintf(&crossstr[0], format, &reaction[0], 1E3*crosssection, 1E3*cserror,
-            offcentertransmission, offcentertransmissionerror,
-            reactF5.at(1).Integral());
+    setting set;
+    stringstream stringout;
+    stringout << reaction << " \u03C3: " << setprecision(4) << 1E3*crosssection
+        << " \u00b1 " << 1E3*cserror <<  "mb, Offc. Transmission: "
+        << offcentertransmission << " \u00b1 " << offcentertransmissionerror
+        << " CTS: " << reactF5.at(1).Integral();
+    if(set.isemptyortrans())
+        stringout << " Ratio: " << 100.*reactionpid2/reactionpid1.load() << " %";
+    cout  << stringout.str() << endl;
 
-    cout << crossstr << endl;
     txtwriter txt;
-    txt.addline(crossstr);
+    txt.addline(stringout.str());
 
     cout << "Raw: In " << reactionpid1.load() << " out " << reactionpid2.load()
          << " ratio " << 100.*reactionpid2/reactionpid1.load() << "% " << endl;

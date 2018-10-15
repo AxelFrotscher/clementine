@@ -38,8 +38,8 @@ void setting::loadnumbers(int i) {
             analysedfile = 131;
             goodruns = vector<uint>{27,28,29,30,31, 4,5,8,19,21,22,23,24,25,26,
                                     32,33,34,35,36,39,40,45,46,47}; // 48
-            transmissionrun = vector<uint>{132};
-            emptyrun = vector<uint>{};
+            transmissionrun = vector<uint>{};
+            emptyrun = vector<uint>{132};
             break;
         }
         case 3:{ // 100Kr
@@ -61,17 +61,21 @@ void setting::checkphysicsrun() {
         std::cout << "Analysing Transmission run Setting "
                   << settingnumber << std::endl;
         istransmissionrun = true;
+        return;
     }
     else if (eventcounts == runinfo::emptysize.at(settingnumber)){
         std::cout << "Analysing Empty Target run Setting "
                   << settingnumber << std::endl;
         isemptyrun = true;
+        return;
     }
     else if(eventcounts == runinfo::fulldata.at(settingnumber)){
         std::cout << "Analysing full physics run Setting "
                   << settingnumber << std::endl;
+        return;
     }
 
+    std::__throw_invalid_argument("Run/Setting does not exist!\n");
 }
 
 const std::vector<std::vector<double>> setting::getHOcutval() {

@@ -8,11 +8,11 @@
 namespace runinfo{
     const std::vector<int> transsize = {395'267,
                                         356'843,
-                                        1'265'431,
+                                        0,
                                         1'026'943};    // Runs containing this number are transmission
     const std::vector<int> emptysize = {513'225,
                                         0,  // no empty run for this setting
-                                        0,  // no empty run here either
+                                        1'265'431,  // no empty run here either
                                         865'630};    // Empty-target measurement
     const std::vector<int> fulldata  = {36'004'149,
                                         8'051'865,
@@ -183,9 +183,9 @@ namespace nancytrans{
     // Variables and constants used for the empty-target runs
     // Cut Isotopes for higherorder correction, F3-7, and F8-11
     const std::vector<std::vector<std::vector<double>>> cutval{
-        {{2.6429, 41.91, 0.008, 0.6}, {2.6460, 40.343, 0.008, 0.5}}, //85Ge
+        {{2.6429, 41.91, 0.008, 0.6}, {2.6460, 40.343, 0.010, 0.5}}, //85Ge
         {{2.6509, 34.00, 0.007, 0.6}, {2.6629, 33.354, 0.012, 0.6}}, //90Se
-        {{2.6706, 36.00, 0.007, 0.6}, {2.7131, 34.18, 0.013, 0.6}}, //96Kr
+        {{0, 0, 0, 0}, {0, 0, 0, 0}},
         {{2.6876, 38.00, 0.007, 0.6}, {2.6937, 37.554, 0.013, 0.6}} // 102Sr
     };
 
@@ -201,27 +201,27 @@ namespace nancytrans{
           0,                // F11linF11X
           8.052E-5,         // F11linF11A
           cutval[0][1][0]}, // F11absF9X0
-        { 2.644,            // F7absF5X
-         -1.453E-5,         // F7linF5X
-          0.000'252'8,      // F7linF5A
-         -0.000'103,        // F7linF3X
+        { 2.651,            // F7absF5X   +// 88Ge
+         -3.146E-5,         // F7linF5X   +
+          5.905E-5,         // F7linF5A   +
+         -0.000'207,        // F7linF3X   +
           cutval[1][0][0],  // F7absF5X0
+          2.665,            // F11absF9X  +
+         -9.226E-5,         // F11linF9X  +
+          7.7079E-5,        // F11linF9A  +
+          0,                // F11linF11X +
+          6.194E-5,         // F11linF11A +
+          cutval[1][1][0]}, // F11absF9X0
+        { 2.644,            // F7absF5X
+          -1.453E-5,         // F7linF5X
+          0.000'252'8,      // F7linF5A
+          -0.000'103,        // F7linF3X
+          cutval[2][0][0],  // F7absF5X0
           2.647,            // F11absF9X
-         -5.871E-5,         // F11linF9X
+          -5.871E-5,         // F11linF9X
           0.000'290'5,      // F11linF9A
           0,                // F11linF11X
           8.052E-5,         // F11linF11A
-          cutval[1][1][0]}, // F11absF9X0
-        { 2.67,            // F7absF5X +  94Se
-         -2.087E-5,         // F7linF5X +
-          0.000'106'7,      // F7linF5A +
-         -0.000'207,        // F7linF3X +
-          cutval[2][0][0],  // F7absF5X0
-          2.716,            // F11absF9X +
-         -1.03E-4,          // F11linF9X +
-         -4.504E-6,         // F11linF9A +
-          0,                // F11linF11X+
-          6.056E-5,         // F11linF11A+
           cutval[2][1][0]}, // F11absF9X0
         { 2.688,            // F7absF5X   + // 100Kr
          -4.472E-5,         // F7linF5X   +
@@ -239,16 +239,16 @@ namespace nancytrans{
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
     // center x centery radius x radius y
     const std::vector<std::vector<double>> incval{
-        {2.706, 41.0, 0.009, 0.6},
+        {2.681, 41.0, 0.009, 0.6},  //110Nb
         {2.6509, 34.00, 0.007, 0.6},
-        {2.717,35.00, 0.007,0.6},   // cut value should match centered beam nuclide
+        {0.,0.,0.,0.},   // cut value should match centered beam nuclide
         {2.7333,37.00,0.006,0.6}  // 101Rb
     };
 
     const std::vector<std::vector<double>> targetval{
-        {2.706, 41.0, incval.at(0).at(2), incval.at(0).at(3)},
+        {2.6799, 40.95, 0.012, incval.at(0).at(3)}, //110Nb
         {2.6629, 33.354, 0.012, 0.65},
-        {2.76, 33.22, 0.012, incval.at(2).at(3)},
+        {0.,0.,0.,0.},
         {2.7383, 36.571, 0.012, incval.at(3).at(3)}, //101Rb
     };
 }
@@ -259,7 +259,7 @@ namespace nancyempty{
     const std::vector<std::vector<std::vector<double>>> cutval{ // for corrections we use 85Ge
         {{2.6429, 41.91, 0.008, 0.6}, {2.6460, 40.343, 0.008, 0.5}},
         {{2.6509, 34.00, 0.008, 0.6}, {2.661, 33.302, 0.012, 0.65}},
-        {{0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{2.6706, 36.00, 0.007, 0.6}, {2.7131, 34.18, 0.013, 0.6}},  //96Kr
         {{2.6876, 38.00, 0.007, 0.6}, {2.7319, 36.123, 0.012, 0.6}}, // 102Sr
     };
 
@@ -286,16 +286,16 @@ namespace nancyempty{
               0,                // F11linF11X
               1.055E-4,         // F11linF11A
               cutval[1][1][0]}, // F11absF9X0
-            { 2.644,            // F7absF5X
-             -1.453E-5,         // F7linF5X
-              0.000'252'8,      // F7linF5A
-             -0.000'103,        // F7linF3X
+            { 2.67,            // F7absF5X +  94Se
+             -2.087E-5,         // F7linF5X +
+              0.000'106'7,      // F7linF5A +
+             -0.000'207,        // F7linF3X +
               cutval[2][0][0],  // F7absF5X0
-              2.647,            // F11absF9X
-             -5.871E-5,         // F11linF9X
-              0.000'290'5,      // F11linF9A
-              0,                // F11linF11X
-              8.052E-5,         // F11linF11A
+              2.716,            // F11absF9X +
+             -1.03E-4,          // F11linF9X +
+             -4.504E-6,         // F11linF9A +
+              0,                // F11linF11X+
+              6.056E-5,         // F11linF11A+
               cutval[2][1][0]}, // F11absF9X0
             { 2.688,            // F7absF5X  + // 100Kr (102Sr)
              -4.512E-5,         // F7linF5X  +
@@ -314,14 +314,14 @@ namespace nancyempty{
     const std::vector<std::vector<double>> incval{
             {2.706, 41.0, 0.009, 0.5},
             {2.6510, 34.00, 0.008, 0.6},
-            {0.,0.,0.,0.},
+            {2.717,35.00, 0.007,0.6},
             {2.7328, 37.00,0.006,0.6}
     };
 
     const std::vector<std::vector<double>> targetval{
             {2.750, 39.27, 0.011, 0.6},
             {2.663, 33.302, 0.012, 0.65},
-            {0.,0.,0.,0.},
+            {2.76, 33.22, 0.012, incval.at(2).at(3)},
             {2.7759,35.212,0.012,0.6}
     };
 }
