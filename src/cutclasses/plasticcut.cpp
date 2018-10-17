@@ -7,6 +7,7 @@
 #include "TMath.h"
 #include <thread>
 #include <numeric>
+#include "zdssetting.h"
 
 using namespace std;
 
@@ -90,8 +91,10 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
                         "BigRIPSPlastic.fpl"};
     for(auto &i: tree) i->setloopkeys(keys);
 
-
     // Generating the histograms:
+    setting set;
+    if(set.isemptyortrans()) numplastic =2; // cut out F8,F11 plastic cut for trans/empty
+
     tree.at(0)->getevent(0);
     for(uint i=0; i<numplastic; i++){
         arrayname.push_back(vector<string>{

@@ -38,6 +38,9 @@ namespace runinfo{
          "93BrP3P","94BrP3P","95BrP3P","94KrP3P","95KrP3P","96KrP3P","97RbP3P"},
         {"99RbP2P","100RbP2P","100SrP2P","101SrP2P","102SrP2P","102YP2P","103YP2P",
          "99RbP3P","100RbP3P","100SrP3P","101SrP3P","102SrP3P","102YP3P","103YP3P"}};
+
+    const std::vector<double> tottransmission{ 0.8177,0.9106,0.898,0.8848};
+    const std::vector<double> tottransmissionerror;
 }
 
 namespace nancy{
@@ -240,14 +243,14 @@ namespace nancytrans{
     // center x centery radius x radius y
     const std::vector<std::vector<double>> incval{
         {2.681, 41.0, 0.009, 0.6},  //110Nb
-        {2.6509, 34.00, 0.007, 0.6},
+        {2.701, 33.00, 0.007, 0.6}, // 89As
         {0.,0.,0.,0.},   // cut value should match centered beam nuclide
         {2.7333,37.00,0.006,0.6}  // 101Rb
     };
 
     const std::vector<std::vector<double>> targetval{
         {2.6799, 40.95, 0.012, incval.at(0).at(3)}, //110Nb
-        {2.6629, 33.354, 0.012, 0.65},
+        {2.7122, 32.328, 0.012, 0.65}, // 89As
         {0.,0.,0.,0.},
         {2.7383, 36.571, 0.012, incval.at(3).at(3)}, //101Rb
     };

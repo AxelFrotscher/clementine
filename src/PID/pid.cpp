@@ -336,7 +336,9 @@ void PID::crosssection() {
         << offcentertransmission << " \u00b1 " << offcentertransmissionerror
         << " CTS: " << reactF5.at(1).Integral();
     if(set.isemptyortrans())
-        stringout << " Ratio: " << 100.*reactionpid2/reactionpid1.load() << " %";
+        stringout << " Ratio: " << 100.*reactionpid2/reactionpid1.load() <<" \u00b1 "
+                  << 100.*reactionpid2/reactionpid1.load()*
+                     pow(1./reactionpid2+ 1./reactionpid1.load(),0.5) << " %";
     cout  << stringout.str() << endl;
 
     txtwriter txt;
@@ -532,7 +534,7 @@ void PID::histogramsetup() {
 
     reactF7PPAC.emplace_back(TH2D("F7pos", "PID F7 beamshape", 200,-40,40,200,-40,40));
     reactF7PPAC.emplace_back(TH2D("F7ang", "PID F7 beam angular shape", 100,-100,100,100,-100,100));
-    reactF7PPAC.emplace_back(TH2D("F7en", "PID F7 energy distribution", 200,700,900,200,200,400));
+    reactF7PPAC.emplace_back(TH2D("F7en", "PID F7 energy distribution", 200,700,900,200,200,800));
 
     fitplot = TH2D("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,binning, binning-1,1,binning);
     fitplot.GetXaxis()->SetTitle("Starting Bin");

@@ -32,7 +32,7 @@ private:
     std::vector<TH2D> tqcorr2D; // Charge-Time correlation
     std::vector<std::vector<std::string>> arrayname, arraytitle;
 
-    const int numplastic = 4;
+    int numplastic = 4;
     const int F7pos = 1;
     const int threshhold = 450; // random noise suppresion value
 

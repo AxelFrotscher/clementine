@@ -23,8 +23,8 @@ void txtwriter::writetofile(){
     auto end = std::chrono::system_clock::now();
 
     std::ofstream out(filename);
-    out << "Analysis Report SEASTAR2-Data" << std::endl << std::endl;
-    out << "Modes analysed: " << outputbuffer.size() << std::endl;
+    out << "Analysis Report SEASTAR2: "<< filename << std::endl << std::endl;
+    out << "Number of Modes analysed: " << outputbuffer.size() << std::endl;
     out << "Analyse Time: " << std::chrono::duration_cast<std::chrono::seconds>(end-begin).count()
         << "s "<< std::endl << std::endl;
     for(auto &i : outputbuffer) out << i << std::endl;

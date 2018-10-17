@@ -6,6 +6,7 @@
 #include <thread>
 #include "progress.h"
 #include <numeric>
+#include "zdssetting.h"
 
 using namespace std;
 
@@ -23,6 +24,8 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     progressbar progress(range.at(1)-range.at(0),threadno);
+    setting set;
+    const bool trans = set.isemptyortrans();
 
     for(int i=range.at(0); i < range.at(1); i++){
         if(goodevents.at(i)){
@@ -40,7 +43,7 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     _comparediag.at(j).at(0).Fill(
                             tree->BigRIPSIC_fADC[0][0],
                             tree->BigRIPSIC_fADC[0][j+1]- tree->BigRIPSIC_fADC[0][0]);
-                if(tree->BigRIPSIC_fADC[1][j] >0)
+                if(tree->BigRIPSIC_fADC[1][j] >0 && !trans)
                     _comparediag.at(j).at(1).Fill(
                             tree->BigRIPSIC_fADC[1][0],
                             tree->BigRIPSIC_fADC[1][j+1]-tree->BigRIPSIC_fADC[1][0]);

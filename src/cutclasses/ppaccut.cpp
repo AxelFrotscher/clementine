@@ -6,6 +6,7 @@
 #include "progress.h"
 #include <thread>
 #include <numeric>
+#include "zdssetting.h"
 
 using namespace std;
 
@@ -28,7 +29,7 @@ void ppaccut::innerloop(treereader *tree,
     vector<bool> temptruth(4, true); // variable for position checking
 
     progressbar progress(range.at(1)-range.at(0), threadno);
-
+    setting set;
     // Step 3: glorious loop
     for(int i=range.at(0); i<range.at(1); i++){
         if(goodevents.at(i)){  // analyse good events only
@@ -57,7 +58,8 @@ void ppaccut::innerloop(treereader *tree,
             // := Sum for x and y is in range
             bool temp = true;
 
-            for(uint k =0; k<ppacplane.size();k++){
+            // Make empty and trans runs only go over points to F7
+            for(uint k =0; k<(ppacplane.size()-3*set.isemptyortrans()); k++){
                 for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
                     int cpl = ppacplane.at(k).at(j);
                     temptruth.at(j) =

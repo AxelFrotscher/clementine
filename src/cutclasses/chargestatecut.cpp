@@ -79,6 +79,9 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
 
     // Get Cut from right setting | mode
     setting set;
+    if(set.isemptyortrans()){ // Cut after F7 not sensible for empty/trans runs
+        cout << "Empty or trans run. Not doing CCSC cut." << endl; return;
+    }
     for(auto &i: tree) mycut.push_back(set.getbrhocut());
 
     int cutpre = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
