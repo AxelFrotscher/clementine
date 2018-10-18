@@ -27,6 +27,16 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     // Get temporary mean value:
     double meanx = 0, meany = 0, meanxz=0, meanyz =0, fXTar=0, fYTar=0;
 
+    // Do test to have right PPAC's
+    tree->getevent(range.at(0));
+    for(int i=ppacoffset; i<(ppacoffset+f8ppac); i++){
+        if(tree->BigRIPSPPAC_fpl[i] != 8){
+            cout << "PPAC FPl from Index " << i << " not 8 but "
+                 << tree->BigRIPSPPAC_fpl[i] << endl;
+            std::__throw_invalid_argument("Wrong PPAC F8 indizes");
+        }
+    }
+
     for(int i =range.at(0); i < range.at(1); i++){
         if(goodevents.at(i)){
             // Determine cut only on good events
@@ -54,8 +64,8 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                         slopex.at(1).size();
                 meanyz= accumulate(slopey.at(1).begin(), slopey.at(1).end(), 0.0)/
                         slopey.at(1).size();
-                fXTar= meanx - (meanxz-f8offset)*slope(slopex.at(1),slopex.at(0));
-                fYTar= meany - (meanyz-f8offset)*slope(slopey.at(1),slopey.at(0));
+                fXTar= meanx + (f8offset - meanxz)*slope(slopex.at(1),slopex.at(0));
+                fYTar= meany + (f8offset - meanyz)*slope(slopey.at(1),slopey.at(0));
 
                 _tarhist.at(0).Fill(fXTar,fYTar);
 
@@ -98,7 +108,7 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
     printf("Targetcut with %ix power!\n", threads);
 
     // Get relevant keys
-    vector<string> keys{"BigRIPSPPAC.fX", "BigRIPSPPAC.fY"};
+    vector<string> keys{"BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSPPAC.fpl"};
     for(auto &i: tree) i->setloopkeys(keys);
 
     tarhist.emplace_back(TH2D("target", "Beam Profile F8", 1000,-50,50,1000,-50,50));

@@ -17,6 +17,15 @@
 #include "TArtFocalPlane.hh"
 #include <iostream>
 #include "TArtDALIParameters.hh"
+#include "TArtMINOSMap.hh"
+#include "TArtMINOSPara.hh"
+#include "TArtMINOSParameters.hh"
+
+#include "TArtCalibMINOS.hh"
+#include "TArtAnalyzedMINOS.hh"
+#include "TArtTrackMINOS.hh"
+#include "TArtVertexMINOS.hh"
+
 
 R__LOAD_LIBRARY(libanacore.so)
 
@@ -101,6 +110,16 @@ void generatetree(const string infile, const string output){
 
     // Create CalibDALI to get and calibrate raw data
     auto dalicalib = new TArtCalibDALI();
+    dalicalib->LoadFile((char *)"config/db/DALI");
+
+    // Create Minos
+    TArtMINOSParameters setup("MINOSParameters", "MINOSParameters");
+    setup.LoadParameters((char*)"config/db/MINOS.xml");
+
+    TArtCalibMINOS minoscalib;
+    TArtAnalyzedMINOS minosanalyzed;
+    TArtTrackMINOS minostrack;
+    TArtVertexMINOS minosvertex;
 
     // Create TTree and output file for it
     TFile fout(output.c_str(), "RECREATE");
@@ -111,8 +130,8 @@ void generatetree(const string infile, const string output){
     // Define data nodes which are supposed to be dumped to tree 
     // EventInfo is important for the fBit information to know the trigger!
     vector<string> datanodes{"EventInfo", "BigRIPSPPAC", "BigRIPSPlastic",
-                                  "BigRIPSIC","BigRIPSFocalPlane","BigRIPSRIPS",
-                                  "BigRIPSTOF", "BigRIPSBeam", "DALINaI", "EventInfo_FBIT"};
+                             "BigRIPSIC","BigRIPSFocalPlane","BigRIPSRIPS",
+                             "BigRIPSTOF", "BigRIPSBeam", "DALINaI", "EventInfo_FBIT"};
 
     // Trigger bits are broken in anaroot manual recover (kudos to n.hupin)
     uint EventInfo_FBIT =0;
@@ -133,6 +152,48 @@ void generatetree(const string infile, const string output){
 
     if(!fbitarray) __throw_bad_function_call();
     //Making new branches
+
+    // Create output values for minos by hand -.-
+    TClonesArray fidata, dataresult;
+    fidata.SetClass("TMinosClust");
+    dataresult.SetClass("TMinosResult");
+    tree->Branch("fitdata", &fidata);
+    tree->Branch("dataresult", &dataresult);
+
+    int track_no, track_no_final, evtOrig, padsleft;
+    tree->Branch("track_no",&track_no, "track_no/I");
+    tree->Branch("track_no_final", &track_no_final, "track_no_final/I");
+    tree->Branch("evtOrig", &evtOrig, "evtOrig/I");
+
+    double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0, phi_vertex=0,
+           thetaz1=0, thetaz2=0,
+           VDrift,          // in cm/(1E-6*s)
+           DelayTrigger,    // in ns
+           Stoptime;
+    tree->Branch("VDrift", &VDrift, "MINOS.VDrift/D");
+    tree->Branch("DelayTrig", &DelayTrigger, "DelayTrigger/D");
+    tree->Branch("x_vertex", &x_vertex, "x_vertex/D");
+    tree->Branch("y_vertex", &y_vertex, "y_vertex/D");
+    tree->Branch("z_vertex", &z_vertex, "z_vertex/D");
+    tree->Branch("r_vertex", &r_vertex, "r_vertex/D");
+    tree->Branch("phi_vertex", &phi_vertex, "phi_vertex/D");
+    tree->Branch("thetaz1", &thetaz1, "thetaz1/D");
+    tree->Branch("thetaz2", &thetaz1, "thetaz2/D");
+
+    //Parameters for MINOS analysis
+    double minosthresh, TimeBinElec, Tshaping;
+    ifstream minosconfigfile;
+    minosconfigfile.open("config/db/ConfigMINOSDrift_fixed.txt");
+    if(!minosconfigfile.is_open())__throw_invalid_argument("Could not open "
+                                        "config/db/ConfigMINOSDrift_fixed.txt");
+    string trash;
+    getline(minosconfigfile, trash);
+    minosconfigfile >> minosthresh >> TimeBinElec >> Tshaping;
+    getline(minosconfigfile, trash);
+    while(minosconfigfile.is_open()){
+        minosconfigfile >> trash >> DelayTrigger >> Stoptime >> VDrift;
+        if(infile.find(trash) != string::npos) break;
+    }
 
     //BigRIPS
     const double magnum = -999; // Magic Number for unset events
@@ -245,6 +306,7 @@ void generatetree(const string infile, const string output){
 
         // 880mm F8-1B to target
 
+
         for(uint i=0; i<focalplanes.size(); i++){ // Loop all focal planes
             if(cfpl->FindFocalPlane(focalplanes.at(i))){
                 vec = cfpl->FindFocalPlane(focalplanes.at(i))->GetOptVector();
@@ -274,28 +336,28 @@ void generatetree(const string infile, const string output){
         //                 + 0.000000005*(F9X+10)*(F9X+10)*(F9X+10);
 
         //AoQ_Z_BR->Fill(beam_br_57->GetAoQ(),beam_br_57->GetZet());
-        //AoQ_Z_ZD->Fill(beam_zd_911->GetAoQ()+modif,beam_zd_911->GetZet());
+        //AoQ_Z_ZD->Fill(beam_zd_911->GetAoQ()+modif,beam_zd_911->GetZet());*/
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         //Making MINOS
-         minoscalib->ClearData();
-        minosanalyzed->ClearData();
-        minostrack->ClearData();
-        minosvertex->ClearData();
-        minoscalib->ReconstructData();
-        minosanalyzed->ReconstructData(); 
-        minostrack->ReconstructData();
-        minosvertex->ReconstructVertex();
+        minoscalib.ClearData();
+        //minosanalyzed.ClearData();
+        //minostrack.ClearData();
+        minosvertex.ClearData();
+        minoscalib.ReconstructData();
+        //minosanalyzed.ReconstructData();
+        //minostrack.ReconstructData();
+        minosvertex.ReconstructVertex();
         // Convert the reconstructed vertex in z (mm)
-        z_vertex = (minosvertex->GetZv()*TimeBinElec - DelayTrig)*1e-3*VDrift*10; 
+        double z_vertex = (minosvertex.GetZv()*TimeBinElec - DelayTrigger)*1e-3*VDrift*10;
         //time bin*(ns/us)*vdrift(cm/us)*(mm/cm)
-        */
+
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         //Making DALI
         dalicalib->ClearData();
         //dalicalib->SetPlTime(plasticcalib->FindPlastic("F8pl")->GetTime());
-        //dalicalib->SetVertex(z_vertex);   // WE DID IT... Your turn to make it 
+        dalicalib->SetVertex(z_vertex);   // WE DID IT... Your turn to make it
                                         // compile :)
         //Add above to remove F8plastic tof.
         dalicalib->ReconstructData();

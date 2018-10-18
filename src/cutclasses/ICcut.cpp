@@ -32,8 +32,8 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             // Determine cut only on good events
             tree->getevent(i);
 
-            if((tree->BigRIPSIC_nhitchannel[0]*
-                tree->BigRIPSIC_nhitchannel[1]) <16){//Require 4 hits per IC
+            if((tree->BigRIPSIC_nhitchannel[0] <4 ) ||
+               ((tree->BigRIPSIC_nhitchannel[1] <4) && !set.isemptyortrans())){//Require 4 hits per IC
                 goodevents.at(i).exchange(false);
             }
             if((tree->BigRIPSIC_fADC[0][0] <0) ||
@@ -43,7 +43,7 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     _comparediag.at(j).at(0).Fill(
                             tree->BigRIPSIC_fADC[0][0],
                             tree->BigRIPSIC_fADC[0][j+1]- tree->BigRIPSIC_fADC[0][0]);
-                if(tree->BigRIPSIC_fADC[1][j] >0 && !trans)
+                if(tree->BigRIPSIC_fADC[1][j] >0)
                     _comparediag.at(j).at(1).Fill(
                             tree->BigRIPSIC_fADC[1][0],
                             tree->BigRIPSIC_fADC[1][j+1]-tree->BigRIPSIC_fADC[1][0]);
