@@ -99,8 +99,8 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     _reactF7PPAC.at(0).Fill(tree->BigRIPSPPAC_fX[17],
                                             tree->BigRIPSPPAC_fY[17]);
                     _reactF7PPAC.at(1).Fill(
-                        1E3*atan((tree->BigRIPSPPAC_fX[17]-tree->BigRIPSPPAC_fX[16])/37.4),
-                        1E3*atan((tree->BigRIPSPPAC_fY[17]-tree->BigRIPSPPAC_fY[16])/20.2));
+                        1E3*atan2((tree->BigRIPSPPAC_fX[17]-tree->BigRIPSPPAC_fX[15]), 945.),
+                        1E3*atan2((tree->BigRIPSPPAC_fY[17]-tree->BigRIPSPPAC_fY[15]), 945.));
                     _reactF7PPAC.at(2).Fill(tree->BigRIPSIC_fCalMeVSqSum[0],
                                             tree->BigRIPSIC_fCalMeVSqSum[1]);
                 }
@@ -511,21 +511,23 @@ void PID::histogramsetup() {
     // Nasty histogram setup routine
     setting set;
     const vector<uint> y = set.getZrange(); // y boundaries
-    const uint xbin = 400; // number of x-bins
-    const vector<double> x{2.55,2.85};
+    const vector<double> x{400, 2.55, 2.85};  // xbins, lower x, upper x
 
     vector<TH2D> temp1, temp2;
-    temp1.emplace_back(TH2D("pidinc", "PID Incoming F3-F7",  xbin,x[0],x[1], y[0],y[1],y[2]));
-    temp1.emplace_back(TH2D("pidout", "PID Outgoing F8-F11", xbin,x[0],x[1], y[0],y[1],y[2]));
-    temp1.emplace_back(TH2D("pidincut","PID Inc cut  F3-F7",xbin,x[0],x[1], y[0],y[1],y[2]));
-    temp1.emplace_back(TH2D("pidincutout", "PID Out w/ in cut", xbin,x[0],x[1],y[0],y[1],y[2]));
-    temp1.emplace_back(TH2D("pidincutoutcut", "PID Out cut w/ in cut", xbin,x[0],x[1],y[0],y[1],y[2]));
+    vector<vector<string>> t1s = {{"pidinc", "PID Incoming F3-F7"},
+        {"pidout", "PID Outgoing F8-F11"}, {"pidincut","PID Inc cut  F3-F7"},
+        {"pidincutout", "PID Out w/ in cut"},
+        {"pidincutoutcut", "PID Out cut w/ in cut"}};
+    vector<vector<string>> t2s = {{"pidinccorr", "PID Incoming F3-F7"},
+        {"pidoutcorr", "PID Outgoing F8-F11"},{"pidincutcorr","PID Inc cut  F3-F7"},
+        {"pidincutoutcorr", "PID Out w/ in cut"},
+        {"pidincutoutcutcorr", "PID Out cut w/ in cut"}};
 
-    temp2.emplace_back(TH2D("pidinccorr", "PID Incoming F3-F7",  xbin,x[0],x[1], y[0],y[1],y[2]));
-    temp2.emplace_back(TH2D("pidoutcorr", "PID Outgoing F8-F11", xbin,x[0],x[1], y[0],y[1],y[2]));
-    temp2.emplace_back(TH2D("pidincutcorr","PID Inc cut  F3-F7",xbin,x[0],x[1],y[0],y[1],y[2]));
-    temp2.emplace_back(TH2D("pidincutoutcorr", "PID Out w/ in cut", xbin,x[0],x[1],y[0],y[1],y[2]));
-    temp2.emplace_back(TH2D("pidincutoutcutcorr", "PID Out cut w/ in cut", xbin,x[0],x[1],y[0],y[1],y[2]));
+    for(auto &i : t1s) temp1.emplace_back(i.at(0).c_str(),i.at(1).c_str(),
+                                          x[0],x[1],x[2],y[0],y[1],y[2]);
+    for(auto &i : t2s) temp2.emplace_back(i.at(0).c_str(),i.at(1).c_str(),
+                                          x[0],x[1],x[2],y[0],y[1],y[2]);
+
     PIDplot.emplace_back(temp1);
     PIDplot.emplace_back(temp2);
 
@@ -534,7 +536,7 @@ void PID::histogramsetup() {
 
     reactF7PPAC.emplace_back(TH2D("F7pos", "PID F7 beamshape", 200,-40,40,200,-40,40));
     reactF7PPAC.emplace_back(TH2D("F7ang", "PID F7 beam angular shape", 100,-100,100,100,-100,100));
-    reactF7PPAC.emplace_back(TH2D("F7en", "PID F7 energy distribution", 200,700,900,200,200,800));
+    reactF7PPAC.emplace_back(TH2D("F7en", "PID F7 energy distribution", 300,300,900,300,200,800));
 
     fitplot = TH2D("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,binning, binning-1,1,binning);
     fitplot.GetXaxis()->SetTitle("Starting Bin");
@@ -552,6 +554,7 @@ void PID::histogramsetup() {
             uelem.SetOption("colz");
             uelem.GetXaxis()->SetTitle("A/Q");
             uelem.GetYaxis()->SetTitle("Z");
+            uelem.SetMinimum(1);
         }
     }
 
@@ -562,5 +565,8 @@ void PID::histogramsetup() {
     reactF7PPAC.at(2).GetXaxis()->SetTitle("E|F7 [MeV]");
     reactF7PPAC.at(2).GetYaxis()->SetTitle("E|F11 [MeV]");
 
-    for(auto &i: reactF7PPAC) i.SetOption("colz");
+    for(auto &i: reactF7PPAC){
+        i.SetOption("colz");
+        i.SetMinimum(1);
+    }
 }

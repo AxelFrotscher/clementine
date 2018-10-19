@@ -131,7 +131,8 @@ void generatetree(const string infile, const string output){
     // EventInfo is important for the fBit information to know the trigger!
     vector<string> datanodes{"EventInfo", "BigRIPSPPAC", "BigRIPSPlastic",
                              "BigRIPSIC","BigRIPSFocalPlane","BigRIPSRIPS",
-                             "BigRIPSTOF", "BigRIPSBeam", "DALINaI", "EventInfo_FBIT"};
+                             "BigRIPSTOF", "BigRIPSBeam", "DALINaI",
+                             "EventInfo_FBIT", "TrackMINOS"};
 
     // Trigger bits are broken in anaroot manual recover (kudos to n.hupin)
     uint EventInfo_FBIT =0;
@@ -154,11 +155,11 @@ void generatetree(const string infile, const string output){
     //Making new branches
 
     // Create output values for minos by hand -.-
-    TClonesArray fidata, dataresult;
+    /*TClonesArray fidata, dataresult;
     fidata.SetClass("TMinosClust");
     dataresult.SetClass("TMinosResult");
     tree->Branch("fitdata", &fidata);
-    tree->Branch("dataresult", &dataresult);
+    tree->Branch("dataresult", &dataresult); */
 
     int track_no, track_no_final, evtOrig, padsleft;
     tree->Branch("track_no",&track_no, "track_no/I");
@@ -190,9 +191,15 @@ void generatetree(const string infile, const string output){
     getline(minosconfigfile, trash);
     minosconfigfile >> minosthresh >> TimeBinElec >> Tshaping;
     getline(minosconfigfile, trash);
-    while(minosconfigfile.is_open()){
-        minosconfigfile >> trash >> DelayTrigger >> Stoptime >> VDrift;
-        if(infile.find(trash) != string::npos) break;
+
+    while(getline(minosconfigfile, trash)){
+        stringstream ss(trash);
+        ss >> trash >> DelayTrigger >> Stoptime >> VDrift;
+        if(infile.find(trash) != string::npos){
+            cout << endl << "Found parameters for MINOS file "<< trash  << "  "
+                 << infile << endl;
+            break;
+        }
     }
 
     //BigRIPS
@@ -349,7 +356,7 @@ void generatetree(const string infile, const string output){
         //minostrack.ReconstructData();
         minosvertex.ReconstructVertex();
         // Convert the reconstructed vertex in z (mm)
-        double z_vertex = (minosvertex.GetZv()*TimeBinElec - DelayTrigger)*1e-3*VDrift*10;
+        z_vertex = (minosvertex.GetZv()*TimeBinElec - DelayTrigger)*1e-3*VDrift*10;
         //time bin*(ns/us)*vdrift(cm/us)*(mm/cm)
 
 
