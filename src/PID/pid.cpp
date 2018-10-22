@@ -19,11 +19,15 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     &goodevents, std::vector<uint> range) {
     // Step 1: duplicate the data structure
     vector<TH1D> _reactF5;
-    vector<TH2D> _reactF7PPAC;
+    vector<vector<TH2D>> _reactPPAC;
     vector<vector<TH2D>> _PIDplot;
 
     for(auto &i: reactF5) _reactF5.emplace_back(TH1D(i));
-    for(auto &i: reactF7PPAC) _reactF7PPAC.emplace_back(TH2D(i));
+    for(auto &i: reactPPAC){
+        vector<TH2D> temp;
+        for(auto &j:i) temp.emplace_back(TH2D(j));
+        _reactPPAC.emplace_back(temp);
+    }
     for(auto &i: PIDplot){
         vector<TH2D> temp;
         for(auto &j:i) temp.emplace_back(TH2D(j));
@@ -34,6 +38,9 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     progressbar progress(range.at(1)-range.at(0), threadno);
 
     vector<vector<double>> valinc;     // Store temporary beam values
+
+    const vector<int> ppacFpositions{17,25,33}; // F7-2B, F9-2B, F11-2B
+    const vector<int> ppacangledistance{945,700,500}; // in mm
 
     for(uint eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
         if(goodevents.at(eventcounter)){
@@ -95,14 +102,21 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     _PIDplot.at(1).at(4).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
 
                     // Fill Information to the beam profile/shape/energy
-                    // 17 == F7PPAC-2B
-                    _reactF7PPAC.at(0).Fill(tree->BigRIPSPPAC_fX[17],
-                                            tree->BigRIPSPPAC_fY[17]);
-                    _reactF7PPAC.at(1).Fill(
-                        1E3*atan2((tree->BigRIPSPPAC_fX[17]-tree->BigRIPSPPAC_fX[15]), 945.),
-                        1E3*atan2((tree->BigRIPSPPAC_fY[17]-tree->BigRIPSPPAC_fY[15]), 945.));
-                    _reactF7PPAC.at(2).Fill(tree->BigRIPSIC_fCalMeVSqSum[0],
-                                            tree->BigRIPSIC_fCalMeVSqSum[1]);
+                    // 17 == F7PPAC-2B, 15 == F7PPAC-1B
+                    for(int i=0; i<_reactPPAC.size();i++){
+                        _reactPPAC.at(i).at(0).Fill(
+                                tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
+                                tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]);
+                        _reactPPAC.at(i).at(1).Fill(
+                            1E3*atan2(tree->BigRIPSPPAC_fX[ppacFpositions.at(i)]-
+                                      tree->BigRIPSPPAC_fX[ppacFpositions.at(i)-2],
+                                      ppacangledistance.at(i)),
+                            1E3*atan2(tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]-
+                                      tree->BigRIPSPPAC_fY[ppacFpositions.at(i)-2],
+                                      ppacangledistance.at(i)));
+                        _reactPPAC.at(i).at(2).Fill(tree->BigRIPSIC_fCalMeVSqSum[0],
+                                                    tree->BigRIPSIC_fCalMeVSqSum[1]);
+                    }
                 }
             }
         }
@@ -112,7 +126,11 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     // Step 3: rejoining data structure
     unitemutex.lock();
     for(uint i=0;i<reactF5.size();i++) reactF5.at(i).Add(new TH1D(_reactF5.at(i)));
-    for(uint i=0;i<reactF7PPAC.size();i++) reactF7PPAC.at(i).Add(new TH2D(_reactF7PPAC.at(i)));
+    for(uint i=0;i<reactPPAC.size();i++){
+        for(uint j=0; j<reactPPAC.at(0).size(); j++){
+            reactPPAC.at(i).at(j).Add(new TH2D(_reactPPAC.at(i).at(j)));
+        }
+    }
     for(uint i=0;i<PIDplot.size();i++){
         for(uint j=0;j<PIDplot.at(0).size();j++){
             PIDplot.at(i).at(j).Add(new TH2D(_PIDplot.at(i).at(j)));
@@ -128,9 +146,12 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     PID::reactionparameters();
 
     // Generate folder names and check for previous analysises
-    vector<string> folders{"PID/"+reaction+"/Uncorrected",
-                           "PID/"+reaction+"/Corrected",
-                           "PID/"+reaction+"/investigate"};
+    vector<string> folders{
+        "PID/"+reaction+"/Uncorrected", "PID/"+reaction+"/Corrected",
+        "PID/"+reaction+"/investigate", "PID/"+reaction+"/investigate/F5",
+        "PID/"+reaction+"/investigate/F7", "PID/"+reaction+"/investigate/F9",
+        "PID/"+reaction+"/investigate/F11"};
+
     for (auto &i :folders){
         // Do not analyse the same thing twice
         if (output->GetDirectory(i.c_str())) return;
@@ -160,7 +181,6 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     PID::histogramsetup();
 
     //Making threads
-
     vector<thread> th;
     for(uint i=0; i<threads;i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
@@ -178,16 +198,22 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     PID::offctrans();
     PID::crosssection();
 
-    for(uint i=0; i<folders.size(); i++) {
+    for(uint i=0; i<2; i++) {
         output->cd(folders.at(i).c_str());
-        if (i < 2) for (auto &elem: PIDplot.at(i)) elem.Write();
-        else {
-            for(auto &elem: reactF5) elem.Write();
-            fitplot.Write();
-            for(auto &elem: reactF7PPAC) elem.Write();
-            if(bestfit) bestfit->Write();
-        }
+        for (auto &elem: PIDplot.at(i)) elem.Write();
         output->cd("");
+    }
+
+    output->cd(folders.at(2).c_str());
+    fitplot.Write();
+
+    output->cd(folders.at(3).c_str());
+    for(auto &elem: reactF5) elem.Write();
+    if(bestfit) bestfit->Write();
+
+    for(int i=0; i<reactPPAC.size();i++){
+        output->cd(folders.at(4+i).c_str());
+        for(auto &elem: reactPPAC.at(i)) elem.Write();
     }
 }
 
@@ -532,11 +558,22 @@ void PID::histogramsetup() {
     PIDplot.emplace_back(temp2);
 
     reactF5.emplace_back(TH1D("F5beam", "F5 beam profile", binning,-100,100));
-    reactF5.emplace_back(TH1D("F5react", "F5-position of reacted particles", binning,-100,100));
+    reactF5.emplace_back(TH1D("F5react", "F5-position of reacted particles",
+                              binning,-100,100));
 
-    reactF7PPAC.emplace_back(TH2D("F7pos", "PID F7 beamshape", 200,-40,40,200,-40,40));
-    reactF7PPAC.emplace_back(TH2D("F7ang", "PID F7 beam angular shape", 100,-100,100,100,-100,100));
-    reactF7PPAC.emplace_back(TH2D("F7en", "PID F7 energy distribution", 300,300,900,300,200,800));
+    for(int j=0; j<3; j++){
+        vector<TH2D> temp;
+        string no = "F" + to_string(7+2*j); // form F7+F9+F11
+        int k =1; // Scaling factor F9
+        if(j==1) k=3; // make space wider for F9
+        temp.emplace_back(TH2D((no+"pos").c_str(), ("PID "+no+" beamshape").c_str(),
+                               200,-40*k,40*k,200,-30*k,30*k));
+        temp.emplace_back(TH2D((no+"ang").c_str(), ("PID "+no+" beam angular shape").c_str(),
+                               100,-50,50,100,-50,50));
+        temp.emplace_back(TH2D((no+"en").c_str(), ("PID "+no+" Energy Distribution").c_str(),
+                               300,300,900,300,200,800));
+        reactPPAC.emplace_back(temp);
+    }
 
     fitplot = TH2D("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,binning, binning-1,1,binning);
     fitplot.GetXaxis()->SetTitle("Starting Bin");
@@ -558,15 +595,20 @@ void PID::histogramsetup() {
         }
     }
 
-    reactF7PPAC.at(0).GetXaxis()->SetTitle("F7X [mm]");
-    reactF7PPAC.at(0).GetYaxis()->SetTitle("F7Y [mm]");
-    reactF7PPAC.at(1).GetXaxis()->SetTitle("F7A [mrad]");
-    reactF7PPAC.at(1).GetYaxis()->SetTitle("F7B [mrad]");
-    reactF7PPAC.at(2).GetXaxis()->SetTitle("E|F7 [MeV]");
-    reactF7PPAC.at(2).GetYaxis()->SetTitle("E|F11 [MeV]");
+    for(int i=0; i<reactPPAC.size(); i++){
+        string no = "F" + to_string(7+2*i);
+        reactPPAC.at(i).at(0).GetXaxis()->SetTitle((no+"X [mm]").c_str());
+        reactPPAC.at(i).at(0).GetYaxis()->SetTitle((no+"Y [mm]").c_str());
+        reactPPAC.at(i).at(1).GetXaxis()->SetTitle((no+"A [mrad]").c_str());
+        reactPPAC.at(i).at(1).GetXaxis()->SetTitle((no+"B [mrad]").c_str());
+        reactPPAC.at(i).at(2).GetXaxis()->SetTitle(("E|"+no+" [MeV]").c_str());
+        reactPPAC.at(i).at(2).GetXaxis()->SetTitle("E|F11 [MeV]");
+    }
 
-    for(auto &i: reactF7PPAC){
-        i.SetOption("colz");
-        i.SetMinimum(1);
+    for(auto &i: reactPPAC){
+        for(auto &j :i){
+            j.SetOption("colz");
+            j.SetMinimum(1);
+        }
     }
 }
