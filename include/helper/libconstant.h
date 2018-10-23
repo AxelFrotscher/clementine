@@ -110,16 +110,17 @@ namespace nancy{
             0.6    // radius y
     };
 
-    const std::vector<double> targetval112Nb{2.729, 41.0, 0.01, 0.5};
-    const std::vector<double> targetval111Nb{2.707, 40.9, 0.01, 0.5};
+    // Fifth value is simulated total transmission from F7 through LH2-Target
+    const std::vector<double> targetval112Nb{2.729, 41.0, 0.01, 0.5, 0.4652};
+    const std::vector<double> targetval111Nb{2.707, 40.9, 0.01, 0.5, 0.4659};
     const std::vector<double> targetval110Nb{2.683, 40.95, incval111Nb.at(2),
-                                             incval111Nb.at(3)};
+                                             incval111Nb.at(3), 0.3329};
     const std::vector<double> targetval109Nb{2.66, 40.9, incval111Nb.at(2),
-                                             incval111Nb.at(3)};
-    const std::vector<double> targetval111Zr{2.775, 40, 0.01, 0.4};
-    const std::vector<double> targetval110Zr{2.75, 40.0, 0.01, 0.5};
-    const std::vector<double> targetval109Zr{2.725, 39.9, 0.01, 0.5};
-    const std::vector<double> targetval108Zr{2.6992, 39.91, 0.01, 0.4};
+                                             incval111Nb.at(3), 0.1234};
+    const std::vector<double> targetval111Zr{2.775, 40, 0.01, 0.4, 0.3972};
+    const std::vector<double> targetval110Zr{2.75, 40.0, 0.01, 0.5, 0.4726};
+    const std::vector<double> targetval109Zr{2.725, 39.9, 0.01, 0.5, 0.4794};
+    const std::vector<double> targetval108Zr{2.6992, 39.91, 0.01, 0.4, 0.4803};
 
     const std::vector<double> incval110Mo{2.6247, 41.9, 0.006, 0.6};
     const std::vector<double> incval110Nb{2.6882, 40.9, 0.006, 0.6};
@@ -249,10 +250,10 @@ namespace nancytrans{
     };
 
     const std::vector<std::vector<double>> targetval{
-        {2.6799, 40.95, 0.012, incval.at(0).at(3)}, //110Nb
-        {2.7122, 32.328, 0.012, 0.65}, // 89As
-        {0.,0.,0.,0.},
-        {2.7383, 36.571, 0.012, incval.at(3).at(3)}, //101Rb
+        {2.6799, 40.95, 0.012, incval.at(0).at(3), 1}, //110Nb
+        {2.7122, 32.328, 0.012, 0.65, 1}, // 89As
+        {0.,0.,0.,0., 1},
+        {2.7383, 36.571, 0.012, incval.at(3).at(3), 1}, //101Rb
     };
 }
 
@@ -322,9 +323,9 @@ namespace nancyempty{
     };
 
     const std::vector<std::vector<double>> targetval{
-            {2.750, 39.27, 0.011, 0.6},
-            {2.663, 33.302, 0.012, 0.65},
-            {2.76, 33.22, 0.012, incval.at(2).at(3)},
-            {2.7759,35.212,0.012,0.6}
+            {2.750, 39.27, 0.011, 0.6, 1},
+            {2.663, 33.302, 0.012, 0.65, 1},
+            {2.76, 33.22, 0.012, incval.at(2).at(3), 1},
+            {2.7759,35.212,0.012,0.6, 1}
     };
 }
