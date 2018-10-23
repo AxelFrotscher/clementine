@@ -111,36 +111,37 @@ namespace nancy{
     };
 
     // Fifth value is simulated total transmission from F7 through LH2-Target
-    const std::vector<double> targetval112Nb{2.729, 41.0, 0.01, 0.5, 0.4652};
-    const std::vector<double> targetval111Nb{2.707, 40.9, 0.01, 0.5, 0.4659};
+    // for P,2P. 6th is for P,3P
+    const std::vector<double> targetval112Nb{2.729, 41.0, .01, .5, .4666, .2066};
+    const std::vector<double> targetval111Nb{2.707, 40.9, .01, .5, .4672, .0978};
     const std::vector<double> targetval110Nb{2.683, 40.95, incval111Nb.at(2),
-                                             incval111Nb.at(3), 0.3329};
+                                             incval111Nb.at(3), .4517, .0362};
     const std::vector<double> targetval109Nb{2.66, 40.9, incval111Nb.at(2),
-                                             incval111Nb.at(3), 0.1234};
-    const std::vector<double> targetval111Zr{2.775, 40, 0.01, 0.4, 0.3972};
-    const std::vector<double> targetval110Zr{2.75, 40.0, 0.01, 0.5, 0.4726};
-    const std::vector<double> targetval109Zr{2.725, 39.9, 0.01, 0.5, 0.4794};
-    const std::vector<double> targetval108Zr{2.6992, 39.91, 0.01, 0.4, 0.4803};
+                                             incval111Nb.at(3), .3986, .0099};
+    const std::vector<double> targetval111Zr{2.775, 40,   .01, .4, .4737, .1956};
+    const std::vector<double> targetval110Zr{2.75,  40.0, .01, .5, .4745, .0883};
+    const std::vector<double> targetval109Zr{2.725, 39.9, .01, .5, .4586, .0304};
+    const std::vector<double> targetval108Zr{2.6992,39.91,.01, .4, .4037, .0076};
 
-    const std::vector<double> incval110Mo{2.6247, 41.9, 0.006, 0.6};
-    const std::vector<double> incval110Nb{2.6882, 40.9, 0.006, 0.6};
-    const std::vector<double> incval111Mo{2.6482, 41.9, 0.006, 0.6};
-    const std::vector<double> incval112Mo{2.672, 41.9, 0.006, 0.6};
-    const std::vector<double> incval113Mo{2.696, 41.92, 0.004, 0.6};
-    const std::vector<double> incval113Tc{2.6334, 42.86, 0.004, 0.6};
-    const std::vector<double> incval112Tc{2.6103, 42.9, 0.004, 0.6};
-    const std::vector<double> incval114Tc{2.65676, 42.882, 0.004, 0.5};
+    const std::vector<double> incval110Mo{2.6247, 41.9, .006, .6};
+    const std::vector<double> incval110Nb{2.6882, 40.9, .006, .6};
+    const std::vector<double> incval111Mo{2.6482, 41.9, .006, .6};
+    const std::vector<double> incval112Mo{2.672,  41.9, .006, .6};
+    const std::vector<double> incval113Mo{2.696,  41.92,.004, .6};
+    const std::vector<double> incval113Tc{2.6334, 42.86,.004, .6};
+    const std::vector<double> incval112Tc{2.6103, 42.9, .004, .6};
+    const std::vector<double> incval114Tc{2.6568, 42.88,.004, .5};
 
     // Second setting
-    const std::vector<double> incval90Se{2.651, 34.0, 0.006, 0.6};
-    const std::vector<double> targetval89As{2.711, 32.3, 0.012, 0.5};
-    const std::vector<double> targetval88Ge{2.759, 31.23, 0.012, 0.5};
-    const std::vector<double> incval89Se{2.6225, 34.0, 0.005, 0.6};
-    const std::vector<double> targetval88As{2.679, 32.27, 0.01, 0.5};
-    const std::vector<double> targetval87Ge{2.7247, 31.244, 0.01, 0.5};
-    const std::vector<double> incval88As{2.670, 33.0, 0.006, 0.6};
-    const std::vector<double> incval89As{2.701, 33.0, 0.006, 0.6};
-    const std::vector<double> targetval87Ga{2.8121, 30.348, 0.01, 0.5};
+    const std::vector<double> incval90Se{2.651, 34.0, .006, .6};
+    const std::vector<double> incval89Se{2.6225, 34.0,.005, .6};
+    const std::vector<double> incval88As{2.670, 33.0, .006, .6};
+    const std::vector<double> incval89As{2.701, 33.0, .006, .6};
+    const std::vector<double> targetval87Ga{2.8121, 30.348, .01, .5, .5602, .4505};
+    const std::vector<double> targetval87Ge{2.7247, 31.244, .01, .5, .5593, .3988};
+    const std::vector<double> targetval88Ge{2.759, 31.23,   .012,.5, .5571, .4868};
+    const std::vector<double> targetval88As{2.679, 32.27,   .01, .5, .5560, 1};
+    const std::vector<double> targetval89As{2.711, 32.3,    .012,.5, .5544, 1};
 
     // Third setting
     const std::vector<double> incval97Rb{2.6246, 37.0, 0.006, 0.6};

@@ -340,11 +340,15 @@ void PID::offctrans() {
 }
 
 void PID::crosssection() {
+    // Find out reaction type
+    double tottransmission = 1;
+    if(reaction.find("P2P") != string::npos) tottransmission = targetval.at(4);
+    else if(reaction.find("P3P") != string::npos) tottransmission = targetval.at(5);
+
     // Calculate the final crosssection for this run
     const double numberdensity = 0.433; // atoms/cm2 for 10cm LH2
     const double numberdensityerror = 0.00924; // relative error
     //const double tottransmission = 0.7839; // empty target transmission for centered beam
-    const double tottransmission = targetval.at(4);
     //const double tottransmissionerror = 0.01865; // associated relative error
     const double tottransmissionerror = 0.05; // conservative relative error
 
@@ -352,15 +356,18 @@ void PID::crosssection() {
                           reactionpid1/tottransmission;
     const double cserror = crosssection*
                      pow(1./reactionpid1 + 2./reactionpid2+
-                         pow(tottransmissionerror,2)+
+                         pow(tottransmissionerror+ 0.01/tottransmission,2)+
                          pow(numberdensityerror,2), 0.5);  // Error on Transm.
+    // 1% absolute error + 5% relative error
 
     // make cross section string:
     setting set;
     stringstream stringout;
-    stringout << reaction << " \u03C3: " << setprecision(4) << 1E3*crosssection
-        << " \u00b1 " << setprecision(2) << 1E3*cserror << setprecision(4)
-        <<  "mb, CTS: " << reactF5.at(1).Integral() << " T= " << tottransmission;
+    stringout.precision(3);
+    stringout.fixed;
+    stringout << reaction << " \u03C3: " << 1E3*crosssection
+        << " \u00b1 " << 1E3*cserror <<  "mb, CTS: " << reactF5.at(1).Integral()
+        << ", T = " << tottransmission;
     if(set.isemptyortrans())
         stringout << " Ratio: " << 100.*reactionpid2/reactionpid1.load() <<" \u00b1 "
                   << 100.*reactionpid2/reactionpid1.load()*
