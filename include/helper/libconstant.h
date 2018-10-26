@@ -32,8 +32,9 @@ namespace runinfo{
 
     const std::vector<std::vector<std::string>> reactionmodes{
         {"111NbP2P","110NbP2P","110MoP3P","111MoP3P","112MoP3P",
-         "113MoP3P","112TcP3P","113TcP3P","114TcP3P"},
-        {"88AsP2P","89AsP2P","89SeP2P","90SeP2P","89AsP3P","89SeP3P", "90SeP3P"},
+         "113MoP3P","112TcP3P","113TcP3P","114TcP3P", "110NbP0P"},
+        {"88AsP2P","89AsP2P","89SeP2P","90SeP2P","89AsP3P","89SeP3P", "90SeP3P",
+         "88GeP0P"},
         {"93BrP2P","94BrP2P","95BrP2P","94KrP2P","95KrP2P","96KrP2P","97RbP2P",
          "93BrP3P","94BrP3P","95BrP3P","94KrP3P","95KrP3P","96KrP3P","97RbP3P"},
         {"99RbP2P","100RbP2P","100SrP2P","101SrP2P","102SrP2P","102YP2P","103YP2P",
@@ -114,8 +115,7 @@ namespace nancy{
     // for P,2P. 6th is for P,3P
     const std::vector<double> targetval112Nb{2.729, 41.0, .01, .5, .4666, .2066};
     const std::vector<double> targetval111Nb{2.707, 40.9, .01, .5, .4672, .0978};
-    const std::vector<double> targetval110Nb{2.683, 40.95, incval111Nb.at(2),
-                                             incval111Nb.at(3), .4517, .0362};
+    const std::vector<double> targetval110Nb{2.683, 40.95,.01, .6, .4517, .0362};
     const std::vector<double> targetval109Nb{2.66, 40.9, incval111Nb.at(2),
                                              incval111Nb.at(3), .3986, .0099};
     const std::vector<double> targetval111Zr{2.775, 40,   .01, .4, .4737, .1956};
@@ -134,14 +134,15 @@ namespace nancy{
 
     // Second setting
     const std::vector<double> incval90Se{2.651, 34.0, .006, .6};
-    const std::vector<double> incval89Se{2.6225, 34.0,.005, .6};
+    const std::vector<double> incval89Se{2.623, 34.0, .005, .6};
     const std::vector<double> incval88As{2.670, 33.0, .006, .6};
     const std::vector<double> incval89As{2.701, 33.0, .006, .6};
-    const std::vector<double> targetval87Ga{2.8121, 30.348, .01, .5, .5602, .4505};
-    const std::vector<double> targetval87Ge{2.7247, 31.244, .01, .5, .5593, .3988};
-    const std::vector<double> targetval88Ge{2.759, 31.23,   .012,.5, .5571, .4868};
-    const std::vector<double> targetval88As{2.679, 32.27,   .01, .5, .5560, 1};
-    const std::vector<double> targetval89As{2.711, 32.3,    .012,.5, .5544, 1};
+    const std::vector<double> incval88Ge{2.7533,32.0, .008, .6};
+    const std::vector<double> targetval87Ga{2.812, 30.35, .01, .5, .5602, .4505};
+    const std::vector<double> targetval87Ge{2.725, 31.24, .01, .5, .5593, .3988};
+    const std::vector<double> targetval88Ge{2.759, 31.23, .012,.5, .5571, .4868};
+    const std::vector<double> targetval88As{2.679, 32.27, .01, .5, .5560, 1};
+    const std::vector<double> targetval89As{2.711, 32.3,  .012,.5, .5544, 1};
 
     // Third setting
     const std::vector<double> incval97Rb{2.6246, 37.0, 0.006, 0.6};
@@ -152,16 +153,16 @@ namespace nancy{
     const std::vector<double> incval94Br{2.6878, 35.0, 0.007, 0.6};
     const std::vector<double> incval95Br{2.7172, 35.0, 0.008, 0.6};
 
-    const std::vector<double> targetval96Kr{2.6756, 35.42, 0.009,0.6};
-    const std::vector<double> targetval95Br{2.7215, 34.41, 0.012,0.6};
-    const std::vector<double> targetval93Br{2.6627, 34.30, 0.009,0.6};
-    const std::vector<double> targetval92Se{2.7091, 33.39, 0.011,0.6};
-    const std::vector<double> targetval94Br{2.6932, 34.43, 0.010,0.6};
-    const std::vector<double> targetval93Se{2.7419, 33.44, 0.011,0.6};
-    const std::vector<double> targetval94Se{2.7711, 33.49, 0.011,0.6};
     const std::vector<double> targetval91As{2.7622, 32.42, 0.011,0.6};
     const std::vector<double> targetval92As{2.7933, 32.49, 0.011,0.6};
     const std::vector<double> targetval93As{2.8236, 32.54, 0.011,0.6};
+    const std::vector<double> targetval92Se{2.7091, 33.39, 0.011,0.6};
+    const std::vector<double> targetval93Se{2.7419, 33.44, 0.011,0.6};
+    const std::vector<double> targetval94Se{2.7711, 33.49, 0.011,0.6};
+    const std::vector<double> targetval93Br{2.6627, 34.30, 0.009,0.6};
+    const std::vector<double> targetval94Br{2.6932, 34.43, 0.010,0.6};
+    const std::vector<double> targetval95Br{2.7215, 34.41, 0.012,0.6};
+    const std::vector<double> targetval96Kr{2.6756, 35.42, 0.009,0.6};
 
     // Fourth Setting
     const std::vector<double> incval102Y {2.6172, 39.00, 0.006, 0.6};
@@ -172,16 +173,17 @@ namespace nancy{
     const std::vector<double> incval99Rb {2.6770, 37.00, 0.006, 0.6};
     const std::vector<double> incval100Rb{2.7046, 37.00, 0.006, 0.6};
 
-    const std::vector<double> targetval101Sr{2.6697,37.438, 0.01, 0.6};
-    const std::vector<double> targetval100Rb{2.7145,36.412, 0.01, 0.6};
-    const std::vector<double> targetval102Sr{2.6966,37.467, 0.01, 0.6};
-    const std::vector<double> targetval101Rb{2.7410,36.499,0.01,0.6};
-    const std::vector<double> targetval99Rb{2.6874,36.389,0.011,0.6};
+    const std::vector<double> targetval97Br{2.7829,34.503,0.011,0.6};
+    const std::vector<double> targetval98Br{2.8115,34.553,0.011,0.6};
     const std::vector<double> targetval98Kr{2.7333,35.422,0.011,0.6};
     const std::vector<double> targetval99Kr{2.7613,35.485,0.011,0.5};
     const std::vector<double> targetval100Kr{2.7891,35.506,0.011,0.6};
-    const std::vector<double> targetval97Br{2.7829,34.503,0.011,0.6};
-    const std::vector<double> targetval98Br{2.8115,34.553,0.011,0.6};
+    const std::vector<double> targetval99Rb{2.6874,36.389,0.011,0.6};
+    const std::vector<double> targetval100Rb{2.7145,36.412, 0.01, 0.6};
+    const std::vector<double> targetval101Rb{2.7410,36.499,0.01,0.6};
+    const std::vector<double> targetval101Sr{2.6697,37.438, 0.01, 0.6};
+    const std::vector<double> targetval102Sr{2.6966,37.467, 0.01, 0.6};
+
 }
 
 namespace nancytrans{

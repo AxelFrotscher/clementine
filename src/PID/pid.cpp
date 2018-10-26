@@ -114,8 +114,8 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                             1E3*atan2(tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]-
                                       tree->BigRIPSPPAC_fY[ppacFpositions.at(i)-2],
                                       ppacangledistance.at(i)));
-                        _reactPPAC.at(i).at(2).Fill(tree->BigRIPSIC_fCalMeVSqSum[0],
-                                                    tree->BigRIPSIC_fCalMeVSqSum[1]);
+                        _reactPPAC.at(i).at(2).Fill(tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
+                                                    tree->BigRIPSRIPS_brho[1]);
                     }
                 }
             }
@@ -173,8 +173,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     vector<string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
                          "F5X", "F5A", "F9X", "F9A", "F11X", "F11A",
-                         "BigRIPSIC.fCalMeVSqSum", "BigRIPSPPAC.fX",
-                         "BigRIPSPPAC.fY"};
+                         "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho"};
     for(auto &i:tree) i->setloopkeys(keys);
 
     //Constructing all the histograms
@@ -363,6 +362,7 @@ void PID::crosssection() {
     // make cross section string:
     setting set;
     stringstream stringout;
+
     stringout.precision(3);
     stringout.fixed;
     stringout << reaction << " \u03C3: " << 1E3*crosssection
@@ -401,6 +401,7 @@ void PID::reactionparameters() {
                                      binning = 100; }
     else if(reaction == "110NbP2P"){ incval = nancy::incval110Nb; targetval = nancy::targetval109Zr;
                                      binning = 40; }
+    else if(reaction == "110NbP0P"){ incval = nancy::incval110Nb; targetval = nancy::targetval110Nb; }
     else if(reaction == "110MoP3P"){ incval = nancy::incval110Mo; targetval = nancy::targetval108Zr; }
     else if(reaction == "111MoP3P"){ incval = nancy::incval111Mo; targetval = nancy::targetval109Zr; }
     else if(reaction == "112MoP3P"){ incval = nancy::incval112Mo; targetval = nancy::targetval110Zr; }
@@ -415,6 +416,7 @@ void PID::reactionparameters() {
     else if(reaction == "88AsP2P"){  incval = nancy::incval88As;  targetval = nancy::targetval87Ge; }
     else if(reaction == "89AsP2P"){  incval = nancy::incval89As;  targetval = nancy::targetval88Ge; }
     else if(reaction == "89AsP3P"){  incval = nancy::incval89As;  targetval = nancy::targetval87Ga; }
+    else if(reaction == "88GeP0P"){  incval = nancy::incval88Ge;  targetval = nancy::targetval88Ge; }
     else if(reaction == "93BrP2P"){  incval = nancy::incval93Br;  targetval = nancy::targetval92Se; }
     else if(reaction == "93BrP3P"){  incval = nancy::incval93Br;  targetval = nancy::targetval91As; }
     else if(reaction == "94BrP2P"){  incval = nancy::incval94Br;  targetval = nancy::targetval93Se; }
@@ -483,8 +485,8 @@ void PID::histogramsetup() {
                                200,-40*k,40*k,200,-30*k,30*k));
         temp.emplace_back(TH2D((no+"ang").c_str(), ("PID "+no+" beam angular shape").c_str(),
                                100,-50,50,100,-50,50));
-        temp.emplace_back(TH2D((no+"en").c_str(), ("PID "+no+" Energy Distribution").c_str(),
-                               300,300,900,300,200,800));
+        temp.emplace_back(TH2D((no+"brho").c_str(), ("PID "+no+" Brho Distribution").c_str(),
+                               200,-40*k,40*k,200,6.5,7));
         reactPPAC.emplace_back(temp);
     }
 
@@ -514,8 +516,8 @@ void PID::histogramsetup() {
         reactPPAC.at(i).at(0).GetYaxis()->SetTitle((no+"Y [mm]").c_str());
         reactPPAC.at(i).at(1).GetXaxis()->SetTitle((no+"A [mrad]").c_str());
         reactPPAC.at(i).at(1).GetXaxis()->SetTitle((no+"B [mrad]").c_str());
-        reactPPAC.at(i).at(2).GetXaxis()->SetTitle(("E|"+no+" [MeV]").c_str());
-        reactPPAC.at(i).at(2).GetXaxis()->SetTitle("E|F11 [MeV]");
+        reactPPAC.at(i).at(2).GetXaxis()->SetTitle((no+"X [mm]").c_str());
+        reactPPAC.at(i).at(2).GetYaxis()->SetTitle("B#rho BigRIPS [Tm]");
     }
 
     for(auto &i: reactPPAC){
