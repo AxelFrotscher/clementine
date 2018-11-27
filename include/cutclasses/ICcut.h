@@ -19,7 +19,7 @@ public:
     std::vector<std::atomic<bool>> &goodevents;
 
 private:
-    const int threads = 7;
+    int threads = std::max((int)sqrt(goodevents.size())/500,1);
     std::mutex unitemutex;
 
     const int numchannel = 6; // There are 6 channel per IC

@@ -20,5 +20,5 @@ public:
 private:
     //TFile *output;
     const int badtrg = 0b110; // triggerbit to exclude (does not contain F7DS)
-    const int threads = 10;
+    int threads = std::max((int)sqrt(goodevents.size())/400,1);
 };

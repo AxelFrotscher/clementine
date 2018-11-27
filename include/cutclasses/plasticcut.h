@@ -23,7 +23,7 @@ public:
     std::vector<std::atomic<bool>> &goodevents;
 
 private:
-    const int threads = 7;
+    int threads = std::max((int)sqrt(goodevents.size())/500,1);
     std::mutex unitemutex;
 
     // generate output diagrams

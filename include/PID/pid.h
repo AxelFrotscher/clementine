@@ -16,6 +16,7 @@ public:
     void crosssection();
     void reactionparameters();
     void histogramsetup();
+    void brhoprojections();
 
     PID(const std::vector<std::string> &input, std::vector<std::atomic<bool>>
     &goodevents_, TFile* output, const std::string &reaction_):
@@ -32,6 +33,7 @@ private:
     std::vector<std::vector<TH2D>> PIDplot;
     std::vector<TH1D> reactF5;
     std::vector<std::vector<TH2D>> reactPPAC; // F7,F9,F11
+    std::vector<TH1D> brhoprojection; // F5,7,9,11(Brho)
 
     std::vector<double> incval; // cut on incoming particles (F7)
     std::vector<double> targetval; // second cut to detected particles (F11)
@@ -44,7 +46,7 @@ private:
     std::mutex unitemutex;
     int binning = 100;
 
-    TH2D fitplot;
+    std::vector<TH2D> fitplot;
     std::vector<std::vector<TF1*>> fitstyle; // off-center 2D matrix fits
 
     double maxchisq = 1.15;

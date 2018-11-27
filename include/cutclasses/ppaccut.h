@@ -18,7 +18,7 @@ public:
     };
 
 private:
-    const int threads = 10;
+    int threads = std::max((int)sqrt(goodevents.size())/400,1);
     const int numplane = 36;
     const int pl11position = 3; //Plastic at F11 is fourth in array
     std::vector<std::atomic<bool>> &goodevents;

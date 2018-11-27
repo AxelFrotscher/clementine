@@ -21,7 +21,8 @@ public:
     std::vector<std::atomic<bool>> &goodevents;
 
 private:
-    const int threads = 7;
+    //const int threads = 7;
+    int threads = std::max((int)sqrt(goodevents.size())/500,1);
     std::vector<TH2D> cschist;
 
     std::vector<TCutG*> mycut;

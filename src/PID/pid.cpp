@@ -39,8 +39,8 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
 
     vector<vector<double>> valinc;     // Store temporary beam values
 
-    const vector<int> ppacFpositions{17,25,33}; // F7-2B, F9-2B, F11-2B
-    const vector<int> ppacangledistance{945,700,500}; // in mm
+    const vector<int> ppacFpositions{12,17,25,33}; //F5-2B, F7-2B, F9-2B, F11-2B
+    const vector<int> ppacangledistance{650,945,700,500}; // in mm
 
     for(uint eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
         if(goodevents.at(eventcounter)){
@@ -117,6 +117,8 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                         _reactPPAC.at(i).at(2).Fill(tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
                                                     tree->BigRIPSRIPS_brho[1]);
                     }
+                    // do the correlation between F5 and F9
+                    fitplot.at(1).Fill(tree->F5X, tree->F9X);
                 }
             }
         }
@@ -196,6 +198,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     // Calculate the transmission and the crosssection
     PID::offctrans();
     PID::crosssection();
+    PID::brhoprojections();
 
     for(uint i=0; i<2; i++) {
         output->cd(folders.at(i).c_str());
@@ -204,15 +207,20 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     }
 
     output->cd(folders.at(2).c_str());
-    fitplot.Write();
+    for(auto &i: fitplot) i.Write();
 
     output->cd(folders.at(3).c_str());
     for(auto &elem: reactF5) elem.Write();
     if(bestfit) bestfit->Write();
 
     for(int i=0; i<reactPPAC.size();i++){
-        output->cd(folders.at(4+i).c_str());
+        output->cd(folders.at(3+i).c_str());
         for(auto &elem: reactPPAC.at(i)) elem.Write();
+    }
+
+    for(int i=0; i<brhoprojection.size(); i++){
+        output->cd(folders.at(3+i).c_str());
+        brhoprojection.at(i).Write();
     }
 }
 
@@ -257,7 +265,7 @@ void PID::offctrans() {
                     reactF5.back().GetBinCenter(j),1);
             reactF5.back().Fit(corrfit, "NRQ");
             if(corrfit->GetNDF() >= (minrange - 1) && corrfit->GetParameter(0) > 0.95*mean)
-                fitplot.SetBinContent(i,j-i,corrfit->GetChisquare()/
+                fitplot.at(0).SetBinContent(i,j-i,corrfit->GetChisquare()/
                                             corrfit->GetNDF());
             temp.push_back(corrfit);
         }
@@ -272,18 +280,18 @@ void PID::offctrans() {
     vector<int> backupfit{0,0};
     double minchisq = 10E8; // current minimum chi-sq.
 
-    for(int i= (fitplot.GetNbinsY()-1); i>=minrange; i--){ // switch for effect (current normal)
-        for(int j=startbin; j<fitplot.GetNbinsX(); j++){
+    for(int i= (fitplot.at(0).GetNbinsY()-1); i>=minrange; i--){ // switch for effect (current normal)
+        for(int j=startbin; j<fitplot.at(0).GetNbinsX(); j++){
             //Backup preparation:
-            if((fitplot.GetBinContent(j,i) < minchisq) &&
-                    (fitplot.GetBinContent(j,i) > 0)){
-               minchisq =  fitplot.GetBinContent(j,i);
+            if((fitplot.at(0).GetBinContent(j,i) < minchisq) &&
+                    (fitplot.at(0).GetBinContent(j,i) > 0)){
+               minchisq =  fitplot.at(0).GetBinContent(j,i);
                backupfit = vector<int>{j,i};
             }
 
             // Main sequence
-            if((fitplot.GetBinContent(j,i) > 0) &&
-               (fitplot.GetBinContent(j,i) < maxchisq)){
+            if((fitplot.at(0).GetBinContent(j,i) > 0) &&
+               (fitplot.at(0).GetBinContent(j,i) < maxchisq)){
 
                 reactF5.push_back(reactF5.at(0));
                 reactF5.back().Scale(fitstyle.at(j-startbin).at(i-minrange)->GetParameter(0));
@@ -300,7 +308,7 @@ void PID::offctrans() {
                         offcentertransmission;
 
                 cout << fitstyle.at(j-startbin).at(i-minrange)->GetName()
-                     << " Chisq: " << fitplot.GetBinContent(j,i)
+                     << " Chisq: " << fitplot.at(0).GetBinContent(j,i)
                      << " Offcentertransmission: " << offcentertransmission
                      << " +- " << offcentertransmissionerror << endl;
 
@@ -333,7 +341,7 @@ void PID::offctrans() {
             offcentertransmission;
 
     cout << fitstyle.at(backupfit[0]-startbin).at(backupfit[1]-minrange)->GetName()
-         << " Chisq: " << fitplot.GetBinContent(backupfit[0],backupfit[1])
+         << " Chisq: " << fitplot.at(0).GetBinContent(backupfit[0],backupfit[1])
          << " Offcentertransmission: " << offcentertransmission
          << " \u00b1 " << offcentertransmissionerror << endl;
 }
@@ -476,29 +484,47 @@ void PID::histogramsetup() {
     reactF5.emplace_back(TH1D("F5react", "F5-position of reacted particles",
                               binning,-100,100));
 
-    for(int j=0; j<3; j++){
+    const int brhoslice = 200;
+    brhoprojection.emplace_back(TH1D("F5brhop", "F5X projection b#rho",brhoslice,6.5,7));
+    brhoprojection.emplace_back(TH1D("F7brhop", "F7X projection b#rho",brhoslice,6.5,7));
+    brhoprojection.emplace_back(TH1D("F9brhop", "F9X projection b#rho",brhoslice,6.5,7));
+    brhoprojection.emplace_back(TH1D("F11brhop", "F11X projection b#rho",brhoslice,6.5,7));
+
+    for(int j=0; j<4; j++){
         vector<TH2D> temp;
-        string no = "F" + to_string(7+2*j); // form F7+F9+F11
+        string no = "F" + to_string(5+2*j); // form F5+F7+F9+F11
         int k =1; // Scaling factor F9
-        if(j==1) k=3; // make space wider for F9
+        if(j== 2) k=3; // make space wider for F9
+        else if(j== 0) k=2; // make space wider for F5
         temp.emplace_back(TH2D((no+"pos").c_str(), ("PID "+no+" beamshape").c_str(),
                                200,-40*k,40*k,200,-30*k,30*k));
         temp.emplace_back(TH2D((no+"ang").c_str(), ("PID "+no+" beam angular shape").c_str(),
                                100,-50,50,100,-50,50));
-        temp.emplace_back(TH2D((no+"brho").c_str(), ("PID "+no+" Brho Distribution").c_str(),
-                               200,-40*k,40*k,200,6.5,7));
+        temp.emplace_back(TH2D((no+"brho").c_str(), ("PID "+no+" B#rho Distribution").c_str(),
+                               200,-40*k,40*k,brhoslice,6.5,7));
         reactPPAC.emplace_back(temp);
     }
 
-    fitplot = TH2D("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,binning, binning-1,1,binning);
-    fitplot.GetXaxis()->SetTitle("Starting Bin");
-    fitplot.GetYaxis()->SetTitle("Number of Bins");
-    fitplot.SetOption("colz");
-    fitplot.SetMaximum(2.*maxchisq);
+    fitplot.emplace_back(TH2D("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,
+                              binning, binning-1,1,binning));
+    fitplot.at(0).GetXaxis()->SetTitle("Starting Bin");
+    fitplot.at(0).GetYaxis()->SetTitle("Number of Bins");
+    fitplot.at(0).SetMaximum(2.*maxchisq);
+    fitplot.emplace_back(TH2D("F9XF5X", "PID F9F5-X correlation", binning,-100,
+                              100, 100,-120,120));
+    fitplot.at(1).GetXaxis()->SetTitle("F5X");
+    fitplot.at(1).GetYaxis()->SetTitle("F9X");
+    for (auto &i: fitplot) i.SetOption("colz");
 
     for (auto &elem: reactF5){
         elem.GetXaxis()->SetTitle("x [mm]");
         elem.GetYaxis()->SetTitle("N");
+    }
+
+    for(int i=0; i<brhoprojection.size(); i++){
+        string no = "F"+ to_string(5+2*i) + "X";
+        brhoprojection.at(i).GetXaxis()->SetTitle("B#rho BigRIPS [Tm]");
+        brhoprojection.at(i).GetYaxis()->SetTitle(no.c_str());
     }
 
     for(auto &elem: PIDplot){
@@ -511,7 +537,7 @@ void PID::histogramsetup() {
     }
 
     for(int i=0; i<reactPPAC.size(); i++){
-        string no = "F" + to_string(7+2*i);
+        string no = "F" + to_string(5+2*i);
         reactPPAC.at(i).at(0).GetXaxis()->SetTitle((no+"X [mm]").c_str());
         reactPPAC.at(i).at(0).GetYaxis()->SetTitle((no+"Y [mm]").c_str());
         reactPPAC.at(i).at(1).GetXaxis()->SetTitle((no+"A [mrad]").c_str());
@@ -524,6 +550,20 @@ void PID::histogramsetup() {
         for(auto &j :i){
             j.SetOption("colz");
             j.SetMinimum(1);
+        }
+    }
+}
+
+void PID::brhoprojections(){
+    // Fill histograms of i.e. F5X(Brho), needs to be done afterwards
+
+    for(int i=0; i<brhoprojection.size(); i++){ // Loop over all Focal Planes
+        for(int j=1; j<reactPPAC.at(i).at(2).GetNbinsY(); j++){ // Loop over all bins
+            TH1D* temp = reactPPAC.at(i).at(2).ProjectionX(Form("_pfx%i",j),j,j,"e");
+            double mean = temp->GetMean();
+            double meanerror = temp->GetMeanError();
+            brhoprojection.at(i).SetBinContent(j, mean);
+            brhoprojection.at(i).SetBinError(j, meanerror);
         }
     }
 }
