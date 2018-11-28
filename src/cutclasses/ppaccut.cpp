@@ -99,7 +99,6 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
         chain.emplace_back(new TChain("tree"));
         for(auto &h: input) chain.back()->Add(h.c_str());
     }
-
     vector<treereader*> tree;
     for(auto *i:chain){
         tree.emplace_back(new treereader(i));

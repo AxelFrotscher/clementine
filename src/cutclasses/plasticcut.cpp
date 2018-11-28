@@ -156,11 +156,6 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
     progressbar finishcondition;
     while(finishcondition.ongoing()) finishcondition.draw();
 
-    int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
-
-    printf("\nPlastic Cut out %i Events %f %%\n", cutpre-cutafter,
-           100*(cutpre-cutafter)/(double)goodevents.size());
-
     vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr"};
     for (auto &str:folders) output->mkdir(str.c_str());
 
@@ -171,5 +166,7 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
     output->cd("Plastics/TQCorr");
     for(auto histo: tqcorr2D) histo.Write();
     output->cd("");
-    printf("Finished writing plastic histograms!\n");
+    int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    printf("\nPlastic Cut out %i Events %f %%\n", cutpre-cutafter,
+           100*(cutpre-cutafter)/(double)goodevents.size());
 }

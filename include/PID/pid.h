@@ -25,15 +25,15 @@ public:
     };
 
 private:
-    const int threads= 20;
-    std::string reaction = "";
-
     std::vector<std::atomic<bool>> &goodevents;
+
+    int threads = std::max((int)sqrt(goodevents.size())/300,2);
+    std::string reaction = "";
 
     std::vector<std::vector<TH2D>> PIDplot;
     std::vector<TH1D> reactF5;
     std::vector<std::vector<TH2D>> reactPPAC; // F7,F9,F11
-    std::vector<TH1D> brhoprojection; // F5,7,9,11(Brho)
+    std::vector<std::vector<TH1D>> brhoprojection; // F5,7,9,11(Brho)
 
     std::vector<double> incval; // cut on incoming particles (F7)
     std::vector<double> targetval; // second cut to detected particles (F11)

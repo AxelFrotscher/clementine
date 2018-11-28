@@ -43,12 +43,19 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     const vector<int> ppacangledistance{650,945,700,500}; // in mm
 
     for(uint eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
+        tree->getevent(eventcounter);
+
+        double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
+                             (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
+                             tree->F5A*p1.F7linF5A -
+                             tree->F3X*p1.F7linF3X;
+
+        if((pow(1./incval.at(2)*(beamaoqcorr-incval.at(0)),2) +
+            pow(1/incval.at(3)*(tree->BigRIPSBeam_zet[0]-incval.at(1)),2))<1)
+        // Fill F7 value with PID
+            _reactF5.at(0).Fill(tree->F5X);
+
         if(goodevents.at(eventcounter)){
-            tree->getevent(eventcounter);
-            double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
-                                 (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
-                                 tree->F5A*p1.F7linF5A -
-                                 tree->F3X*p1.F7linF3X;
             //cout << "Thread: " << id << " Cor AOQ: " << beamaoqcorr << endl;
             double beamaoqcorr2 = tree->BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
                                   (p1.F11absF9X+tree->F9X*p1.F11linF9X) -
@@ -87,7 +94,7 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                 reactionpid1++;
 
                 // Fill F7 value with PID
-                _reactF5.at(0).Fill(tree->F5X);
+                //_reactF5.at(0).Fill(tree->F5X);
 
                 // Second ellipsoid for cross section
                 if((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
@@ -218,9 +225,10 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         for(auto &elem: reactPPAC.at(i)) elem.Write();
     }
 
-    for(int i=0; i<brhoprojection.size(); i++){
+    for(int i=0; i<brhoprojection.at(0).size(); i++){
         output->cd(folders.at(3+i).c_str());
-        brhoprojection.at(i).Write();
+        brhoprojection.at(0).at(i).Write();
+        brhoprojection.at(1).at(i).Write();
     }
 }
 
@@ -485,10 +493,18 @@ void PID::histogramsetup() {
                               binning,-100,100));
 
     const int brhoslice = 200;
-    brhoprojection.emplace_back(TH1D("F5brhop", "F5X projection b#rho",brhoslice,6.5,7));
-    brhoprojection.emplace_back(TH1D("F7brhop", "F7X projection b#rho",brhoslice,6.5,7));
-    brhoprojection.emplace_back(TH1D("F9brhop", "F9X projection b#rho",brhoslice,6.5,7));
-    brhoprojection.emplace_back(TH1D("F11brhop", "F11X projection b#rho",brhoslice,6.5,7));
+    vector<TH1D> brt1, brt2;
+    brt1.emplace_back(TH1D("F5brhop", "F5X projection B#rho",brhoslice,6.5,7));
+    brt1.emplace_back(TH1D("F7brhop", "F7X projection B#rho",brhoslice,6.5,7));
+    brt1.emplace_back(TH1D("F9brhop", "F9X projection B#rho",brhoslice,6.5,7));
+    brt1.emplace_back(TH1D("F11brhop", "F11X projection B#rho #sigma",brhoslice,6.5,7));
+    brt2.emplace_back(TH1D("F5brhostd", "F5X projection B#rho #sigma",brhoslice,6.5,7));
+    brt2.emplace_back(TH1D("F7brhostd", "F7X projection B#rho #sigma",brhoslice,6.5,7));
+    brt2.emplace_back(TH1D("F9brhostd", "F9X projection B#rho #sigma",brhoslice,6.5,7));
+    brt2.emplace_back(TH1D("F11brhostd", "F11X projection B#rho #sigma",brhoslice,6.5,7));
+    brhoprojection.emplace_back(brt1);
+    brhoprojection.emplace_back(brt2);
+
 
     for(int j=0; j<4; j++){
         vector<TH2D> temp;
@@ -521,10 +537,12 @@ void PID::histogramsetup() {
         elem.GetYaxis()->SetTitle("N");
     }
 
-    for(int i=0; i<brhoprojection.size(); i++){
+    for(int i=0; i<brhoprojection.at(0).size(); i++){
         string no = "F"+ to_string(5+2*i) + "X";
-        brhoprojection.at(i).GetXaxis()->SetTitle("B#rho BigRIPS [Tm]");
-        brhoprojection.at(i).GetYaxis()->SetTitle(no.c_str());
+        brhoprojection.at(0).at(i).GetXaxis()->SetTitle("B#rho BigRIPS [Tm]");
+        brhoprojection.at(1).at(i).GetXaxis()->SetTitle("B#rho BigRIPS [Tm]");
+        brhoprojection.at(0).at(i).GetYaxis()->SetTitle(no.c_str());
+        brhoprojection.at(1).at(i).GetYaxis()->SetTitle((no + " #sigma").c_str());
     }
 
     for(auto &elem: PIDplot){
@@ -541,7 +559,7 @@ void PID::histogramsetup() {
         reactPPAC.at(i).at(0).GetXaxis()->SetTitle((no+"X [mm]").c_str());
         reactPPAC.at(i).at(0).GetYaxis()->SetTitle((no+"Y [mm]").c_str());
         reactPPAC.at(i).at(1).GetXaxis()->SetTitle((no+"A [mrad]").c_str());
-        reactPPAC.at(i).at(1).GetXaxis()->SetTitle((no+"B [mrad]").c_str());
+        reactPPAC.at(i).at(1).GetYaxis()->SetTitle((no+"B [mrad]").c_str());
         reactPPAC.at(i).at(2).GetXaxis()->SetTitle((no+"X [mm]").c_str());
         reactPPAC.at(i).at(2).GetYaxis()->SetTitle("B#rho BigRIPS [Tm]");
     }
@@ -557,13 +575,15 @@ void PID::histogramsetup() {
 void PID::brhoprojections(){
     // Fill histograms of i.e. F5X(Brho), needs to be done afterwards
 
-    for(int i=0; i<brhoprojection.size(); i++){ // Loop over all Focal Planes
+    for(int i=0; i<brhoprojection.at(0).size(); i++){ // Loop over all Focal Planes
         for(int j=1; j<reactPPAC.at(i).at(2).GetNbinsY(); j++){ // Loop over all bins
             TH1D* temp = reactPPAC.at(i).at(2).ProjectionX(Form("_pfx%i",j),j,j,"e");
             double mean = temp->GetMean();
-            double meanerror = temp->GetMeanError();
-            brhoprojection.at(i).SetBinContent(j, mean);
-            brhoprojection.at(i).SetBinError(j, meanerror);
+            double stddev = temp->GetStdDev();
+            brhoprojection.at(0).at(i).SetBinContent(j, mean);
+            brhoprojection.at(0).at(i).SetBinError(j, temp->GetMeanError());
+            brhoprojection.at(1).at(i).SetBinContent(j, stddev);
+            brhoprojection.at(1).at(i).SetBinError(j, temp->GetStdDevError());
         }
     }
 }
