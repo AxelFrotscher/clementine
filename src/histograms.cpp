@@ -77,27 +77,31 @@ void dalicalib(treereader *tree, TFile *output){
     if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
     txtwriter writetotxt(gentxt(".txt")); // Writer class
 
-    triggercut(input, goodevents);
-    ccsc(input,goodevents,outputfile);
-    targetcut(input,goodevents,outputfile);
-    plasticcut(input, goodevents, outputfile);
-    ppaccut(input, goodevents, outputfile);
-    iccut(input,goodevents,outputfile);
-    higherorder(input, goodevents, outputfile);
+     { // Make everything go out of scope to prevent memory overflow
+         triggercut(input, goodevents);
+         ccsc(input, goodevents, outputfile);
+         targetcut(input, goodevents, outputfile);
+         plasticcut(input, goodevents, outputfile);
+         ppaccut(input, goodevents, outputfile);
+         iccut(input, goodevents, outputfile);
+         higherorder(input, goodevents, outputfile);
+     };
 
+    cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
+                              /goodevents.size() << " % valid Elements" << endl;
     // Get Z vs. A/Q
     const vector<string> reactionmodes = set.getreactions();
 
     // 111NbPPN, 111NbPP2N, 110NbPPN
-    for(auto &i: reactionmodes) PID(input,goodevents,outputfile,i);
+    for(auto &i: reactionmodes){
+        PID(input,goodevents,outputfile,i);
+
+    }
 
     printf("Made PID histograms in %s\n", gentxt(".root").c_str());
     //Get ADC Spectra for DALI
     //dalicalib(alt4dtree, outputfile);
     writetotxt.writetofile();
-
-    cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
-                          /goodevents.size() << " % valid Elements" << endl;
 
     outputfile->Close();
 }

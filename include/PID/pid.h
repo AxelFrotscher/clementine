@@ -27,7 +27,7 @@ public:
 private:
     std::vector<std::atomic<bool>> &goodevents;
 
-    int threads = std::max((int)sqrt(goodevents.size())/300,2);
+    int threads = std::max((int)sqrt(goodevents.size())/350,2);
     std::string reaction = "";
 
     std::vector<std::vector<TH2D>> PIDplot;

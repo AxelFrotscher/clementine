@@ -34,6 +34,12 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
         _PIDplot.emplace_back(temp);
     }
 
+    double maxbrho = 10; // Tm, higher than all my values
+    if(incval.size() == 8){
+        if(reaction.find("P2P") != string::npos) maxbrho = incval.at(5);
+        else if(reaction.find("P3P") != string::npos) maxbrho = incval.at(7);
+    }
+
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
     progressbar progress(range.at(1)-range.at(0), threadno);
 
@@ -43,19 +49,13 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     const vector<int> ppacangledistance{650,945,700,500}; // in mm
 
     for(uint eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
-        tree->getevent(eventcounter);
-
-        double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
-                             (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
-                             tree->F5A*p1.F7linF5A -
-                             tree->F3X*p1.F7linF3X;
-
-        if((pow(1./incval.at(2)*(beamaoqcorr-incval.at(0)),2) +
-            pow(1/incval.at(3)*(tree->BigRIPSBeam_zet[0]-incval.at(1)),2))<1)
-        // Fill F7 value with PID
-            _reactF5.at(0).Fill(tree->F5X);
-
         if(goodevents.at(eventcounter)){
+            tree->getevent(eventcounter);
+            double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
+                                 (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
+                                 tree->F5A*p1.F7linF5A -
+                                 tree->F3X*p1.F7linF3X;
+
             //cout << "Thread: " << id << " Cor AOQ: " << beamaoqcorr << endl;
             double beamaoqcorr2 = tree->BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
                                   (p1.F11absF9X+tree->F9X*p1.F11linF9X) -
@@ -82,16 +82,21 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             }
             valinc.clear();
 
-            // We now fill the cut data (cut by ellipsoid)
+            // We now fill the cut data (cut by ellipsoid and brho)
+
             if((pow(1./incval.at(2)*(beamaoqcorr-incval.at(0)),2) +
                 pow(1/incval.at(3)*(tree->BigRIPSBeam_zet[0]-incval.at(1)),2))<1){
+                _reactF5.at(0).Fill(tree->F5X);
+
                 _PIDplot.at(0).at(2).Fill(tree->BigRIPSBeam_aoq[0],
                                      tree->BigRIPSBeam_zet[0]);
                 _PIDplot.at(1).at(2).Fill(beamaoqcorr, tree->BigRIPSBeam_zet[0]);
                 _PIDplot.at(0).at(3).Fill(tree->BigRIPSBeam_aoq[4],
                                      tree->BigRIPSBeam_zet[4]);
                 _PIDplot.at(1).at(3).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
-                reactionpid1++;
+
+                // cut on energy(Brho) to avoid offcenter Transmission
+                if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid1++;
 
                 // Fill F7 value with PID
                 //_reactF5.at(0).Fill(tree->F5X);
@@ -99,7 +104,8 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                 // Second ellipsoid for cross section
                 if((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
                     pow(1./targetval.at(3)*(tree->BigRIPSBeam_zet[4]-targetval.at(1)),2))<1) {
-                    reactionpid2++;
+                    // cut on energy(Brho) to avoid offcenter Transmission
+                    if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid2++;
                     // Investigate F7 position of (p,2p) ions (off center effects)
                     _reactF5.at(1).Fill(tree->F5X);
 
@@ -126,6 +132,7 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     }
                     // do the correlation between F5 and F9
                     fitplot.at(1).Fill(tree->F5X, tree->F9X);
+
                 }
             }
         }
@@ -357,22 +364,22 @@ void PID::offctrans() {
 void PID::crosssection() {
     // Find out reaction type
     double tottransmission = 1;
-    if(reaction.find("P2P") != string::npos) tottransmission = targetval.at(4);
-    else if(reaction.find("P3P") != string::npos) tottransmission = targetval.at(5);
+    if(incval.size() == 8){
+        if(reaction.find("P2P") != string::npos) tottransmission = incval.at(4);
+        else if(reaction.find("P3P") != string::npos) tottransmission = incval.at(6);
+    }
 
     // Calculate the final crosssection for this run
     const double numberdensity = 0.433; // atoms/cm2 for 10cm LH2
     const double numberdensityerror = 0.00924; // relative error
-    //const double tottransmission = 0.7839; // empty target transmission for centered beam
-    //const double tottransmissionerror = 0.01865; // associated relative error
     const double tottransmissionerror = 0.05; // conservative relative error
 
     const double crosssection = 1./numberdensity*reactionpid2/
                           reactionpid1/tottransmission;
-    const double cserror = crosssection*
-                     pow(1./reactionpid1 + 2./reactionpid2+
-                         pow(tottransmissionerror+ 0.01/tottransmission,2)+
+    double cserror = crosssection*pow(1./reactionpid1 + 2./reactionpid2+
+                         pow(tottransmissionerror+ 0.02/tottransmission,2)+
                          pow(numberdensityerror,2), 0.5);  // Error on Transm.
+    if(isnan(cserror)) cserror = 0;
     // 1% absolute error + 5% relative error
 
     // make cross section string:
@@ -382,7 +389,7 @@ void PID::crosssection() {
     stringout.precision(3);
     stringout.fixed;
     stringout << reaction << " \u03C3: " << 1E3*crosssection
-        << " \u00b1 " << 1E3*cserror <<  "mb, CTS: " << reactF5.at(1).Integral()
+        << " \u00b1 " << 1E3*cserror <<  "mb, CTS: " << reactionpid2.load()
         << ", T = " << tottransmission;
     if(set.isemptyortrans())
         stringout << " Ratio: " << 100.*reactionpid2/reactionpid1.load() <<" \u00b1 "
@@ -396,6 +403,14 @@ void PID::crosssection() {
     cout << "Raw: In " << reactionpid1.load() << " out " << reactionpid2.load()
          << " ratio " << 100.*reactionpid2/reactionpid1.load() << "% " << endl;
 }
+
+/*uint64_t constexpr mix(char m, uint64_t s){
+    return ((s<<7) + ~(s>>3)) + ~m;
+}
+
+uint64_t constexpr h(const char *m){
+    return (*m) ? mix(*m,h(m+1)) : 0;
+}*/
 
 void PID::reactionparameters() {
     // Setup cut values
@@ -433,6 +448,7 @@ void PID::reactionparameters() {
     else if(reaction == "89AsP2P"){  incval = nancy::incval89As;  targetval = nancy::targetval88Ge; }
     else if(reaction == "89AsP3P"){  incval = nancy::incval89As;  targetval = nancy::targetval87Ga; }
     else if(reaction == "88GeP0P"){  incval = nancy::incval88Ge;  targetval = nancy::targetval88Ge; }
+    else if(reaction == "89AsP0P"){  incval = nancy::incval89As;  targetval = nancy::targetval89As; }
     else if(reaction == "93BrP2P"){  incval = nancy::incval93Br;  targetval = nancy::targetval92Se; }
     else if(reaction == "93BrP3P"){  incval = nancy::incval93Br;  targetval = nancy::targetval91As; }
     else if(reaction == "94BrP2P"){  incval = nancy::incval94Br;  targetval = nancy::targetval93Se; }
@@ -492,16 +508,17 @@ void PID::histogramsetup() {
     reactF5.emplace_back(TH1D("F5react", "F5-position of reacted particles",
                               binning,-100,100));
 
-    const int brhoslice = 200;
+    const int brhoslice = 320;
+    const vector<double> bl = {6.5,7.3};
     vector<TH1D> brt1, brt2;
-    brt1.emplace_back(TH1D("F5brhop", "F5X projection B#rho",brhoslice,6.5,7));
-    brt1.emplace_back(TH1D("F7brhop", "F7X projection B#rho",brhoslice,6.5,7));
-    brt1.emplace_back(TH1D("F9brhop", "F9X projection B#rho",brhoslice,6.5,7));
-    brt1.emplace_back(TH1D("F11brhop", "F11X projection B#rho #sigma",brhoslice,6.5,7));
-    brt2.emplace_back(TH1D("F5brhostd", "F5X projection B#rho #sigma",brhoslice,6.5,7));
-    brt2.emplace_back(TH1D("F7brhostd", "F7X projection B#rho #sigma",brhoslice,6.5,7));
-    brt2.emplace_back(TH1D("F9brhostd", "F9X projection B#rho #sigma",brhoslice,6.5,7));
-    brt2.emplace_back(TH1D("F11brhostd", "F11X projection B#rho #sigma",brhoslice,6.5,7));
+    brt1.emplace_back(TH1D("F5brhop", "F5X projection B#rho",brhoslice,bl[0],bl[1]));
+    brt1.emplace_back(TH1D("F7brhop", "F7X projection B#rho",brhoslice,bl[0],bl[1]));
+    brt1.emplace_back(TH1D("F9brhop", "F9X projection B#rho",brhoslice,bl[0],bl[1]));
+    brt1.emplace_back(TH1D("F11brhop", "F11X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
+    brt2.emplace_back(TH1D("F5brhostd", "F5X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
+    brt2.emplace_back(TH1D("F7brhostd", "F7X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
+    brt2.emplace_back(TH1D("F9brhostd", "F9X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
+    brt2.emplace_back(TH1D("F11brhostd", "F11X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
     brhoprojection.emplace_back(brt1);
     brhoprojection.emplace_back(brt2);
 
@@ -510,14 +527,13 @@ void PID::histogramsetup() {
         vector<TH2D> temp;
         string no = "F" + to_string(5+2*j); // form F5+F7+F9+F11
         int k =1; // Scaling factor F9
-        if(j== 2) k=3; // make space wider for F9
-        else if(j== 0) k=2; // make space wider for F5
+        if(j==2 || j==0) k=3; // make space wider for F9 and F5
         temp.emplace_back(TH2D((no+"pos").c_str(), ("PID "+no+" beamshape").c_str(),
-                               200,-40*k,40*k,200,-30*k,30*k));
+                               250,-40*k,40*k,200,-30*k,30*k));
         temp.emplace_back(TH2D((no+"ang").c_str(), ("PID "+no+" beam angular shape").c_str(),
                                100,-50,50,100,-50,50));
         temp.emplace_back(TH2D((no+"brho").c_str(), ("PID "+no+" B#rho Distribution").c_str(),
-                               200,-40*k,40*k,brhoslice,6.5,7));
+                               250,-40*k,40*k,brhoslice,bl[0],bl[1]));
         reactPPAC.emplace_back(temp);
     }
 

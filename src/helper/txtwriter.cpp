@@ -24,7 +24,7 @@ void txtwriter::writetofile(){
 
     std::ofstream out(filename);
     out << "Analysis Report SEASTAR2: "<< filename << std::endl << std::endl;
-    out << "Number of Modes analysed: " << outputbuffer.size() << std::endl;
+    out << "Number of Modes analysed: " << outputbuffer.size()-1 << std::endl;
     out << "Analyse Time: " << std::chrono::duration_cast<std::chrono::seconds>(end-begin).count()
         << "s "<< std::endl << std::endl;
     for(auto &i : outputbuffer) out << i << std::endl;

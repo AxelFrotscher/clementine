@@ -6,6 +6,7 @@
 #include "time.h"
 #include "progress.h"
 #include "zdssetting.h"
+#include "txtwriter.h"
 #include <thread>
 #include <numeric>
 
@@ -35,8 +36,10 @@ void triggercut::innerloop(treereader *tree, std::vector <std::atomic<bool>> &go
 
 void triggercut::analyse(const vector<string> input){
     setting set;
-    if(!set.isemptyortrans()){
+    txtwriter txt;
+    if(!set.isemptyortrans() && 1){
         cout << "Physics Run. Omitting trigger cut to gain statistics" << endl;
+        txt.addline("No trigger cut on DALI Trigger applied.");
         return;
     }
 
@@ -74,4 +77,7 @@ void triggercut::analyse(const vector<string> input){
     int cutout = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
     printf("\nTrigger Cut out %lu Events %f %%\n", goodevents.size()-cutout,
            100*(1-cutout/(double)goodevents.size()));
+
+    txt.addline(Form("Trigger Cut for DALI %i events (%.2f %%).", cutout,
+                     100*(1-cutout/(double)goodevents.size())));
 }
