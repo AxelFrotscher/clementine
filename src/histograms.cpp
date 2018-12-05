@@ -56,11 +56,17 @@ void dalicalib(treereader *tree, TFile *output){
     TChain chain("tree");
     for(auto &i:input) chain.Add(i.c_str());
 
-     cout << "Beginning reconstruction of " << chain.GetEntries()
-          << " Elements." << endl;
-     // Store events that cannot be used
-     vector<atomic<bool>> goodevents((uint)chain.GetEntries());
-     for(auto &i:goodevents) i.exchange(true);
+    cout << "Beginning reconstruction of " << chain.GetEntries()
+         << " Elements." << endl;
+    // Store events that cannot be used
+    //vector<vector<atomic<bool>>> goodevents((uint)chain.GetEntries(), vector<atomic<bool>>(2));
+    //for(auto &i:goodevents) for(auto &j:i) j.exchange(true);
+
+    vector<vector<atomic<bool>>> goodevents;
+    for(uint i=0; i<(uint)chain.GetEntries(); i++){
+        goodevents.emplace_back(vector<atomic<bool>>(2));
+    }
+    for(auto &i:goodevents) for(auto &j:i) j.exchange(true);
 
     setting set;
     set.setcountno((int)chain.GetEntries());
@@ -87,8 +93,9 @@ void dalicalib(treereader *tree, TFile *output){
          higherorder(input, goodevents, outputfile);
      };
 
-    cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
-                              /goodevents.size() << " % valid Elements" << endl;
+    //cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
+    //                          /goodevents.size() << " % valid Elements" << endl;
+
     // Get Z vs. A/Q
     const vector<string> reactionmodes = set.getreactions();
 

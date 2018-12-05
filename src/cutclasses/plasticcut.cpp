@@ -11,7 +11,7 @@
 
 using namespace std;
 
-void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void plasticcut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
                              &goodevents, std::vector<uint> range) {
     // Step 1: cloning histograms
     vector<TH1D> _qcorr;
@@ -28,7 +28,7 @@ void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     progressbar progress(range.at(1)-range.at(0), threadno);
 
     for(int i=range.at(0);i < range.at(1);i++){
-        if(goodevents.at(i)){
+        if(goodevents.at(i).at(0)){
             tree->getevent(i);
             if(sqrt(tree->BigRIPSPlastic_fQLRaw[F7pos]*
                     tree->BigRIPSPlastic_fQRRaw[F7pos])> threshhold) // F7-cut
@@ -49,14 +49,18 @@ void plasticcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                     }
                 }
             bool temp = true;
+            // Applying cut to data
             for(int j=0;j<numplastic;j++){
                 temp = temp * (sqrt(tree->BigRIPSPlastic_fQLRaw[j]*
                        tree->BigRIPSPlastic_fQRRaw[j]) > acceptance_range[j][0])*
                        (sqrt(tree->BigRIPSPlastic_fQLRaw[j]*
                        tree->BigRIPSPlastic_fQRRaw[j]) < acceptance_range[j][1]);
+                if(!temp && j==2){
+                    for(auto &j:goodevents.at(i)) j.exchange(false);
+                    break;
+                }
             }
-            if(!temp) goodevents.at(i).exchange(false);
-
+            if(!temp) goodevents.at(i).at(1).exchange(false);
         }
         progress.increaseevent();
     }
@@ -92,9 +96,6 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
     for(auto &i: tree) i->setloopkeys(keys);
 
     // Generating the histograms:
-    setting set;
-    if(set.isemptyortrans()) numplastic =2; // cut out F8,F11 plastic cut for trans/empty
-
     tree.at(0)->getevent(0);
     for(uint i=0; i<numplastic; i++){
         arrayname.push_back(vector<string>{
@@ -141,7 +142,11 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
     }
 
     // Start the looop
-    int cutpre = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    vector<int> cutpre = {0,0};
+    for(auto &i: goodevents){
+        cutpre.at(0) += i.at(0);
+        cutpre.at(1) += i.at(1);
+    }
 
     vector<thread> th;
     for(uint i=0; i<threads; i++){
@@ -166,7 +171,14 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
     output->cd("Plastics/TQCorr");
     for(auto histo: tqcorr2D) histo.Write();
     output->cd("");
-    int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
-    printf("\nPlastic Cut out %i Events %f %%\n", cutpre-cutafter,
-           100*(cutpre-cutafter)/(double)goodevents.size());
+
+    vector<int> cutafter ={0,0};
+    for(auto &i: goodevents){
+        cutafter.at(0) += i.at(0);
+        cutafter.at(1) += i.at(1);
+    }
+
+    printf("\nPlastic Cut out %i F1-7 Events (%f %%) %i F1-11 Events (%f %%) \n",
+           cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
+           cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
 }

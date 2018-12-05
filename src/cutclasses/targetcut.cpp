@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void targetcut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
                             &goodevents, std::vector<uint> range) {
     //Step 1: Cloning histograms
     vector<TH2D> _tarhist;
@@ -38,7 +38,7 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     }
 
     for(int i =range.at(0); i < range.at(1); i++){
-        if(goodevents.at(i)){
+        if(goodevents.at(i).at(0)){
             // Determine cut only on good events
             tree->getevent(i);
             // 1. Fill valid events
@@ -53,7 +53,7 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                 }
             }
             if((slopex.at(0).size() < 2) || (slopey.at(0).size() <2)){
-                goodevents.at(i).exchange(false);
+                for(auto &j:goodevents.at(i)) j.exchange(false);
             }
             else{
                 meanx = accumulate(slopex.at(0).begin(), slopex.at(0).end(), 0.0)/
@@ -72,7 +72,7 @@ void targetcut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                 if(pow(fXTar*fXTar+fYTar*fYTar,0.5) < targetradius){ // target cut
                     _tarhist.at(1).Fill(fXTar,fYTar);
                 }
-                else goodevents.at(i).exchange(false);
+                else for(auto &j:goodevents.at(i)) j.exchange(false);
 
             }
 
@@ -120,7 +120,8 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
         histo.GetXaxis()->SetTitle("x [mm]");
     }
 
-    int cutpre = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    int cutpre =  0;
+    for(auto &i:goodevents) cutpre += i.at(0);
 
     vector<thread> th;
     for(uint i=0; i<threads; i++){
@@ -135,9 +136,10 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
     progressbar finishcondition;
     while(finishcondition.ongoing()) finishcondition.draw();
 
-    int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    int cutafter = 0;
+    for(auto &i:goodevents) cutafter += i.at(0);
 
-    printf("\nTarget Cut out %i Events %f %%\n", cutpre-cutafter,
+    printf("\nTarget Cut out %i Events %.3f %%\n", cutpre-cutafter,
            100*(cutpre-cutafter)/(double)goodevents.size());
 
     output->mkdir("Target");

@@ -10,17 +10,17 @@
 
 class plasticcut {
 public:
-    void innerloop(treereader *tree, std::vector<std::atomic<bool>>
+    void innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
                           &goodevents, std::vector<uint> range);
     void analyse(std::vector<std::string> input, TFile* output);
-    plasticcut(const std::vector<std::string> input, std::vector<std::atomic<bool>>
+    plasticcut(const std::vector<std::string> input, std::vector<std::vector<std::atomic<bool>>>
                &goodevents_, TFile* output):goodevents(goodevents_){
         setting set;
         acceptance_range = set.getPlasticRange();
         analyse(input, output);
     };
 
-    std::vector<std::atomic<bool>> &goodevents;
+    std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
 private:
     int threads = std::max((int)sqrt(goodevents.size())/500,2);
@@ -32,7 +32,7 @@ private:
     std::vector<TH2D> tqcorr2D; // Charge-Time correlation
     std::vector<std::vector<std::string>> arrayname, arraytitle;
 
-    int numplastic = 4;
+    int numplastic = 4; // 4
     const int F7pos = 1;
     const int threshhold = 450; // random noise suppresion value
 

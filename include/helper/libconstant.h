@@ -167,13 +167,13 @@ namespace nancy{
     const std::vector<double> targetval96Kr{2.6756, 35.42, 0.009,0.6};
 
     // Fourth Setting
-    const std::vector<double> incval102Y {2.6172, 39.00, 0.006, 0.6};
-    const std::vector<double> incval103Y {2.6426, 39.00, 0.006, 0.6};
-    const std::vector<double> incval100Sr{2.6332, 38.00, 0.006, 0.6};
-    const std::vector<double> incval101Sr{2.6587, 38.00, 0.006, 0.6};
-    const std::vector<double> incval102Sr{2.6857, 38.00, 0.006, 0.6};
-    const std::vector<double> incval99Rb {2.6770, 37.00, 0.006, 0.6};
-    const std::vector<double> incval100Rb{2.7046, 37.00, 0.006, 0.6};
+    const std::vector<double> incval99Rb {2.6770, 37.00, 0.006, 0.6, .513, 6.985, .495, 6.877};
+    const std::vector<double> incval100Rb{2.7046, 37.00, 0.006, 0.6, .513, 7.007, .496, 6.898};
+    const std::vector<double> incval100Sr{2.6332, 38.00, 0.006, 0.6, .508, 6.987, .491, 6.881};
+    const std::vector<double> incval101Sr{2.6587, 38.00, 0.006, 0.6, .508, 7.008, .492, 6.903};
+    const std::vector<double> incval102Sr{2.6857, 38.00, 0.006, 0.6, .506, 7.029, .495, 6.925};
+    const std::vector<double> incval102Y {2.6172, 39.00, 0.006, 0.6, .503, 7.010, .488, 6.908};
+    const std::vector<double> incval103Y {2.6426, 39.00, 0.006, 0.6, .501, 7.031, .491, 6.930};
 
     const std::vector<double> targetval97Br{2.7829,34.503,0.011,0.6};
     const std::vector<double> targetval98Br{2.8115,34.553,0.011,0.6};

@@ -11,7 +11,7 @@
 using namespace std;
 
 void ppaccut::innerloop(treereader *tree,
-                             std::vector<std::atomic<bool>> &goodevents,
+                             std::vector<std::vector<std::atomic<bool>>> &goodevents,
                              std::vector<uint> range) {
     // Step 1: cloning histograms
     vector<TH1D> _effPPAC;
@@ -32,7 +32,7 @@ void ppaccut::innerloop(treereader *tree,
     setting set;
     // Step 3: glorious loop
     for(int i=range.at(0); i<range.at(1); i++){
-        if(goodevents.at(i)){  // analyse good events only
+        if(goodevents.at(i).at(0)){  // analyse good events only
             tree->getevent(i);
 
             // Get Efficiency relative to the last Plastic
@@ -59,7 +59,7 @@ void ppaccut::innerloop(treereader *tree,
             bool temp = true;
 
             // Make empty and trans runs only go over points to F7
-            for(uint k =0; k<(ppacplane.size()-3*set.isemptyortrans()); k++){
+            for(uint k =0; k<(ppacplane.size()); k++){
                 for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
                     int cpl = ppacplane.at(k).at(j);
                     temptruth.at(j) =
@@ -71,9 +71,13 @@ void ppaccut::innerloop(treereader *tree,
                 }
                 // Recursively check each focal plane for at least 1 good Signal
                 temp *= accumulate(temptruth.begin(), temptruth.end(),0);
-                if(!temp) break;
+
+                if(k==2 && !temp){ // if fault before F8 then set both to false
+                    for(auto &l:goodevents.at(i)) l.exchange(false);
+                    break;
+                }
             }
-            if(!temp) goodevents.at(i).exchange(false);
+            if(!temp) goodevents.at(i).at(1).exchange(false);
         } // end of physics loop
         progress.increaseevent();
     }
@@ -150,7 +154,11 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
     effPPAC.at(0).GetYaxis()->SetTitle("PPACX(x)/Plastic(F11)");
     effPPAC.at(1).GetYaxis()->SetTitle("PPACY(x)/Pplastic(F11)");
 
-    int cutpre = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    vector<int> cutpre ={0,0};
+    for(auto &i: goodevents){
+        cutpre.at(0) += i.at(0);
+        cutpre.at(1) += i.at(1);
+    }
 
     vector<thread> th;
     for(uint i=0; i<threads; i++){
@@ -186,8 +194,13 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
 
     output->cd("");
 
-    int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
-    printf("\nPPAC Cut out %i Events %f %%\n", cutpre-cutafter,
-           100*(cutpre-cutafter)/(double)goodevents.size());
+    vector<int> cutafter = {0,0};
+    for(auto &i:goodevents){
+        cutafter.at(0) += i.at(0);
+        cutafter.at(1) += i.at(1);
+    }
 
+    printf("\nPPAC Cut out %i F1-7 Events (%f %%) %i F1-11 Events (%f %%) \n",
+           cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
+           cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
 }

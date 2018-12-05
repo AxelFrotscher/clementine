@@ -12,7 +12,7 @@
 
 using namespace std;
 
-void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void higherorder::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
         &goodevents, std::vector<uint> range) {
     // Step 1: Cloning histograms
     vector<vector<vector<TH2D>>> _culpritdiag;
@@ -34,7 +34,7 @@ void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     vector<vector<double>> fillvals(2,vector<double>(9,0)); // Fill dependent variable and
 
     for(int i=range.at(0); i<range.at(1); i++){
-        if(goodevents.at(i)) { // We absolutely need CCSC cuts for HOC
+        if(goodevents.at(i).at(0)) { // We absolutely need CCSC cuts for HOC
             tree->getevent(i);
             fillvals.at(0).at(0) = tree->F3X;
             fillvals.at(0).at(1) = tree->F3A;
@@ -56,8 +56,8 @@ void higherorder::innerloop(treereader *tree, std::vector<std::atomic<bool>>
             fillvals.at(1).at(7) = fillvals.at(1).at(6) - tree->F9A * p1.F11linF9A;
             fillvals.at(1).at(8) = fillvals.at(1).at(7) - tree->F11A * p1.F11linF11A;
 
-            // Fill pre and post events
-            for (uint ii = 0; ii < beam.size(); ii++) {
+            // Fill pre and post events (post only when gevts[i][1] ok is)
+            for (uint ii = 0; ii < (beam.size()-1+goodevents.at(i).at(1)); ii++){
                 if ((pow(1./cutval.at(ii).at(2)*(tree->BigRIPSBeam_aoq[beam.at(ii)] -
                                                  cutval.at(ii).at(0)), 2) +
                      pow(1./cutval.at(ii).at(3)*(tree->BigRIPSBeam_zet[beam.at(ii)] -

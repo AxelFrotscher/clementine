@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void iccut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
                         &goodevents, std::vector<uint> range) {
     //Step 1: Cloning histograms
     vector<vector<TH2D>> _comparediag;
@@ -28,14 +28,13 @@ void iccut::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     const bool trans = set.isemptyortrans();
 
     for(int i=range.at(0); i < range.at(1); i++){
-        if(goodevents.at(i)){
+        if(goodevents.at(i).at(0)){
             // Determine cut only on good events
             tree->getevent(i);
 
-            if((tree->BigRIPSIC_nhitchannel[0] <4 ) ||
-               ((tree->BigRIPSIC_nhitchannel[1] <4) && !set.isemptyortrans())){//Require 4 hits per IC
-                goodevents.at(i).exchange(false);
-            }
+            if(tree->BigRIPSIC_nhitchannel[0] <4 ) for(auto &j:goodevents.at(i)) j.exchange(false);
+            if((tree->BigRIPSIC_nhitchannel[1] <4) ) goodevents.at(i).at(1).exchange(false);
+
             if((tree->BigRIPSIC_fADC[0][0] <0) ||
                (tree->BigRIPSIC_fADC[1][0] <0)) continue;
             for(uint j=0; j<(numchannel-1); j++){
@@ -97,7 +96,11 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
     }
     printf("Successfully generated Histograms for the IC-cut...\n");
 
-    int cutpre = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    vector<int> cutpre ={0,0};
+    for(auto &i: goodevents){
+        cutpre.at(0) += i.at(0);
+        cutpre.at(1) += i.at(1);
+    }
 
     vector<thread> th;
     for(uint i=0; i<threads; i++){
@@ -112,10 +115,15 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
     progressbar finishcondition;
     while(finishcondition.ongoing()) finishcondition.draw();
 
-    int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    vector<int> cutafter = {0,0};
+    for(auto &i:goodevents){
+        cutafter.at(0) += i.at(0);
+        cutafter.at(1) += i.at(1);
+    }
 
-    printf("\nIC Cut out %i Events %f %%\n", cutpre-cutafter,
-           100*(cutpre-cutafter)/(double)goodevents.size());
+    printf("\nIC Cut out %i F1-7 Events (%f %%) %i F1-11 Events (%f %%) \n",
+           cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
+           cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
 
     output->mkdir("IC/IC7");
     output->mkdir("IC/IC11");

@@ -12,8 +12,9 @@
 
 using namespace std;
 
-void triggercut::innerloop(treereader *tree, std::vector <std::atomic<bool>> &goodevents,
-                                  const std::vector<uint> range) {
+void triggercut::innerloop(treereader *tree,
+                           std::vector<std::vector <std::atomic<bool>>> &goodevents,
+                           const std::vector<uint> range) {
     uint i = range.at(0);
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
@@ -21,10 +22,10 @@ void triggercut::innerloop(treereader *tree, std::vector <std::atomic<bool>> &go
     progressbar progress(range.at(1)-range.at(0),threadno);
 
     while(i<range.at(1)){
-        if(goodevents.at(i)){
+        if(goodevents.at(i).at(0)){
             tree->getevent(i);
             if(tree->EventInfo_fBit[0] == badtrg){
-                goodevents.at(i).exchange(false);
+                for(auto &j:goodevents.at(i))  j.exchange(false);
             }
         }
         i++;
@@ -37,7 +38,9 @@ void triggercut::innerloop(treereader *tree, std::vector <std::atomic<bool>> &go
 void triggercut::analyse(const vector<string> input){
     setting set;
     txtwriter txt;
-    if(!set.isemptyortrans() && 1){
+
+    const bool cuttrigger = false;
+    if(!set.isemptyortrans() && cuttrigger){
         cout << "Physics Run. Omitting trigger cut to gain statistics" << endl;
         txt.addline("No trigger cut on DALI Trigger applied.");
         return;
@@ -74,8 +77,10 @@ void triggercut::analyse(const vector<string> input){
     progressbar finishcondition;
     while(finishcondition.ongoing()) finishcondition.draw();
 
-    int cutout = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
-    printf("\nTrigger Cut out %lu Events %f %%\n", goodevents.size()-cutout,
+    int cutout = 0;
+    for(auto &i:goodevents) cutout += i.at(1);
+
+    printf("\nTrigger Cut out %lu Events %.2f %%\n", goodevents.size()-cutout,
            100*(1-cutout/(double)goodevents.size()));
 
     txt.addline(Form("Trigger Cut for DALI %i events (%.2f %%).", cutout,

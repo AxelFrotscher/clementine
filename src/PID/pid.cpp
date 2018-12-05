@@ -15,7 +15,7 @@
 
 using namespace std;
 
-void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
+void PID::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
                     &goodevents, std::vector<uint> range) {
     // Step 1: duplicate the data structure
     vector<TH1D> _reactF5;
@@ -49,7 +49,7 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
     const vector<int> ppacangledistance{650,945,700,500}; // in mm
 
     for(uint eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
-        if(goodevents.at(eventcounter)){
+        if(goodevents.at(eventcounter).at(0)){
             tree->getevent(eventcounter);
             double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
                                  (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
@@ -75,7 +75,9 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                               tree->BigRIPSBeam_aoq[4]});
             valinc.push_back({tree->BigRIPSBeam_zet[2],tree->BigRIPSBeam_zet[3],
                               tree->BigRIPSBeam_zet[4]});
-            if(closeness(valinc.at(2)) && closeness(valinc.at(3))){
+
+            // F7-F11 part
+            if(closeness(valinc.at(2)) && closeness(valinc.at(3)) && goodevents.at(eventcounter).at(1)){
                 _PIDplot.at(0).at(1).Fill(tree->BigRIPSBeam_aoq[4],
                                      tree->BigRIPSBeam_zet[4]);
                 _PIDplot.at(1).at(1).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
@@ -91,19 +93,22 @@ void PID::innerloop(treereader *tree, std::vector<std::atomic<bool>>
                 _PIDplot.at(0).at(2).Fill(tree->BigRIPSBeam_aoq[0],
                                      tree->BigRIPSBeam_zet[0]);
                 _PIDplot.at(1).at(2).Fill(beamaoqcorr, tree->BigRIPSBeam_zet[0]);
-                _PIDplot.at(0).at(3).Fill(tree->BigRIPSBeam_aoq[4],
-                                     tree->BigRIPSBeam_zet[4]);
-                _PIDplot.at(1).at(3).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
 
+                if(goodevents.at(eventcounter).at(1)) { // F7-F11 part
+                    _PIDplot.at(0).at(3).Fill(tree->BigRIPSBeam_aoq[4],
+                                              tree->BigRIPSBeam_zet[4]);
+                    _PIDplot.at(1).at(3).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
+                }
                 // cut on energy(Brho) to avoid offcenter Transmission
                 if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid1++;
 
                 // Fill F7 value with PID
                 //_reactF5.at(0).Fill(tree->F5X);
 
-                // Second ellipsoid for cross section
+                // Second ellipsoid for cross section F7-F11 part
                 if((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
-                    pow(1./targetval.at(3)*(tree->BigRIPSBeam_zet[4]-targetval.at(1)),2))<1) {
+                    pow(1./targetval.at(3)*(tree->BigRIPSBeam_zet[4]-targetval.at(1)),2))<1
+                    && goodevents.at(eventcounter).at(1)) {
                     // cut on energy(Brho) to avoid offcenter Transmission
                     if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid2++;
                     // Investigate F7 position of (p,2p) ions (off center effects)
@@ -403,14 +408,6 @@ void PID::crosssection() {
     cout << "Raw: In " << reactionpid1.load() << " out " << reactionpid2.load()
          << " ratio " << 100.*reactionpid2/reactionpid1.load() << "% " << endl;
 }
-
-/*uint64_t constexpr mix(char m, uint64_t s){
-    return ((s<<7) + ~(s>>3)) + ~m;
-}
-
-uint64_t constexpr h(const char *m){
-    return (*m) ? mix(*m,h(m+1)) : 0;
-}*/
 
 void PID::reactionparameters() {
     // Setup cut values

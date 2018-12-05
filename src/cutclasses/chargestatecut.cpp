@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
+void ccsc::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>> &goodevents,
                        std::vector<uint> range) {
     // precious tight inner loop
     // Cloning histograms
@@ -24,7 +24,7 @@ void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevent
     progressbar progress(range.at(1)-range.at(0), threadno);
 
     for(int i=range.at(0); i<range.at(1); i++){
-         if(goodevents.at(i)){
+         if(goodevents.at(i).at(1)){
             tree->getevent(i);
 
             brhoratio = tree->BigRIPSBeam_brho[3]/tree->BigRIPSBeam_brho[2];
@@ -33,7 +33,7 @@ void ccsc::innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevent
             if(mycut.at(threadno)->IsInside(brhoratio,tree->BigRIPSBeam_brho[2])){
                 _cschist.at(1).Fill(brhoratio,tree->BigRIPSBeam_brho[2]);
             }
-            else goodevents.at(i).exchange(false);
+            else goodevents.at(i).at(1).exchange(false);
         }
 
         progress.increaseevent();
@@ -84,7 +84,8 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     }
     for(auto &i: tree) mycut.push_back(set.getbrhocut());
 
-    int cutpre = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    int cutpre = 0;
+    for(auto &i:goodevents) cutpre += i.at(1);
 
     vector<thread> th;
     for(uint i=0; i<threads; i++){
@@ -100,9 +101,10 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     progressbar finishcondition;
     while(finishcondition.ongoing()) finishcondition.draw();
 
-    int cutafter = (int)accumulate(goodevents.begin(), goodevents.end(), 0.0);
+    int cutafter = 0;
+    for(auto &i:goodevents) cutafter += i.at(1);
 
-    printf("\nCCSC Cut out %i Events %f %%\n", cutpre-cutafter,
+    printf("\nCCSC Cut out (F1-F11) %i Events %f %%\n", cutpre-cutafter,
            100.*(cutpre-cutafter)/(double)goodevents.size());
 
     output->mkdir("CSC");

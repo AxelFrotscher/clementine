@@ -9,15 +9,15 @@
 
 class ppaccut{
 public:
-    void innerloop(treereader *tree, std::vector<std::atomic<bool>> &goodevents,
+    void innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>> &goodevents,
                           std::vector<uint> range);
     void analyse(std::vector<std::string> input, TFile* output);
-    ppaccut(const std::vector<std::string> input, std::vector<std::atomic<bool>> &goodevents_,
+    ppaccut(const std::vector<std::string> input, std::vector<std::vector<std::atomic<bool>>> &goodevents_,
     TFile* output): goodevents(goodevents_){
         analyse(input, output);
     };
 
-    std::vector<std::atomic<bool>> &goodevents;
+    std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
 private:
     int threads = std::max((int)sqrt(goodevents.size())/400,2);
