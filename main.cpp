@@ -40,7 +40,8 @@ int main(int argc, char**argv){
     const vector<string> input = getlist("config/minosridf.txt");
 
     printf("Which Setting do you want to analyse?\n"
-           "[0] 110Nb \n[1] 88Ge \n[2] 94Se \n[3] 100Kr\n");
+           "[0] 110Nb \n[1] 88Ge \n[2] 94Se \n[3] 100Kr\n[4] 66Cr\n[5] 70Fe\n"
+           "[6] 78Ni\n");
     int set = 0;
     if(!(cin >> set)) throw invalid_argument("That's no setting!");
     auto s = setting(set);
@@ -59,7 +60,7 @@ int main(int argc, char**argv){
 
     vector<string> emptyout;
     for(auto run: s.emptyrun)
-        emptyout.push_back(runinfo::prefix + input.at(run).substr(34,9) + ".root");
+        emptyout.push_back(runinfo::prefix+input.at(run).substr(34,9)+".root");
 
     switch(analyse_raw){
         case 1:{ // Analyse SEASTAR-DATA
@@ -82,7 +83,8 @@ int main(int argc, char**argv){
                 case 1:{
                     cout << "(Trans) Analyzing SEASTAR:"
                          << input.at(s.transmissionrun.at(0)) << endl;
-                    generatetree(input.at(s.transmissionrun.at(0)), transmissionout.at(0));
+                    generatetree(input.at(s.transmissionrun.at(0)),
+                                 transmissionout.at(0));
                     break;
                 }
                 case 2:{

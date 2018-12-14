@@ -87,7 +87,7 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
         tree.emplace_back(new treereader(i));
     }
 
-    printf("Performing  Plastic Cut with %i threads.\n", threads);
+    printf("Performing Plastic Cut with %i threads.\n", threads);
 
     // Setting appropriate keys
     vector<string> keys{"BigRIPSPlastic.fQLRaw", "BigRIPSPlastic.fQRRaw",
@@ -178,7 +178,7 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
         cutafter.at(1) += i.at(1);
     }
 
-    printf("\nPlastic Cut out %i F1-7 Events (%f %%) %i F1-11 Events (%f %%) \n",
+    printf("\nPlastic Cut out %i F1-7 Events (%.3f %%) %i F1-11 Events (%.3f %%) \n",
            cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
            cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
 }
