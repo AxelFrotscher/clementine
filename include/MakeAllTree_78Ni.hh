@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <TGraph.h>
 
 struct TMinosClust{
     std::vector<double> x_mm;
@@ -102,3 +103,17 @@ double conv_fit(double *x, double *p);
 void Hough_filter(std::vector<double> &x,std::vector<double> &y,std::vector<double> &z,
                   std::vector<double> &q,std::vector<double> &x_out,std::vector<double> &y_out,
                   std::vector<double> &z_out,std::vector<double> &q_out);
+
+double FitFunction(double *x, double *p);
+
+void FindStart(std::vector<double> pStart, std::vector<double> chi,
+               std::vector<int> fitstatus, TGraph *grxz, TGraph *gryz);
+
+void SumDistance1(int &, double *, double &sum, double *par, int);
+
+double distancelinepoint(double &x, double &y, double &z, double *p);
+
+void SumDistance2(int &, double *, double &sum, double *par, int);
+
+void vertex(std::vector<double> &p, std::vector<double> &pp, double &xv,
+            double &yv, double &zv);

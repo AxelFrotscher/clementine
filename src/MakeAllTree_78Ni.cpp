@@ -18,22 +18,20 @@
 #include <TH2F.h>
 #include <TF1.h>
 #include "TGraph.h"
-//#include "TArtDALIParameters.hh"
-#include "TArtMINOSMap.hh"
-#include "TArtMINOSPara.hh"
 #include "TArtMINOSParameters.hh"
-
 #include "TArtCalibMINOS.hh"
-#include "TArtAnalyzedMINOS.hh"
-#include "TArtTrackMINOS.hh"
-#include "TArtVertexMINOS.hh"
-
 #include "TMath.h"
+#include "TMinuit.h"
+#include <Math/Vector3D.h>
 
 R__LOAD_LIBRARY(libanacore.so)
 R__LOAD_LIBRARY(libminos.so)
 
 using namespace std;
+
+// Create output values for minos by hand -.-
+TMinosClust fitdata;
+TMinosResult dataresult;
 
 void generatetree(const string infile, const string output){
     //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
@@ -65,8 +63,6 @@ void generatetree(const string infile, const string output){
     auto brcalib      = new TArtCalibPID();
     auto ppaccalib    = brcalib->GetCalibPPAC();
     auto cfpl         = brcalib->GetCalibFocalPlane();
-    //auto *plasticcalib = brcalib->GetCalibPlastic();
-    //auto *iccalib      = brcalib->GetCalibIC();
 
     // Create RecoPID to get calibrated data and to reconstruct TOF, AoQ, Z, ... 
     // (RecoPID -> [ RecoTOF , RecoRIPS , RecoBeam] )
@@ -108,22 +104,11 @@ void generatetree(const string infile, const string output){
         recopid.DefineNewBeam(rips[3], tof[1], (char *) "F11IC"),          //zd_911
         recopid.DefineNewBeam(rips[2], rips[3], tof[1], (char *) "F11IC")};//zd_811
 
-    // Create DALIParameters to get ".xml"
-    //auto dpara = TArtDALIParameters::Instance();
-    //dpara->LoadParameter((char *)"config/db/DALI.xml");
-
-    // Create CalibDALI to get and calibrate raw data
-    //auto dalicalib = new TArtCalibDALI();
-    //dalicalib->LoadFile((char *)"config/db/DALI");
-
     // Create Minos
     TArtMINOSParameters setup("MINOSParameters", "MINOSParameters");
-    setup.LoadParameters((char*)"config/db/MINOS.xml");
+    setup.LoadParameters((char *) "config/db/MINOS.xml");
 
     TArtCalibMINOS minoscalib;
-    //TArtAnalyzedMINOS minosanalyzed;
-    //TArtTrackMINOS minostrack;
-    //TArtVertexMINOS minosvertex;
 
     // Create TTree and output file for it
     TFile fout(output.c_str(), "RECREATE");
@@ -156,10 +141,6 @@ void generatetree(const string infile, const string output){
 
     if(!fbitarray) __throw_bad_function_call();
     //Making new branches
-
-    // Create output values for minos by hand -.-
-    TMinosClust fitdata;
-    TMinosResult dataresult;
 
     tree->Branch("MinosClustX", &fitdata.x_mm);
     tree->Branch("MinosClustY", &fitdata.y_mm);
@@ -196,7 +177,11 @@ void generatetree(const string infile, const string output){
     tree->Branch("r_vertex", &r_vertex, "r_vertex/D");
     tree->Branch("phi_vertex", &phi_vertex, "phi_vertex/D");
     tree->Branch("thetaz1", &thetaz1, "thetaz1/D");
-    tree->Branch("thetaz2", &thetaz1, "thetaz2/D");
+    tree->Branch("thetaz2", &thetaz2, "thetaz2/D");
+
+    vector<double> par1, par2;
+    tree->Branch("parFit_1", &par1);
+    tree->Branch("parFit_2", &par2);
 
     //Parameters for MINOS analysis
     double minosthresh, TimeBinElec, Tshaping;
@@ -237,9 +222,6 @@ void generatetree(const string infile, const string output){
     const vector<vector<double>> f8z{{-1310.7,-1302.1},{-1273.3,-1281.9},
                                      {-810.7,-802.1},{-773.3,-781.9}};
 
-    /*tree->Branch("xtar",&fXTar,"fXTar/D");
-    tree->Branch("ytar",&fYTar,"fYTar/D");*/
-
     vector<vector<string>> focalname{{"F3X","F3A"}, {"F5X","F5A"}, 
                                      {"F7X","F7A"}, {"F8X","F8A"},
                                      {"F9X","F9A"}, {"F11X","F11A"}};
@@ -249,27 +231,11 @@ void generatetree(const string infile, const string output){
         tree->Branch(focalname[i][1].c_str(), &focal.at(i).at(1));
     }
 
-    //TArtFocalPlane *tfpl;
     TVectorD *vec;
 
     tree->Branch("fgoodppacfocus",fGoodPPACFocus.data(),"fGoodPPACFocus[12]/I");
     tree->Branch("fgoodppacfocusor",fGoodPPACFocusOr.data(),
                  "fGoodPPACFocusOr[12]/I");
-
-    //DALI
-    /*Int_t dalimultwotime        = 0;
-    Int_t dalimult              = 0;
-    Int_t dalitimetruemult      = 0;
-    Int_t dalimultthres         = 0;
-    Int_t dalitimetruemultthres = 0;
-
-    tree->Branch("dalimultwotime",&dalimultwotime,"dalimultwotime/I");
-    tree->Branch("dalimult",&dalimult,"dalimult/I");
-    tree->Branch("dalitimetruemult",&dalitimetruemult,"dalitimetruemult/I");
-    tree->Branch("dalimultthres",&dalimultthres,"dalimultthres/I");
-
-    tree->Branch("dalitimetruemultthres",&dalitimetruemultthres,
-                 "dalitimetruemultthres/I");*/
 
     const vector<string> ppacname{
         "F8PPAC-1A", "F8PPAC-1B", "F8PPAC-2A", "F8PPAC-2B",
@@ -278,8 +244,8 @@ void generatetree(const string infile, const string output){
 
     // Progress Bar setup
     int neve = 0; // counting variable
-    uint totevents = 50000; //50000
-    const int downscale = 50; // every n-th event
+    uint totevents = 500; //50000
+    const int downscale = totevents/100; // every n-th event
 
     progressbar progress(totevents, 0);
 
@@ -330,7 +296,6 @@ void generatetree(const string infile, const string output){
 
         // 880mm F8-1B to target
 
-
         for(uint i=0; i<focalplanes.size(); i++){ // Loop all focal planes
             if(cfpl->FindFocalPlane(focalplanes.at(i))){
                 vec = cfpl->FindFocalPlane(focalplanes.at(i))->GetOptVector();
@@ -354,33 +319,19 @@ void generatetree(const string infile, const string output){
         ((TArtEventInfo *)fbitarray->At(0))->SetTriggerBit(EventInfo_FBIT);
         //cout << EventInfo_FBIT << endl;
 
-        /*
-        //Double_t modif = - 0.0011*(F11X-8) - 0.0000003*(F11X-8)*(F11X-8)*(F11X-8)
-        //                 - 0.000023*(F9X-10) - 0.0000005*(F9X)*(F9X)
-        //                 + 0.000000005*(F9X+10)*(F9X+10)*(F9X+10);
-
-        //AoQ_Z_BR->Fill(beam_br_57->GetAoQ(),beam_br_57->GetZet());
-        //AoQ_Z_ZD->Fill(beam_zd_911->GetAoQ()+modif,beam_zd_911->GetZet());*/
-
-        //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        //Making MINOS
+        ////////////////////////////////// Making MINOS ////////////////////////
         minoscalib.ClearData();
-        //minosanalyzed.ClearData();
-        //minostrack.ClearData();
-        //minosvertex.ClearData();
         minoscalib.ReconstructData();
-        //minosanalyzed.ReconstructData();
-        //minostrack.ReconstructData();
-        //minosvertex.ReconstructVertex();
         // Convert the reconstructed vertex in z (mm)
         //z_vertex = (minosvertex.GetZv()*TimeBinElec - DelayTrigger)*1e-3*VDrift*10;
         //time bin*(ns/us)*vdrift(cm/us)*(mm/cm)
 
-        // MINOS 1. Filling vectors with (x,y) data ////////////////////////////
+        /// MINOS 1. Filling vectors with (x,y) data ///////////////////////////
         vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
         int filled = 0; // Number of tracks
         fitdata.reset();
-        TArtCalibMINOSData *minos = new TArtCalibMINOSData;
+        dataresult.reset();
+        auto *minos = new TArtCalibMINOSData;
         for(int i=0; i<minoscalib.GetNumCalibMINOS(); i++){
             minos = minoscalib.GetCalibMINOS(i);
             double maxcharge =0;
@@ -398,7 +349,7 @@ void generatetree(const string infile, const string output){
             }
         }
 
-        // MINOS 2. Modify with hough-transformation
+        /// MINOS 2. Modify with hough-transformation
         int padsleft = Xpad.size();
         vector<bool> clusterringbool;
         vector<int> clusternbr, clusterpads;
@@ -424,14 +375,14 @@ void generatetree(const string infile, const string output){
             Zpadnew.push_back(-1E4);
         }
 
-        // Bonus for Tracknumber between 1 and 4
+        /// Bonus for Tracknumber between 1 and 4
         TH1F hfit("hfit", "hfit", 512,0,512);
         auto fit_function = new TF1("fit_function",conv_fit, 0,511,3);
         if(trackNbr > 0 && trackNbr < 4){
             if(!filled) cerr << "Tracknumber:" << trackNbr << " but no evts." << endl;
 
 
-            // MINOS 3: Fitting the taken pads for Qmax and Ttrig information //
+            /// MINOS 3: Fitting the taken pads for Qmax and Ttrig information /
             padsleft -= Xpadnew.size();
             for(int i=0; i<minoscalib.GetNumCalibMINOS(); i++){
                 minos = minoscalib.GetCalibMINOS(i);
@@ -519,7 +470,7 @@ void generatetree(const string infile, const string output){
                 else continue;
             } // End of all entries
 
-            // 4: MINOS Filtering the tracks off possible noise with Hough3D ///
+            /// 4: MINOS Filtering the tracks off possible noise with Hough3D //
             int padsleft2 = Xpadnew.size();
             vector<double> xin, yin, zin, qin, xout, yout, zout, qout;
             int cluster_temp = 0, ringsum =0, npoint1=0, npoint2=0, array_final = 0;
@@ -540,8 +491,8 @@ void generatetree(const string infile, const string output){
                                                pow(yout[k],2.))-45.2)/2.1))++;
                     }
                     for(auto &j: ringtouch) if(j>0) ringsum++;
-                    if(zmax>290) ringsum=16;
-                    if(xout.size()>10 && ringsum >= 15) {
+                    if(zmax > 290) ringsum = 16;
+                    if(xout.size() > 10 && ringsum >= 15) {
                         cout << xout.size() <<" "<< ringsum << " Padsleft2" << endl;
                         trackNbr_FINAL++;
                         //cluster1 = cluster_temp; delete if no use
@@ -551,7 +502,8 @@ void generatetree(const string infile, const string output){
                             dataresult.add(xout[l], yout[l], zout[l],
                                            qout[l], trackNbr_FINAL, xout.size(), zmax);
                             array_final++;
-                            npoint2++;
+                            if(trackNbr_FINAL == 1) npoint1++;
+                            if(trackNbr_FINAL == 2) npoint2++;
                         }
                     }
                     xin.clear();
@@ -569,8 +521,8 @@ void generatetree(const string infile, const string output){
                 }
 
                 cluster_temp = clusternbr[i];
-                if(!(clusterpads[i]>=10 && clusterringbool[i] == true &&
-                     Zpadnew[i]> -1E4 && Zpadnew[i]<=320)) continue;
+                if(!(clusterpads[i] >= 10 && clusterringbool[i] == true &&
+                     Zpadnew[i] > -1E4 && Zpadnew[i] <= 320)) continue;
                 else{
                     xin.push_back(Xpadnew[i]);
                     yin.push_back(Ypadnew[i]);
@@ -579,7 +531,85 @@ void generatetree(const string infile, const string output){
                     //npoint_temp++;
                 }
             } // end of loop on pads
-        }
+
+            /// 5. MINOS Fitting filtered tracks in 3D (weight by charge, TMinuit) //
+            if(trackNbr_FINAL > 0){
+                vector<double> pStart_1{0,1,0,1}, pStart_2{0,1,0,1},
+                    parFit_1(4), err_1(4), parFit_2(4), err_2(4), chi1(2), chi2(2);
+                vector<int> fitStatus(2);
+
+                TMinuit min(4);
+                min.SetPrintLevel(-1);
+                vector<double> arglist(10);
+                arglist.at(0) = 3;
+                int iflag, nvpar, nparx;
+                double amin, edm, errdef, chi2res1, chi2res2;
+
+                FindStart(pStart_1, chi1, fitStatus, grxz_1, gryz_1);
+                min.SetFCN(SumDistance1);
+                // Set starting values and step sizes for parameters
+                min.mnparm(0,"x0",pStart_1.at(0),0.1,-500,500, iflag);
+                min.mnparm(0,"Ax",pStart_1.at(1),0.1,-10,  10, iflag);
+                min.mnparm(0,"y0",pStart_1.at(2),0.1,-500,500, iflag);
+                min.mnparm(0,"Ay",pStart_1.at(3),0.1,-10,  10, iflag);
+                arglist.at(0) = 100; // Number of function calls
+                arglist.at(1) = 1E-6;// tolerance
+                min.mnexcm("MIGRAD", arglist.data(),2,iflag);
+                // get currecnt status of minimization
+                min.mnstat(amin,edm,errdef,nvpar,nparx,iflag);
+                for(int i=0; i<4;i++) min.GetParameter(i,parFit_1[i], err_1[i]);
+
+                if(trackNbr_FINAL == 1) parFit_2 = {0,0,0,0};
+                else{
+                    FindStart(pStart_2, chi2, fitStatus, grxz_2,gryz_2);
+                    min.SetFCN(SumDistance2);
+
+                    min.mnparm(0,"x0",pStart_2.at(0),0.1,-500,500, iflag);
+                    min.mnparm(0,"Ax",pStart_2.at(1),0.1,-10,  10, iflag);
+                    min.mnparm(0,"y0",pStart_2.at(2),0.1,-500,500, iflag);
+                    min.mnparm(0,"Ay",pStart_2.at(3),0.1,-10,  10, iflag);
+                    arglist.at(0) = 100; // Number of function calls
+                    arglist.at(1) = 1E-6;// tolerance
+                    min.mnexcm("MIGRAD", arglist.data(),2,iflag);
+                    // get currecnt status of minimization
+                    min.mnstat(amin,edm,errdef,nvpar,nparx,iflag);
+                    for(int i=0; i<4;i++) min.GetParameter(i,parFit_1[i], err_1[i]);
+
+                    int sumerr_1 = accumulate(begin(err_1), end(err_1), 0);
+                    int sumerr_2 = accumulate(begin(err_2), end(err_2), 0);
+
+                    chi2res1 = (chi1.at(0)+chi1.at(1))/npoint1;
+                    chi2res2 = (chi2.at(0)+chi2.at(1))/npoint2;
+
+                    vertex(parFit_1, parFit_2, x_vertex, y_vertex, z_vertex);
+
+                    r_vertex = sqrt(pow(x_vertex,2)+pow(y_vertex,2));
+
+                    thetaz1 = acos(1/(1 + pow(parFit_1.at(1),2) +
+                                   pow(parFit_1.at(3),2))) * 180./TMath::Pi();
+                    thetaz2 = acos(1/(1 + pow(parFit_2.at(1),2) +
+                                   pow(parFit_2.at(3),2))) * 180./TMath::Pi();
+
+                    phi_vertex =
+                        acos((parFit_1[1] * parFit_2[1] + parFit_1[3] * parFit_2[3] + 1)/
+                             (sqrt(pow(parFit_1[1],2) + pow(parFit_1[3],2) +1) *
+                             sqrt(pow(parFit_2[1],2) + pow(parFit_2[3],2) +1))) *
+                             180./TMath::Pi();
+
+                    par1 = parFit_1;
+                    par2 = parFit_2;
+                }
+            } // endif trackNbr_final >= 1
+
+            xin.clear();
+            yin.clear();
+            zin.clear();
+            qin.clear();
+            xout.clear();
+            yout.clear();
+            zout.clear();
+            qout.clear();
+        } // loop for E(T) fits for less than 5 track evts
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         //Making DALI
@@ -608,9 +638,7 @@ void generatetree(const string infile, const string output){
 
     fout.Write();
     fout.Close();
-
     printf("Writing TTree complete!\n");
-
 }
 
 int Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
@@ -1045,3 +1073,89 @@ void Hough_filter(vector<double> &x,vector<double> &y,vector<double> &z,
      */
 }
 
+void FindStart(vector<double> pStart, vector<double> chi, vector<int> fitstatus,
+               TGraph *grxz, TGraph *gryz){
+    TF1 *myfit1 = new TF1("myfit1", FitFunction, -100,500,2);
+    myfit1->SetParameters(0,10);
+    fitstatus = {0,0};
+    grxz->Fit(myfit1, "RQM");
+    chi.at(0) = myfit1->GetChisquare();
+    pStart.at(0) = myfit1->GetParameter(0);
+    pStart.at(1) = myfit1->GetParameter(1);
+    gryz->Fit(myfit1, "RQM");
+    chi.at(1) = myfit1->GetChisquare();
+    pStart.at(2) = myfit1->GetParameter(0);
+    pStart.at(3) = myfit1->GetParameter(1);
+}
+
+double FitFunction(double *x, double *p){
+    return p[0]+p[1]*x[0];
+}
+
+void SumDistance1(int &, double *, double &sum, double *par, int){
+    sum =0;
+    double qtot =0;
+    for(int i=0; i<dataresult.x_mm.size(); i++){
+        if(dataresult.n_Cluster.at(i) == 1){
+            double d = distancelinepoint(dataresult.x_mm.at(i), dataresult.y_mm.at(i),
+                                         dataresult.z_mm.at(i), par);
+            sum  += d*dataresult.Chargemax.at(i);
+            qtot +=   dataresult.Chargemax.at(i);
+        }
+    }
+    sum /=qtot;
+}
+
+double distancelinepoint(double &x, double &y, double &z, double *p){
+    // Calculation of the distance between line point
+    ROOT::Math::XYZVector xp(x,y,z);
+    ROOT::Math::XYZVector x0(p[0],p[2],0.);
+    ROOT::Math::XYZVector x1(p[0]+p[1],p[2]+p[3],1.);
+    ROOT::Math::XYZVector u =(x1-x0).Unit();
+    return ((xp-x0).Cross(u)).Mag2();
+}
+
+void SumDistance2(int &, double *, double &sum, double *par, int){
+    double qtot = 0;
+    sum = 0;
+    for(int i=0; i<dataresult.x_mm.size(); i++){
+        if(dataresult.n_Cluster.at(i) == 2){
+            double d = distancelinepoint(dataresult.x_mm.at(i), dataresult.y_mm.at(i),
+                                         dataresult.z_mm.at(i), par);
+            sum += d*dataresult.Chargemax.at(i);
+            qtot += dataresult.Chargemax.at(i);
+        }
+    }
+    sum /= qtot;
+}
+
+void vertex( vector<double> &p, vector<double> &pp, double &xv, double &yv, double &zv){
+    double alpha, beta, A, B, C;
+    alpha = (pp.at(1)*(p.at(0)-pp.at(0))+pp.at(3)*(p.at(2)-pp.at(2)))/
+             (pow(pp.at(1),2) + pow(pp.at(3),2) + 1);
+    beta = (pp.at(1)*p.at(1)+pp.at(3)*p.at(3) + 1)/
+            (pow(pp.at(1),2) + pow(pp.at(3),2) + 1);
+
+    A = beta*(pow(pp.at(1),2) + pow(pp.at(3),2) +1) -
+         (pp.at(1)*p.at(1) + pp.at(3)*p.at(3) + 1);
+    B = (pow(p.at(1),2) + pow(p.at(3),2) + 1) -
+        beta*(pp.at(1)*p.at(1) + pp.at(3)*p.at(3) + 1);
+    C = beta*(pp.at(1)*(pp.at(0)-p.at(0))+ pp.at(3)*(pp.at(2)-p.at(2))) -
+            (p.at(1)*(pp.at(0)-p.at(0))+ p.at(3)*(pp.at(2)-p.at(2)));
+
+    double sol1, solf1, x, y, z, xp, yp, zp;
+
+    sol1 = -(A*alpha+C)/(A*beta + B);
+    solf1 = alpha + beta*sol1;
+
+    x = p.at(0) + p.at(1)*sol1;
+    y = p.at(2) + p.at(3)*sol1;
+    z = sol1;
+    xp = pp.at(0) + pp.at(1)*solf1;
+    yp = pp.at(2) + pp.at(3)*solf1;
+    zp = solf1;
+
+    xv = (x+xp)/2;
+    yv = (y+yp)/2;
+    zv = (z+zp)/2;
+}
