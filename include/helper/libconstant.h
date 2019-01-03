@@ -18,7 +18,6 @@ namespace runinfo{
                                         8'051'865,
                                         38'803'327,
                                         58'865'437}; // // full physics run
-    const std::string prefix = "/d/d02-1/ag_ob/SEASTAR2_DATA/root/";
 
     const std::vector<std::vector<std::vector<int>>> plasticrange{
             {{480,620},{700,920},{220,330},{270,1510}},

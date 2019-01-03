@@ -16,7 +16,7 @@ using namespace std;
 
 calibpar p1;
 
-void dalicalib(treereader *tree, TFile *output){
+/*void dalicalib(treereader *tree, TFile *output){
     // This Method aims to calibrate the 187 detectors of DALI
     printf("Now beginning the Calibration of the NaI crystals... \n");
 
@@ -48,7 +48,7 @@ void dalicalib(treereader *tree, TFile *output){
     gammadetectors.Write();
     output->cd("");
     printf("\nFinished DALI Calibration.\n");
-}
+}*/
 
  void makehistograms(const vector<string> input) {
     // Generating an outputfile that matches names with the input file
@@ -92,9 +92,6 @@ void dalicalib(treereader *tree, TFile *output){
          iccut(input, goodevents, outputfile);
          higherorder(input, goodevents, outputfile);
      };
-
-    //cout << "Run has " <<100.* accumulate(goodevents.begin(),goodevents.end(),0)
-    //                          /goodevents.size() << " % valid Elements" << endl;
 
     // Get Z vs. A/Q
     const vector<string> reactionmodes = set.getreactions();

@@ -51,6 +51,38 @@ void setting::loadnumbers(int i) {
             emptyrun = vector<uint>{182};
             break;
         }
+        case 4:{ //66Cr
+            analysedfile = 277;
+            goodruns = vector<uint>{38,40,41,42,43,44,45,46,47,48,49,50,51,52,53,
+                                    54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,
+                                    69};
+            transmissionrun = vector<uint>{299};
+            emptyrun = vector<uint>{279};
+            break;
+        }
+        case 5:{ // 70Fe
+            analysedfile = 346;
+            goodruns = vector<uint>{7,8,9,11,12,13,14,15,18,19,20,21,22,23,24,25,
+                                    26,27,28,30,31,32,33,34,35,36,37,39,40,41,42,
+                                    43,44,45};
+            transmissionrun = vector<uint>{};
+            emptyrun = vector<uint>{};
+            break;
+        }
+        case 6:{
+            analysedfile = 395;
+            goodruns = vector<uint>{8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,
+                                    24,25,26,28,29,30,31,34,35,36,37,38,39,40,41,
+                                    42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,
+                                    57,58,59,62,63,64,65,66,67,68,69,70,71,72,73,
+                                    74,75,76,77,78,79,81,82,83,84,85,80,90,91,93,
+                                    94,95,96,97,98,99,100,101,102,103,104,105,106,
+                                    108};
+            for(int i=110; i<156; i++) goodruns.push_back(i);
+            transmissionrun = vector<uint>{394};
+            emptyrun = vector<uint>{393};
+            break;
+        }
         default: std::__throw_invalid_argument("Chosen setting is not implemented.\n");
     }
 }

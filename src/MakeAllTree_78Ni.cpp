@@ -33,36 +33,40 @@ using namespace std;
 TMinosClust fitdata;
 TMinosResult dataresult;
 
-void generatetree(const string infile, const string output){
+void generatetree(const string infile, const string output) {
     //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
     cout << "Now in Estore -> " << infile << endl;
 
     // Create StoreManager both for calibration "TArtCalib..." and 
     // treatment "TArtReco..."
-    auto * sman = TArtStoreManager::Instance();
+    auto *sman = TArtStoreManager::Instance();
     // Create EventStore to control the loop and get the EventInfo
     TArtEventStore estore;
     //estore.SetInterrupt(&stoploop);
-    if(!estore.Open(infile.c_str())) __throw_invalid_argument(("Could not open"+
-                                                               infile).c_str());
+    if (!estore.Open(infile.c_str()))
+        __throw_invalid_argument(("Could not open" +
+                                  infile).c_str());
 
+    uint setting = getset(estore); // 0 -> 2014, 1 -> 2015
     // Create BigRIPSParameters to get Plastics, PPACs, ICs and FocalPlanes 
     // parameters from ".xml" files
     TArtBigRIPSParameters para;
-    vector<string> parameterfiles{
-        "config/db/BigRIPSPPAC.xml", "config/db/BigRIPSPlastic.xml",
-        "config/db/BigRIPSIC.xml",   "config/db/FocalPlane.xml"};
+    vector<vector<string>> parameterfiles{
+            {"config/db2014/BigRIPSPPAC.xml", "config/db2014/BigRIPSPlastic.xml",
+             "config/db2014/BigRIPSIC.xml",   "config/db2014/FocalPlane.xml"},
+            {"config/db/BigRIPSPPAC.xml",     "config/db/BigRIPSPlastic.xml",
+             "config/db/BigRIPSIC.xml",       "config/db/FocalPlane.xml"}};
 
-    for(auto i : parameterfiles){
-        if(!para.LoadParameter(&i[0])) __throw_invalid_argument(&i[0]);
+    for (auto i : parameterfiles.at(setting)) {
+        if (!para.LoadParameter(&i[0])) __throw_invalid_argument(&i[0]);
     }
 
-    para.SetFocusPosOffset(8,138.5);
+    para.SetFocusPosOffset(8, 138.5);
     // Create CalibPID to get and calibrate raw data ( CalibPID -> [CalibPPAC , 
     // CalibIC, CalibPlastic , CalibFocalPlane] 
-    auto brcalib      = new TArtCalibPID();
-    auto ppaccalib    = brcalib->GetCalibPPAC();
-    auto cfpl         = brcalib->GetCalibFocalPlane();
+    auto brcalib = new TArtCalibPID();
+    auto ppaccalib = brcalib->GetCalibPPAC();
+    auto cfpl = brcalib->GetCalibFocalPlane();
 
     // Create RecoPID to get calibrated data and to reconstruct TOF, AoQ, Z, ... 
     // (RecoPID -> [ RecoTOF , RecoRIPS , RecoBeam] )
@@ -74,27 +78,32 @@ void generatetree(const string infile, const string output){
     const vector<int> focalplanes{3, 5, 7, 8, 9, 11};
 
     vector<vector<string>> mfil{  // matrixfiles
-            {"config/matrix/mat1.mat",               "D3"},    // F3 - F5 => D3
-            {"config/matrix/mat2.mat",               "D5"},    // F5 - F7 => D5
-            {"config/matrix/F8F9_LargeAccAchr.mat",  "D7"},    // F8 - F9 => D7
-            {"config/matrix/F9F11_LargeAccAchr.mat", "D8"}};   // F9 - F11=> D8
+            {"config/matrix/mat1.mat",                   "D3"},    // F3 - F5 => D3
+            {"config/matrix/mat2.mat",                   "D5"},    // F5 - F7 => D5
+            {"config/matrix/F8F9_LargeAccAchr.mat",      "D7"},    // F8 - F9 => D7
+            {"config/matrix2014/F9F11_LargeAccAchr.mat", "D8"},// F9-F11 => D8
+            {"config/matrix/F9F11_LargeAccAchr.mat",     "D8"}};   // F9 - F11=> D8
 
     vector<TArtRIPS *> rips{
-            recopid.DefineNewRIPS(3, 5,  &mfil[0][0][0], &mfil[0][1][0]),
-            recopid.DefineNewRIPS(5, 7,  &mfil[1][0][0], &mfil[1][1][0]),
-            recopid.DefineNewRIPS(8, 9,  &mfil[2][0][0], &mfil[2][1][0]),
-            recopid.DefineNewRIPS(9, 11, &mfil[3][0][0], &mfil[3][1][0])};
+            recopid.DefineNewRIPS(3, 5, &mfil[0][0][0], &mfil[0][1][0]),
+            recopid.DefineNewRIPS(5, 7, &mfil[1][0][0], &mfil[1][1][0]),
+            recopid.DefineNewRIPS(8, 9, &mfil[2][0][0], &mfil[2][1][0]),
+            recopid.DefineNewRIPS(9, 11, &mfil[3 + setting][0][0],
+                                  &mfil[3 + setting][1][0])};
 
     // Reconstruction of TOF DefineNewTOF(first plane,second plane, time offset)
     vector<vector<string>> fplname{{"F3pl", "F7pl"},
                                    {"F8pl", "F11pl-1"}};
-    vector<double> tofoff{ //300.25 F3-F7 init -159.45 F8-F11 init
-        304.17+0.17,   // good Offset Value for F3-F7,  empty-target run  300.85
-        -161.64-0.08}; // good Offset Value for F8-F11, empty-target run -160.45
+    vector<vector<double>> tofoff{ //300.25 F3-F7 init -159.45 F8-F11 init
+        {304, -161},
+        {304.17 + 0.17,    // good Offset Value for F3-F7,  empty-target run  300.85
+         -161.64 - 0.08}}; // good Offset Value for F8-F11, empty-target run -160.45
 
     vector<TArtTOF *> tof{
-        recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0], tofoff[0], 5),
-        recopid.DefineNewTOF(&fplname[1][0][0], &fplname[1][1][0], tofoff[1], 9)};
+        recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0],
+                             tofoff[setting][0], 5),
+        recopid.DefineNewTOF(&fplname[1][0][0], &fplname[1][1][0],
+                             tofoff[setting][1], 9)};
 
     // Reconstruction of IC observables for ID
     vector<TArtBeam *> beam{  // br = BigRIPS, zd = ZeroDegree
@@ -106,7 +115,8 @@ void generatetree(const string infile, const string output){
 
     // Create Minos
     TArtMINOSParameters setup("MINOSParameters", "MINOSParameters");
-    setup.LoadParameters((char *) "config/db/MINOS.xml");
+    vector<string> minosparameters{"config/db2014/MINOS.xml", "config/db/MINOS.xml"};
+    setup.LoadParameters(&minosparameters.at(setting)[0]);
 
     TArtCalibMINOS minoscalib;
 
@@ -166,9 +176,9 @@ void generatetree(const string infile, const string output){
 
     double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0, phi_vertex=0,
            thetaz1=0, thetaz2=0,
-           VDrift,          // in cm/(1E-6*s)
-           DelayTrigger,    // in ns
-           Stoptime;
+           VDrift = 0.03786,          // in cm/(1E-6*s)
+           DelayTrigger = 2055,    // in ns both Values from
+           Stoptime = 9980;        //       ConfigMINOSDirft_fixed.txt
     tree->Branch("VDrift", &VDrift, "MINOS.VDrift/D");
     tree->Branch("DelayTrig", &DelayTrigger, "DelayTrigger/D");
     tree->Branch("x_vertex", &x_vertex, "x_vertex/D");
@@ -184,7 +194,7 @@ void generatetree(const string infile, const string output){
     tree->Branch("parFit_2", &par2);
 
     //Parameters for MINOS analysis
-    double minosthresh, TimeBinElec, Tshaping;
+    double minosthresh = 25, TimeBinElec = 30, Tshaping = 333;
     ifstream minosconfigfile;
     minosconfigfile.open("config/db/ConfigMINOSDrift_fixed.txt");
     if(!minosconfigfile.is_open())__throw_invalid_argument("Could not open "
@@ -244,11 +254,12 @@ void generatetree(const string infile, const string output){
 
     // Progress Bar setup
     int neve = 0; // counting variable
-    uint totevents = 500; //50000
+    uint totevents = 5000000; //50000
     const int downscale = totevents/100; // every n-th event
 
     progressbar progress(totevents, 0);
 
+    cout << endl << "Finished Initialization. Starting transcription... " << endl;
     while(estore.GetNextEvent() && (neve < totevents)){
         //Making the BigRIPS tree calibration
         brcalib->ClearData();
@@ -487,8 +498,8 @@ void generatetree(const string infile, const string output){
 
                     for(int k=0; k<xout.size(); k++){
                         zmax = max(zmax,zout[k]);
-                        ringtouch.at(int((sqrt(pow(xout[k],2.) +
-                                               pow(yout[k],2.))-45.2)/2.1))++;
+                        ringtouch.at(max(0,int((sqrt(pow(xout[k],2.) +
+                                               pow(yout[k],2.))-45.2)/2.1)))++;
                     }
                     for(auto &j: ringtouch) if(j>0) ringsum++;
                     if(zmax > 290) ringsum = 16;
@@ -1158,4 +1169,11 @@ void vertex( vector<double> &p, vector<double> &pp, double &xv, double &yv, doub
     xv = (x+xp)/2;
     yv = (y+yp)/2;
     zv = (z+zp)/2;
+}
+
+uint getset(TArtEventStore &estore){
+    const char *run = estore.GetRunInfo()->GetRunName()->Data();
+    if(!strcmp(run,(const char *)"psp14")) return 0;
+    else if(!strcmp(run,(const char *)"psp15")) return 1;
+    else __throw_invalid_argument(Form("Unknown Run %s\n", run));
 }

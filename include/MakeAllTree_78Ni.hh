@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <TGraph.h>
+#include "TArtEventStore.hh"
 
 struct TMinosClust{
     std::vector<double> x_mm;
@@ -117,3 +118,5 @@ void SumDistance2(int &, double *, double &sum, double *par, int);
 
 void vertex(std::vector<double> &p, std::vector<double> &pp, double &xv,
             double &yv, double &zv);
+
+uint getset(TArtEventStore &estore);

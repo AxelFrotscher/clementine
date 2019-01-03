@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <thread>
 #include <fstream>
+#include <boost/algorithm/string.hpp>
 #include "libconstant.h"
 
 R__LOAD_LIBRARY(libanacore.so)
@@ -47,20 +48,18 @@ int main(int argc, char**argv){
     auto s = setting(set);
 
     vector<string> output;
-    for(auto run : s.goodruns) {
-        output.push_back(runinfo::prefix +
-                         input.at(s.analysedfile+run).substr(34, 9)
-                         + ".root");
-    }
+    for(auto run : s.goodruns)
+        output.push_back(boost::replace_all_copy(input.at(s.analysedfile+run),
+                                                 "ridf", "root"));
 
     vector<string> transmissionout;
     for(auto run: s.transmissionrun)
-        transmissionout.push_back(runinfo::prefix + input.at(run).substr(34,9)
-                                  + ".root");
+        transmissionout.push_back(boost::replace_all_copy(input.at(run),
+                                                          "ridf", "root"));
 
     vector<string> emptyout;
     for(auto run: s.emptyrun)
-        emptyout.push_back(runinfo::prefix+input.at(run).substr(34,9)+".root");
+        emptyout.push_back(boost::replace_all_copy(input.at(run),"ridf", "root"));
 
     switch(analyse_raw){
         case 1:{ // Analyse SEASTAR-DATA
