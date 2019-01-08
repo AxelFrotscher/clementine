@@ -13,7 +13,7 @@ int setting::settingnumber = 2'000'000'000;
 int setting::eventcounts = 0;
 bool setting::istransmissionrun = false;
 bool setting::isemptyrun = false;
-const vector<std::string> setting::setname{"110Nb", "88Ge", "94Se", "100Kr"};
+const vector<std::string> setting::setname{"110Nb", "88Ge", "94Se", "100Kr", "66Cr", "70Fe", "78Ni"};
 
 void setting::loadnumbers(int i) {
     // Loading the right numbers for th right setting

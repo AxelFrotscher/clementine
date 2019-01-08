@@ -1,9 +1,13 @@
+//
+// Created by afrotscher on 1/7/19.
+//
+
 #pragma once
-#include <string>
+
 #include <vector>
 #include <iostream>
-#include <TGraph.h>
-#include "TArtEventStore.hh"
+#include "TGraph.h"
+using std::vector;
 
 struct TMinosClust{
     std::vector<double> x_mm;
@@ -16,7 +20,7 @@ struct TMinosClust{
     std::vector<double> Chi2;
 
     void add(double xmm, double ymm, double tns, double zmm, double chargemax,
-                double ncluster, double npads, double chi2){
+             double ncluster, double npads, double chi2){
         x_mm.push_back(xmm);
         y_mm.push_back(ymm);
         t_ns.push_back(tns);
@@ -28,7 +32,7 @@ struct TMinosClust{
     }
 
     void replace(double xmm, double ymm, double tns, double zmm, double chargemax,
-             double ncluster, double npads, double chi2, double index){
+                 double ncluster, double npads, double chi2, double index){
         if(index >= x_mm.size()){
             std::cout << "Replacing in TMinosClust Event " << index + 1
                       << " but only " << x_mm.size() << " Elements!!." <<std::endl;
@@ -60,7 +64,7 @@ struct TMinosResult{
     std::vector<double> Chi2;
 
     void add(double xmm, double ymm, double zmm, double chargemax,
-                 double ncluster, double npads, double chi2){
+             double ncluster, double npads, double chi2){
         x_mm.push_back(xmm);
         y_mm.push_back(ymm);
         z_mm.push_back(zmm);
@@ -93,7 +97,37 @@ struct TMinosResult{
     }
 };
 
-void generatetree(std::__cxx11::string infile, std::__cxx11::string output);
-//void progressbar(int currevent, int totevent, int offset, int barwidth=30);
+class minosana{
+public:
+    minosana(int filled_, ): filled(filled_){
 
-uint getset(TArtEventStore &estore);
+    }
+private:
+    void analyze();
+    int Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
+                         vector<double> &x_out,vector<double> &y_out,
+                         vector<double> &q_out, vector<bool> &ringbool);
+    void Hough_filter(vector<double> &x,vector<double> &y,vector<double> &z,
+                      vector<double> &q,vector<double> &x_out,vector<double> &y_out,
+                      vector<double> &z_out,vector<double> &q_out);
+    void FindStart(vector<double> pStart, vector<double> chi, vector<int> fitstatus,
+                             TGraph *grxz, TGraph *gryz);
+    double FitFunction(double *x, double *p);
+    double conv_fit(double *x, double *p);
+
+    void SumDistance1(int &, double *, double &sum, double *par, int);
+    double distancelinepoint(double &x, double &y, double &z, double *p);
+    void SumDistance2(int &, double *, double &sum, double *par, int);
+    void vertex(vector<double> &p, vector<double> &pp, double &xv,
+                          double &yv, double &zv);
+
+    vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
+
+    double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0, phi_vertex=0,
+            thetaz1=0, thetaz2=0;
+
+    int filled =0 ;
+
+    TMinosClust fitdata;
+    TMinosResult dataresult;
+};

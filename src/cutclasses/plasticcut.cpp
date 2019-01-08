@@ -148,6 +148,7 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
         cutpre.at(1) += i.at(1);
     }
 
+    progressbar finishcondition;
     vector<thread> th;
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
@@ -158,7 +159,6 @@ void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
 
     for (auto &i: th) i.detach();
 
-    progressbar finishcondition;
     while(finishcondition.ongoing()) finishcondition.draw();
 
     vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr"};

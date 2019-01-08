@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <thread>
 #include <fstream>
+#include <vector>
 #include <boost/algorithm/string.hpp>
 #include "libconstant.h"
 
@@ -58,6 +59,7 @@ int main(int argc, char**argv){
                                                           "ridf", "root"));
 
     vector<string> emptyout;
+
     for(auto run: s.emptyrun)
         emptyout.push_back(boost::replace_all_copy(input.at(run),"ridf", "root"));
 

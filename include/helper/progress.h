@@ -33,11 +33,14 @@ public:
 private:
     void initstatics();
 
-    static std::vector <int> currevt;
+    static std::vector <int> currevt; // current progress on the matter
+
+    static std::vector <int> lastevent; // progress on last draw() call
+    static long int lasttime; // in milliseconds
+
     static const int constadd = 10;
     static const int barwidth = 30;
     static const int displaythreads = 7;
-    static const int updateinterval = 1; // s
     static std::atomic<int> currentthreads;  // current working (displayed) threads
     static std::mutex currevtmutex;
     bool worker = true ; // Defines a thread to be displayed

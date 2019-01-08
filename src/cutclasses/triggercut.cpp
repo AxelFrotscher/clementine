@@ -63,6 +63,7 @@ void triggercut::analyse(const vector<string> input){
     vector<string> keys{"EventInfo.fBit"};
     for(auto &i:tree) i->setloopkeys(keys);
 
+    progressbar finishcondition;
     vector<thread> th;
     for(uint i=0; i<threads;i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
@@ -74,7 +75,6 @@ void triggercut::analyse(const vector<string> input){
     for(auto &t : th) t.detach();
 
     // Setup synchronization class
-    progressbar finishcondition;
     while(finishcondition.ongoing()) finishcondition.draw();
 
     int cutout = 0;

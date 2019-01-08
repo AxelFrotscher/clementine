@@ -15,7 +15,7 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 include(${ROOT_USE_FILE})
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        /home/afrotscher/soft/anaroot/anarootv4.5.36/include
+        /home/afrotscher/soft/anaroot/anarootest/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/cutclasses
         ${CMAKE_CURRENT_SOURCE_DIR}/include/corrections
         ${CMAKE_CURRENT_SOURCE_DIR}/include/helper)
@@ -37,7 +37,7 @@ add_executable(${PROJECT_NAME} main.cpp
         src/helper/txtwriter.cpp
         src/helper/zdssetting.cpp)
 target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread -lMinuit
--L/home/afrotscher/soft/anaroot/anarootv4.5.36/lib -lanaroot -lanacore -lanabrips -lanadali -lanaminos -lXMLParser
+-L/home/afrotscher/soft/anaroot/anarootest/lib -lanaroot -lanacore -lanabrips -lanadali -lanaminos -lXMLParser
 -L/home/afrotscher/soft/minos/minosv1.1.1/install/pentium-linux-release/lib -lminos-fem
 -lmordicus-utl -lUtilities
         -L/home/afrotscher/soft/minos/liboffline -lminos ${ROOT_LIBRARIES})

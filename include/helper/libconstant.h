@@ -9,7 +9,8 @@ namespace runinfo{
     const std::vector<int> transsize = {395'267,
                                         356'843,
                                         0,
-                                        1'026'943};    // Runs containing this number are transmission
+                                        1'026'943, // Runs containing this number are transmission
+                                        31'716};
     const std::vector<int> emptysize = {513'225,
                                         0,  // no empty run for this setting
                                         1'265'431,  // no empty run here either
@@ -23,6 +24,7 @@ namespace runinfo{
             {{480,620},{700,920},{220,330},{270,1510}},
             {{337,520},{450,750},{220,330},{330,1200}},
             {{350,550},{450,800},{215,380},{350,1100}},
+            {{375,575},{450,850},{215,400},{350,1200}},
             {{375,575},{450,850},{215,400},{350,1200}}
     };
 
@@ -37,7 +39,8 @@ namespace runinfo{
         {"93BrP2P","94BrP2P","95BrP2P","94KrP2P","95KrP2P","96KrP2P","97RbP2P",
          "93BrP3P","94BrP3P","95BrP3P","94KrP3P","95KrP3P","96KrP3P","97RbP3P"},
         {"99RbP2P","100RbP2P","100SrP2P","101SrP2P","102SrP2P","102YP2P","103YP2P",
-         "99RbP3P","100RbP3P","100SrP3P","101SrP3P","102SrP3P","102YP3P","103YP3P"}};
+         "99RbP3P","100RbP3P","100SrP3P","101SrP3P","102SrP3P","102YP3P","103YP3P"},
+        {}};
 
     const std::vector<double> tottransmission{ 0.8177,0.9106,0.898,0.8848};
     const std::vector<double> tottransmissionerror;
@@ -194,7 +197,8 @@ namespace nancytrans{
         {{2.6429, 41.91, 0.008, 0.6}, {2.6460, 40.343, 0.010, 0.5}}, //85Ge
         {{2.6509, 34.00, 0.007, 0.6}, {2.6629, 33.354, 0.012, 0.6}}, //90Se
         {{0, 0, 0, 0}, {0, 0, 0, 0}},
-        {{2.6876, 38.00, 0.007, 0.6}, {2.6937, 37.554, 0.013, 0.6}} // 102Sr
+        {{2.6876, 38.00, 0.007, 0.6}, {2.6937, 37.554, 0.013, 0.6}}, // 102Sr
+        {{0, 0, 0, 0}, {0, 0, 0, 0}},
     };
 
     const std::vector<calibpar> hoparame{
@@ -242,7 +246,18 @@ namespace nancytrans{
           0,                // F11linF11X +
           3.16E-6,          // F11linF11A +
           cutval[3][1][0]}, // F11absF9X0
-         };
+        { 2.688,            // F7absF5X   + // 66Cr
+         -4.472E-5,         // F7linF5X   +
+          9.028E-5,         // F7linF5A   +
+         -0.000'212'6,      // F7linF3X   +
+          cutval[3][0][0],  // F7absF5X0
+          2.695,            // F11absF9X  +
+         -8.14E-5,          // F11linF9X  +
+         -0.000'160'2,      // F11linF9A  +
+          0,                // F11linF11X +
+          3.16E-6,          // F11linF11A +
+          cutval[3][1][0]}, // F11absF9X0
+    };
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
     // center x centery radius x radius y

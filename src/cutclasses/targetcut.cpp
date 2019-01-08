@@ -123,6 +123,7 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
     int cutpre =  0;
     for(auto &i:goodevents) cutpre += i.at(0);
 
+    progressbar finishcondition;
     vector<thread> th;
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
@@ -133,7 +134,6 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
 
     for (auto &i: th) i.detach();
 
-    progressbar finishcondition;
     while(finishcondition.ongoing()) finishcondition.draw();
 
     int cutafter = 0;
@@ -146,5 +146,4 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
     output->cd("Target");
     for(auto hist: tarhist) hist.Write();
     output->cd("");
-
 }
