@@ -12,43 +12,10 @@
 #include <numeric>
 #include "zdssetting.h"
 
-using namespace std;
+using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_string,
+      std::__throw_invalid_argument;
 
 calibpar p1;
-
-/*void dalicalib(treereader *tree, TFile *output){
-    // This Method aims to calibrate the 187 detectors of DALI
-    printf("Now beginning the Calibration of the NaI crystals... \n");
-
-    vector<string> keys{"DALINaI", "DALINaI.fADC", "DALINaI.id"};
-    tree->setloopkeys(keys);
-
-    TH2D gammadetectors("dalispectra", "Spectrum of each Gamma Detector",
-                        186,0,186,4096,0,4096);
-    gammadetectors.SetOption("colz");
-    gammadetectors.GetXaxis()->SetTitle("Detector Number");
-    gammadetectors.GetYaxis()->SetTitle("ADC Channel");
-
-    int numdet =0;
-
-    // Progress Bar setup
-    int currevt=0; // counting variable
-
-    while(tree->singleloop()){
-        numdet = tree->DALINaI_;
-        for(int i=0; i<numdet;i++){
-            if(tree->DALINaI_fADC[i]) gammadetectors.Fill(tree->DALINaI_id[i],
-                tree->DALINaI_fADC[i]);
-        }
-        currevt++;
-    }
-
-    output->mkdir("DALI");
-    output->cd("DALI");
-    gammadetectors.Write();
-    output->cd("");
-    printf("\nFinished DALI Calibration.\n");
-}*/
 
  void makehistograms(const vector<string> input) {
     // Generating an outputfile that matches names with the input file
@@ -74,7 +41,7 @@ calibpar p1;
     const string modename = set.getmodename();
 
     auto gentxt = [input, settingname, modename](auto suffix){ // lambda to generate expression
-        return "build/output/"+ settingname + "_" + modename + "_" +
+        return "output/"+ settingname + "_" + modename + "_" +
                input.at(0).substr(34,9) + "hist" + to_string(input.size()) + suffix;
     };
 

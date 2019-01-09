@@ -131,12 +131,10 @@ void treereader::Init(TTree *tree){
     // (once per file to be processed).
 
     // Set object pointer
-    MinosClustX = 0;
-    MinosClustY = 0;
-    MinosClustQ = 0;
-    parFit_1 = 0;
-    parFit_2 = 0;
-    Minoscalibvalues = 0;
+    MinosClustX = nullptr;
+    MinosClustY = nullptr;
+    MinosClustQ = nullptr;
+    Minoscalibvalues = nullptr;
 
     // Set branch addresses and branch pointers
     if (!tree) return;
@@ -303,8 +301,6 @@ void treereader::Init(TTree *tree){
     fChain->SetBranchAddress("MinosClustQ", &MinosClustQ, &b_MinosClustQ);
     fChain->SetBranchAddress("VDrift", &VDrift, &b_MINOS_VDrift);
     fChain->SetBranchAddress("DelayTrig", &DelayTrig, &b_DelayTrigger);
-    fChain->SetBranchAddress("parFit_1", &parFit_1, &b_parFit_1);
-    fChain->SetBranchAddress("parFit_2", &parFit_2, &b_parFit_2);
     fChain->SetBranchAddress("Trackamount", &Trackamount, &b_Trackamount);
     fChain->SetBranchAddress("Minoscalibvalues", &Minoscalibvalues, &b_Minoscalibvalues);
     fChain->SetBranchAddress("TimeBinElec", &TimeBinElec, &b_TimeBinElec);

@@ -9,8 +9,10 @@
 #include <Math/Vector3D.h>
 #include "minos.h"
 #include "TH2F.h"
+#include <numeric>
 
-using std::vector, std::cerr, std::cout, std::endl, std::min, std::max;
+using std::vector, std::cerr, std::cout, std::endl, std::min, std::max,
+      std::accumulate;
 
 void minosana::analyze() {
     /// MINOS 2. Modify with hough-transformation

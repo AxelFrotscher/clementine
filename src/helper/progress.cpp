@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
+#include <TString.h>
 
 using namespace std;
 
@@ -21,7 +22,7 @@ atomic<int> progressbar::currentthreads;
 atomic<bool> progressbar::ongoinganalysis;
 vector<int> progressbar::lastevent;
 long int progressbar::lasttime;
-
+int progressbar::barwidth = 100;
 
 void progressbar::draw(){
     // Worker Instances must not draw anything
@@ -41,7 +42,7 @@ void progressbar::draw(){
             else if (j==pos.at(i)) stream << ">";
             else                   stream << " ";
         }
-        stream << "] " << max(int(100.*currevt.at(i)/totevent.at(i)),0) << "% ";
+        stream << "] ";
 
         string pstr = stream.str(); // Put out string for insertion of speed
 
@@ -53,12 +54,14 @@ void progressbar::draw(){
                                           (thistime-lasttime);
 
         // Replace with speed so that it doesnt block
-        string stringspeed = " " + std::to_string(speed) + "/s ";
-        if(barwidth - pos.at(i) > (stringspeed.size() +1))
-            pstr.replace(barwidth-stringspeed.size()+1, stringspeed.size(),
-                         stringspeed);
-        else if(pos.at(i) > (stringspeed.size() +3))
-            pstr.replace(2, stringspeed.size(), stringspeed);
+        string strsp = " " + to_string(speed) + "/s " +
+                       Form("%.1f", max((int(1000.*currevt.at(i)/totevent.at(i)))/10.,0.)) +
+                       "% ";
+        if(barwidth - pos.at(i) > (strsp.size() +1))
+            pstr.replace(barwidth-strsp.size()+1, strsp.size(),
+                         strsp);
+        else if(pos.at(i) > (strsp.size() +3))
+            pstr.replace(2, strsp.size(), strsp);
 
         cout << pstr;
         lastevent.at(i) = currevt.at(i); // Replace value for next draw() call
@@ -70,7 +73,10 @@ void progressbar::draw(){
     lasttime = chrono::duration_cast<chrono::milliseconds>(
             chrono::steady_clock::now().time_since_epoch()).count();
 
-    if(currentthreads>1) this_thread::sleep_for(1s);
+    if(currentthreads>1){
+        barwidth = 30;
+        this_thread::sleep_for(1s);
+    }
 }
 
 void progressbar::reset() {

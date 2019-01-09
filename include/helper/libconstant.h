@@ -335,14 +335,14 @@ namespace nancyempty{
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
     const std::vector<std::vector<double>> incval{
-            {2.706, 41.0, 0.009, 0.5},
+            {2.681, 41.0, 0.009, 0.5},
             {2.6510, 34.00, 0.008, 0.6},
             {2.717,35.00, 0.007,0.6},
             {2.7328, 37.00,0.006,0.6}
     };
 
     const std::vector<std::vector<double>> targetval{
-            {2.750, 39.27, 0.011, 0.6, 1},
+            {2.725, 39.22, 0.011, 0.6, 1},
             {2.663, 33.302, 0.012, 0.65, 1},
             {2.76, 33.22, 0.012, incval.at(2).at(3), 1},
             {2.7759,35.212,0.012,0.6, 1}

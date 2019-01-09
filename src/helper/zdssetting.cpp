@@ -130,7 +130,7 @@ TCutG* setting::getbrhocut() {
         return "brhocut" + str + setname.at(settingnumber);};
 
     // Get Cut
-    TFile cutfile("config/cut.root");
+    TFile cutfile("../config/cut.root");
     if(!(cutfile.IsOpen())) std::__throw_invalid_argument(
             "Could not open cut file at config/cut.root\n");
 

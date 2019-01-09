@@ -9,10 +9,10 @@
 #include <numeric>
 #include "zdssetting.h"
 
-using namespace std;
+using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
-void plasticcut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
-                             &goodevents, std::vector<uint> range) {
+void plasticcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
+                             &goodevents, vector<uint> range) {
     // Step 1: cloning histograms
     vector<TH1D> _qcorr;
     vector<TH2D> _qcorr2D;
@@ -75,7 +75,7 @@ void plasticcut::innerloop(treereader *tree, std::vector<std::vector<std::atomic
     progress.reset();
 }
 
-void plasticcut::analyse(const std::vector<std::string> input, TFile *output) {
+void plasticcut::analyse(const vector<string> input, TFile *output) {
     vector<TChain*> chain;
     for(int i=0; i<threads; i++){
         chain.emplace_back(new TChain("tree"));

@@ -13,11 +13,11 @@
 #include "zdssetting.h"
 #include <sstream>
 
-using namespace std;
+using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
+      std::stringstream, std::to_string, std::__throw_invalid_argument, std::min;
 
-void PID::innerloop(treereader *tree,
-                    std::vector<std::vector<std::atomic<bool>>> &goodevents,
-                    std::vector<uint> range) {
+void PID::innerloop(treereader *tree, vector<vector<atomic<bool>>> &goodevents,
+                    vector<uint> range) {
     // Step 1: duplicate the data structure
     vector<TH1D>         _reactF5;
     vector<vector<TH2D>> _reactPPAC;
@@ -525,7 +525,6 @@ void PID::histogramsetup() {
     brt2.emplace_back(TH1D("F11brhostd", "F11X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
     brhoprojection.emplace_back(brt1);
     brhoprojection.emplace_back(brt2);
-
 
     for(int j=0; j<4; j++){
         vector<TH2D> temp;

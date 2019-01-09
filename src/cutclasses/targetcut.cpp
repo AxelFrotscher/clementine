@@ -8,10 +8,10 @@
 #include <thread>
 #include <numeric>
 
-using namespace std;
+using std::vector, std::cout, std::endl, std::atomic, std::string, std::thread;
 
-void targetcut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
-                            &goodevents, std::vector<uint> range) {
+void targetcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
+                            &goodevents, vector<uint> range) {
     //Step 1: Cloning histograms
     vector<TH2D> _tarhist;
     for(auto &i:tarhist) _tarhist.emplace_back(TH2D(i));

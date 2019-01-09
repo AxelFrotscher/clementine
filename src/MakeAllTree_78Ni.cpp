@@ -26,11 +26,9 @@
 R__LOAD_LIBRARY(libanacore.so)
 R__LOAD_LIBRARY(libminos.so)
 
-using namespace std;
-
-// Create output values for minos by hand -.-
-TMinosClust fitdata;
-TMinosResult dataresult;
+using std::cout, std::endl, std::string, std::vector,
+      std::__throw_invalid_argument, std::ifstream, std::stringstream, std::max,
+      std::__throw_bad_function_call;
 
 void generatetree(const string infile, const string output) {
     //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
@@ -51,10 +49,10 @@ void generatetree(const string infile, const string output) {
     // parameters from ".xml" files
     TArtBigRIPSParameters para;
     vector<vector<string>> parameterfiles{
-            {"config/db2014/BigRIPSPPAC.xml", "config/db2014/BigRIPSPlastic.xml",
-             "config/db2014/BigRIPSIC.xml",   "config/db2014/FocalPlane.xml"},
-            {"config/db/BigRIPSPPAC.xml",     "config/db/BigRIPSPlastic.xml",
-             "config/db/BigRIPSIC.xml",       "config/db/FocalPlane.xml"}};
+        {"../config/db2014/BigRIPSPPAC.xml", "../config/db2014/BigRIPSPlastic.xml",
+         "../config/db2014/BigRIPSIC.xml",   "../config/db2014/FocalPlane.xml"},
+        {"../config/db/BigRIPSPPAC.xml",     "../config/db/BigRIPSPlastic.xml",
+         "../config/db/BigRIPSIC.xml",       "../config/db/FocalPlane.xml"}};
 
     for (auto i : parameterfiles.at(setting)) {
         if (!para.LoadParameter(&i[0])) __throw_invalid_argument(&i[0]);
@@ -77,11 +75,11 @@ void generatetree(const string infile, const string output) {
     const vector<int> focalplanes{3, 5, 7, 8, 9, 11};
 
     vector<vector<string>> mfil{  // matrixfiles
-            {"config/matrix/mat1.mat",                   "D3"},    // F3 - F5 => D3
-            {"config/matrix/mat2.mat",                   "D5"},    // F5 - F7 => D5
-            {"config/matrix/F8F9_LargeAccAchr.mat",      "D7"},    // F8 - F9 => D7
-            {"config/matrix2014/F9F11_LargeAccAchr.mat", "D8"},// F9-F11 => D8
-            {"config/matrix/F9F11_LargeAccAchr.mat",     "D8"}};   // F9 - F11=> D8
+        {"../config/matrix/mat1.mat",                   "D3"},  // F3 - F5 => D3
+        {"../config/matrix/mat2.mat",                   "D5"},  // F5 - F7 => D5
+        {"../config/matrix/F8F9_LargeAccAchr.mat",      "D7"},  // F8 - F9 => D7
+        {"../config/matrix2014/F9F11_LargeAccAchr.mat", "D8"},  // F9-  F11=> D8
+        {"../config/matrix/F9F11_LargeAccAchr.mat",     "D8"}}; // F9 - F11=> D8
 
     vector<TArtRIPS *> rips{
             recopid.DefineNewRIPS(3, 5, &mfil[0][0][0], &mfil[0][1][0]),
@@ -112,12 +110,13 @@ void generatetree(const string infile, const string output) {
         recopid.DefineNewBeam(rips[3], tof[1], (char *) "F11IC"),          //zd_911
         recopid.DefineNewBeam(rips[2], rips[3], tof[1], (char *) "F11IC")};//zd_811
 
-    // Create Minos
-    TArtMINOSParameters setup("MINOSParameters", "MINOSParameters");
-    vector<string> minosparameters{"config/db2014/MINOS.xml", "config/db/MINOS.xml"};
-    setup.LoadParameters(&minosparameters.at(setting)[0]);
+    // Create Minos, TArtMINOSPar Class too incompetent to handle regular construction
+    auto setup = new TArtMINOSParameters("MINOSParameters", "MINOSParameters");
+    vector<string> minosparameters{"../config/db2014/MINOS.xml",
+                                   "../config/db/MINOS.xml"};
+    setup->LoadParameters(&minosparameters.at(setting)[0]);
 
-    TArtCalibMINOS minoscalib;
+    auto minoscalib = new TArtCalibMINOS; // regular construction yields double free
 
     // Create TTree and output file for it
     TFile fout(output.c_str(), "RECREATE");
@@ -150,20 +149,16 @@ void generatetree(const string infile, const string output) {
 
     if(!fbitarray) __throw_bad_function_call();
     //Making new branches
-
-    tree->Branch("MinosClustX", &fitdata.x_mm);
-    tree->Branch("MinosClustY", &fitdata.y_mm);
-    tree->Branch("MinosClustQ", &fitdata.Chargemax);
+    vector<double> Xpad, Ypad, Qpad;
+    tree->Branch("MinosClustX", &Xpad);
+    tree->Branch("MinosClustY", &Ypad);
+    tree->Branch("MinosClustQ", &Qpad);
 
     double VDrift = 0.03786,          // in cm/(1E-6*s)
            DelayTrigger = 2055,    // in ns both Values from
            Stoptime = 9980;        //       ConfigMINOSDirft_fixed.txt
     tree->Branch("VDrift", &VDrift, "MINOS.VDrift/D");
     tree->Branch("DelayTrig", &DelayTrigger, "DelayTrigger/D");
-
-    vector<double> par1, par2;
-    tree->Branch("parFit_1", &par1);
-    tree->Branch("parFit_2", &par2);
 
     int filled; // Number of tracks measured
     tree->Branch("Trackamount", &filled);
@@ -173,11 +168,11 @@ void generatetree(const string infile, const string output) {
 
     //Parameters for MINOS analysis
     double minosthresh = 25, TimeBinElec = 30, Tshaping = 333;
-    ifstream minosconfigfile;
-    minosconfigfile.open("config/db/ConfigMINOSDrift_fixed.txt");
+    ifstream minosconfigfile("../config/db/ConfigMINOSDrift_fixed.txt");
+    //minosconfigfile.open("config/db/ConfigMINOSDrift_fixed.txt");
     if(!minosconfigfile.is_open())__throw_invalid_argument("Could not open "
-                                        "config/db/ConfigMINOSDrift_fixed.txt");
-    string trash;
+                                     "../config/db/ConfigMINOSDrift_fixed.txt");
+    string trash = " ";
     getline(minosconfigfile, trash);
     minosconfigfile >> minosthresh >> TimeBinElec >> Tshaping;
     getline(minosconfigfile, trash);
@@ -233,7 +228,7 @@ void generatetree(const string infile, const string output) {
 
     // Progress Bar setup
     int neve = 0; // counting variable
-    uint totevents = 5000; //50000
+    uint totevents = 5000000; //50000
     const int downscale = 1000; // every n-th event
 
     progressbar progress(totevents, 0);
@@ -310,21 +305,18 @@ void generatetree(const string infile, const string output) {
         //cout << EventInfo_FBIT << endl;
 
         ////////////////////////////////// Making MINOS ////////////////////////
-        minoscalib.ClearData();
-        minoscalib.ReconstructData();
-        // Convert the reconstructed vertex in z (mm)
-        //z_vertex = (minosvertex.GetZv()*TimeBinElec - DelayTrigger)*1e-3*VDrift*10;
-        //time bin*(ns/us)*vdrift(cm/us)*(mm/cm)
+        minoscalib->ClearData();
+        minoscalib->ReconstructData();
 
         /// MINOS 1. Filling vectors with (x,y) data ///////////////////////////
-        vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
         filled = 0; // Number of tracks
-        fitdata.reset();
-        dataresult.reset();
+        Xpad.clear();
+        Ypad.clear();
+        Qpad.clear();
         minoscalibvalues.clear();
         auto *minos = new TArtCalibMINOSData;
-        for(int i=0; i<minoscalib.GetNumCalibMINOS(); i++){
-            minos = minoscalib.GetCalibMINOS(i);
+        for(int i=0; i<minoscalib->GetNumCalibMINOS(); i++){
+            minos = minoscalib->GetCalibMINOS(i);
             minoscalibvalues.push_back(*minos->GetCalibValueArray());
 
             double maxcharge =0;
@@ -356,6 +348,8 @@ void generatetree(const string infile, const string output) {
     fout.Write();
     fout.Close();
     printf("Writing TTree complete!\n");
+
+    //std::abort(); // "Fixing" dirty cleanup from MINOS
 }
 
 uint getset(TArtEventStore &estore){

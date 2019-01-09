@@ -38,8 +38,7 @@ private:
     static std::vector <int> lastevent; // progress on last draw() call
     static long int lasttime; // in milliseconds
 
-    static const int constadd = 10;
-    static const int barwidth = 30;
+    static int barwidth;
     static const int displaythreads = 7;
     static std::atomic<int> currentthreads;  // current working (displayed) threads
     static std::mutex currevtmutex;

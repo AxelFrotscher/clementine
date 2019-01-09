@@ -196,8 +196,6 @@ public :
     vector<double>  *MinosClustQ;
     Double_t        VDrift;
     Double_t        DelayTrig;
-    vector<double>  *parFit_1;
-    vector<double>  *parFit_2;
     Int_t           Trackamount;
     vector<vector<double> > *Minoscalibvalues;
     Double_t        TimeBinElec;
@@ -380,8 +378,6 @@ public :
     TBranch        *b_MinosClustQ;   //!
     TBranch        *b_MINOS_VDrift;   //!
     TBranch        *b_DelayTrigger;   //!
-    TBranch        *b_parFit_1;   //!
-    TBranch        *b_parFit_2;   //!
     TBranch        *b_Trackamount;   //!
     TBranch        *b_Minoscalibvalues;   //!
     TBranch        *b_TimeBinElec;   //!

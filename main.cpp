@@ -8,10 +8,12 @@
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include "libconstant.h"
+#include "TArtStoreManager.hh"
 
 R__LOAD_LIBRARY(libanacore.so)
 
-using namespace std;
+using std::vector, std::string, std::ifstream, std::cout, std::endl, std::cerr,
+      std::cin, std::invalid_argument, std::__throw_invalid_argument;
 
 vector<string> getlist(const char *instring){
     // read in the file list for all .rdif's
@@ -39,7 +41,7 @@ int main(int argc, char**argv){
 
     // Step 1: analyse the raw data
     //const uint analysedfile = 57; // 57 Index of analysed file (first, offset)
-    const vector<string> input = getlist("config/minosridf.txt");
+    const vector<string> input = getlist("../config/minosridf.txt");
 
     printf("Which Setting do you want to analyse?\n"
            "[0] 110Nb \n[1] 88Ge \n[2] 94Se \n[3] 100Kr\n[4] 66Cr\n[5] 70Fe\n"
@@ -90,12 +92,23 @@ int main(int argc, char**argv){
                 }
                 case 2:{
                     cout << "Which physicsrun? [0-"<< s.goodruns.size()-1
-                         <<"] " << endl;
+                         <<"], [" << s.goodruns.size() << "] = all" << endl;
                     if(!(cin >> i)) throw invalid_argument("WTH");
+                    if(i == s.goodruns.size()){
+                        cout << "Analyze ALL the events" << endl;
+                        for(int j=0; j<s.goodruns.size(); j++){
+                            //Delete inernal static storage of master class
+                            auto man = TArtStoreManager::Instance();
+                            delete man;
+                            generatetree(input.at(s.analysedfile+s.goodruns.at(j)),
+                                      output.at(j));
+                        }
+                        break;
+                    }
                     cout << "(Empty) Analyzing SEASTAR:"
                          << input.at(s.analysedfile+s.goodruns.at(i)) << endl;
-                    generatetree(input.at(s.analysedfile+s.goodruns.at(i)),
-                                 output.at(i));
+                    {generatetree(input.at(s.analysedfile+s.goodruns.at(i)),
+                                 output.at(i));}
                     break;
                 }
                 default: __throw_invalid_argument("Option not available\n");
