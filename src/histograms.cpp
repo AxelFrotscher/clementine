@@ -51,6 +51,7 @@ calibpar p1;
     txtwriter writetotxt(gentxt(".txt")); // Writer class
 
      { // Make everything go out of scope to prevent memory overflow
+         cout << "Making cuts..." << endl;
          triggercut(input, goodevents);
          ccsc(input, goodevents, outputfile);
          targetcut(input, goodevents, outputfile);

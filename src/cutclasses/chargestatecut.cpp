@@ -30,7 +30,8 @@ void ccsc::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>
             brhoratio = tree->BigRIPSBeam_brho[3]/tree->BigRIPSBeam_brho[2];
             _cschist.at(0).Fill(brhoratio, tree->BigRIPSBeam_brho[2]);
 
-            if(mycut.at(threadno)->IsInside(brhoratio,tree->BigRIPSBeam_brho[2])){
+            if(mycut.at(threadno) &&
+               mycut.at(threadno)->IsInside(brhoratio,tree->BigRIPSBeam_brho[2])){
                 _cschist.at(1).Fill(brhoratio,tree->BigRIPSBeam_brho[2]);
             }
             else goodevents.at(i).at(1).exchange(false);

@@ -14,22 +14,24 @@ namespace runinfo{
     const std::vector<int> emptysize = {513'225,
                                         0,  // no empty run for this setting
                                         1'265'431,  // no empty run here either
-                                        865'630};    // Empty-target measurement
+                                        865'630,
+                                        0};          // Empty-target measurement
     const std::vector<int> fulldata  = {36'004'149,
                                         8'051'865,
                                         38'803'327,
-                                        58'865'437}; // // full physics run
+                                        58'865'437,
+                                        2'072'418}; // // full physics run
 
     const std::vector<std::vector<std::vector<int>>> plasticrange{
             {{480,620},{700,920},{220,330},{270,1510}},
             {{337,520},{450,750},{220,330},{330,1200}},
             {{350,550},{450,800},{215,380},{350,1100}},
             {{375,575},{450,850},{215,400},{350,1200}},
-            {{375,575},{450,850},{215,400},{350,1200}}
+            {{850,1250},{450,800},{320,550},{250,1500}}
     };
 
     const std::vector<std::vector<uint>> pidZrange{
-        {200,36,46},{200,28,38},{200,29,39},{200,31,41}}; // y boundaries
+        {200,36,46},{200,28,38},{200,29,39},{200,31,41}, {200,21,31}}; // y boundaries
 
     const std::vector<std::vector<std::string>> reactionmodes{
         {"110NbP0P", "111NbP2P","110NbP2P","110MoP3P","111MoP3P","112MoP3P",
@@ -40,7 +42,7 @@ namespace runinfo{
          "93BrP3P","94BrP3P","95BrP3P","94KrP3P","95KrP3P","96KrP3P","97RbP3P"},
         {"99RbP2P","100RbP2P","100SrP2P","101SrP2P","102SrP2P","102YP2P","103YP2P",
          "99RbP3P","100RbP3P","100SrP3P","101SrP3P","102SrP3P","102YP3P","103YP3P"},
-        {}};
+        {"88GeP0P"}}; // test
 
     const std::vector<double> tottransmission{ 0.8177,0.9106,0.898,0.8848};
     const std::vector<double> tottransmissionerror;
@@ -265,6 +267,7 @@ namespace nancytrans{
         {2.681, 41.0, 0.009, 0.6},  //110Nb
         {2.701, 33.00, 0.007, 0.6}, // 89As
         {0.,0.,0.,0.},   // cut value should match centered beam nuclide
+        {2.7333,37.00,0.006,0.6},  // 101Rb
         {2.7333,37.00,0.006,0.6}  // 101Rb
     };
 
@@ -273,6 +276,7 @@ namespace nancytrans{
         {2.7122, 32.328, 0.012, 0.65, 1}, // 89As
         {0.,0.,0.,0., 1},
         {2.7383, 36.571, 0.012, incval.at(3).at(3), 1}, //101Rb
+        {2.7383, 36.571, 0.012, incval.at(3).at(3), 1},
     };
 }
 

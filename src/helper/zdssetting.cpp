@@ -7,7 +7,7 @@
 #include "zdssetting.h"
 #include "libconstant.h"
 
-using std::vector;
+using std::vector, std::cout, std::endl, std::string;
 
 int setting::settingnumber = 2'000'000'000;
 int setting::eventcounts = 0;
@@ -53,9 +53,10 @@ void setting::loadnumbers(int i) {
         }
         case 4:{ //66Cr
             analysedfile = 277;
-            goodruns = vector<uint>{38,40,41,42,43,44,45,46,47,48,49,50,51,52,53,
-                                    54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,
-                                    69};
+            goodruns = vector<uint>{38};//,
+                                    //40,41,42,43,44,45,46,47,48,49,50,51,52,53,
+                                    //54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,
+                                    //69};
             transmissionrun = vector<uint>{299};
             emptyrun = vector<uint>{279};
             break;
@@ -112,16 +113,30 @@ void setting::checkphysicsrun() {
 
 const std::vector<std::vector<double>> setting::getHOcutval() {
     // Get the right cut values to perform a linear correction
-    if (istransmissionrun) return nancytrans::cutval.at(settingnumber);
-    if (isemptyrun) return nancyempty::cutval.at(settingnumber);
-    return nancy::cutval.at(settingnumber);
+    if (istransmissionrun && (settingnumber < nancytrans::cutval.size()))
+        return nancytrans::cutval.at(settingnumber);
+    if (isemptyrun && (settingnumber < nancyempty::cutval.size()))
+        return nancyempty::cutval.at(settingnumber);
+    if(settingnumber < nancy::cutval.size())
+        return nancy::cutval.at(settingnumber);
+
+    cout << "WARNING: No HO-Cutvals for Setting " << settingnumber << " using"
+            " Setting 0" << endl;
+    return nancy::cutval.at(0);
 }
 
 const calibpar setting::getHOparameters() {
     // Get the right linear parameters
-    if (istransmissionrun) return nancytrans::hoparame.at(settingnumber);
-    if (isemptyrun) return nancyempty::hoparame.at(settingnumber);
-    return nancy::hoparame.at(settingnumber);
+    if (istransmissionrun && (settingnumber < nancytrans::hoparame.size()))
+        return nancytrans::hoparame.at(settingnumber);
+    if (isemptyrun && (settingnumber < nancyempty::hoparame.size()))
+        return nancyempty::hoparame.at(settingnumber);
+    if(settingnumber < nancy::hoparame.size())
+        return nancy::hoparame.at(settingnumber);
+
+    cout << "WARNING: No HO-Parameters for Setting " << settingnumber << " using"
+            " Setting 0" << endl;
+    return nancy::hoparame.at(0);
 }
 
 TCutG* setting::getbrhocut() {
@@ -143,22 +158,44 @@ TCutG* setting::getbrhocut() {
     if ((TCutG*)cutfile.Get(nam("data").c_str()) != nullptr)
         return (TCutG*)cutfile.Get(nam("data").c_str());
 
-    std::__throw_invalid_argument("Could not load cut from file!\n");
+    cout << "WARNING! Couldn't load cut for " << setname.at(settingnumber) << endl;
+    return nullptr;
 }
 
 const vector<vector<int>> setting::getPlasticRange() {
     // Getting the right Parameter
-    return runinfo::plasticrange.at(settingnumber);
+    if(settingnumber < runinfo::plasticrange.size()) {
+        return runinfo::plasticrange.at(settingnumber);
+    }
+    else{
+        cout << "WARNING: Plastic Ranges for Setting: " << settingnumber <<
+                "not implemented. Return numbers for Setting 0" << endl;
+        return runinfo::plasticrange.at(0);
+    }
 }
 
 const vector<uint> setting::getZrange() {
     // Getting the correct Z Range for the settings
-    return runinfo::pidZrange.at(settingnumber);
+    if(settingnumber < runinfo::pidZrange.size()) {
+        return runinfo::pidZrange.at(settingnumber);
+    }
+    else{
+        cout << "WARNING: PID Z-Ranges for Setting: " << settingnumber <<
+             "not implemented. Return numbers for Setting 0" << endl;
+        return runinfo::pidZrange.at(0);
+    }
 }
 
 const vector<std::string> setting::getreactions() {
     // Determine the reactions to calculate for the settings
-    return runinfo::reactionmodes.at(settingnumber);
+    if(settingnumber < runinfo::reactionmodes.size()) {
+        return runinfo::reactionmodes.at(settingnumber);
+    }
+    else{
+        cout << "WARNING: Reactions for Setting: " << settingnumber <<
+             "not implemented. Return generic 88GeP0P" << endl;
+        return vector<string>{"88GeP0P"};
+    }
 }
 
 const vector<double> setting::getPIDincutvalue() {

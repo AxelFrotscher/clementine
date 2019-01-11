@@ -488,7 +488,7 @@ void PID::histogramsetup() {
     // Nasty histogram setup routine
     setting set;
     const vector<uint> y = set.getZrange(); // y boundaries
-    const vector<double> x{400, 2.55, 2.85};  // xbins, lower x, upper x
+    const vector<double> x{467, 2.50, 2.85};  // xbins, lower x, upper x
 
     vector<TH2D> temp1, temp2;
     vector<vector<string>> t1s = {{"pidinc", "PID Incoming F3-F7"},

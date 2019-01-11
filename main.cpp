@@ -33,8 +33,8 @@ int main(int argc, char**argv){
     ROOT::EnableThreadSafety();
 
     // The Scope of this project is to analyse the 2015 SEASTAR
-    printf("Welcome to the analysis program for 2015 SEASTAR DATA\n"
-           "Would you like to analyse a raw file first? \n"
+    printf("Welcome to the analysis program for 2014/2015 SEASTAR DATA\n"
+           "Would you like to analyse a .ridf file first? \n"
            " (1) yes or (0) no: ");
     int analyse_raw = 0;
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
@@ -74,13 +74,15 @@ int main(int argc, char**argv){
 
             switch(i){
                 case 0:{
-                    cout << "Which emptyrun? [0-" << s.emptyrun.size()-1 << "] "
+                    cout << "Analyzing emptyrun [0-" << s.emptyrun.size()-1 << "] "
                          << endl;
-                    if(!(cin >> i)) throw invalid_argument("WTH");
-                    cout << "(Empty) Analyzing SEASTAR:"
-                         << input.at(s.emptyrun.at(i)) << endl;
-                    generatetree(input.at(s.emptyrun.at(i)),
-                                 emptyout.at(i));
+                    for(int i=0; i<s.emptyrun.size(); i++){
+                        //Delete inernal static storage of master class
+                        auto man = TArtStoreManager::Instance();
+                        delete man;
+                        generatetree(input.at(s.emptyrun.at(i)),
+                                     emptyout.at(i));
+                    }
                     break;
                 }
                 case 1:{
