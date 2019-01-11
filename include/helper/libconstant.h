@@ -44,8 +44,8 @@ namespace runinfo{
          "99RbP3P","100RbP3P","100SrP3P","101SrP3P","102SrP3P","102YP3P","103YP3P"},
         {"88GeP0P"}}; // test
 
-    const std::vector<double> tottransmission{ 0.8177,0.9106,0.898,0.8848};
-    const std::vector<double> tottransmissionerror;
+    //const std::vector<double> tottransmission{ 0.8177,0.9106,0.898,0.8848};
+    //const std::vector<double> tottransmissionerror;
 }
 
 namespace nancy{
@@ -56,8 +56,9 @@ namespace nancy{
     const std::vector<std::vector<std::vector<double>>> cutval{ // for corrections we use 85Ge
             {{2.6449,42.0,0.008,0.6}, {2.6437,41.86,0.008,0.5}},
             {{2.6509,34.0,0.006,0.6}, {2.6608,33.26,0.011,0.5}},
-            {{2.6700,36.0,0.006,0.5}, {2.6748,35.46,0.010,0.5}}, // 96Kr
-            {{2.7040,37.0,0.006,0.5}, {2.714, 36.43,0.010,0.6}}  // 100Rb
+            {{2.6700,36.0,0.006,0.5}, {2.6748,35.46,0.010,0.5}},  // 96Kr
+            {{2.7040,37.0,0.006,0.5}, {2.714, 36.43,0.010,0.6}},  // 100Rb
+            {{2.6374,25.1,0.007,0.6}, {2.6246,25.62,0.020,0.6}}   // 66Mn
     };
 
     const std::vector<calibpar> hoparame{
@@ -105,6 +106,17 @@ namespace nancy{
           0,                 // F11linF11X +
           2.5E-5,            // F11linF11A +
           cutval[3][1][0]},  // F11absF9X0
+        { 2.638,             // F7absF5X   +     66Cr (66Mn)
+         -2.432E-5,          // F7linF5X   +
+         -2.687E-5,          // F7linF5A   +
+          0*2.531E-5,          // F7linF3X   +
+          cutval[4][0][0],   // F7absF5X0
+          2.624,             // F11absF9X  +
+         -7.632E-5,          // F11linF9X  +
+         -0.000'609'4,       // F11linF9A  +
+          0,                 // F11linF11X +
+          0*-1.092E-4,       // F11linF11A +
+          cutval[4][1][0]},  // F11absF9X0
           };
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined

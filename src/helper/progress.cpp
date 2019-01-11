@@ -60,7 +60,7 @@ void progressbar::draw(){
         if(barwidth - pos.at(i) > (strsp.size() +1))
             pstr.replace(barwidth-strsp.size()+1, strsp.size(),
                          strsp);
-        else if(pos.at(i) > (strsp.size() +3))
+        else if(pos.at(i) > (strsp.size()))
             pstr.replace(2, strsp.size(), strsp);
 
         cout << pstr;

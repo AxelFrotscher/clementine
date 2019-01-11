@@ -53,10 +53,9 @@ void setting::loadnumbers(int i) {
         }
         case 4:{ //66Cr
             analysedfile = 277;
-            goodruns = vector<uint>{38};//,
-                                    //40,41,42,43,44,45,46,47,48,49,50,51,52,53,
-                                    //54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,
-                                    //69};
+            goodruns = vector<uint>{38,40,41,42,43,44,45,46,47,48,49,50,51,52,53,
+                                    54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,
+                                    69};
             transmissionrun = vector<uint>{299};
             emptyrun = vector<uint>{279};
             break;
@@ -90,25 +89,29 @@ void setting::loadnumbers(int i) {
 
 void setting::checkphysicsrun() {
     // Determine type of analysed run
-    if(eventcounts == runinfo::transsize.at(settingnumber)){
+    if(eventcounts == runinfo::transsize.at(settingnumber) &&
+       settingnumber < runinfo::transsize.size()){
         std::cout << "Analysing Transmission run Setting "
                   << settingnumber << std::endl;
         istransmissionrun = true;
         return;
     }
-    else if (eventcounts == runinfo::emptysize.at(settingnumber)){
+    else if (eventcounts == runinfo::emptysize.at(settingnumber) &&
+             settingnumber < runinfo::emptysize.size()){
         std::cout << "Analysing Empty Target run Setting "
                   << settingnumber << std::endl;
         isemptyrun = true;
         return;
     }
-    else if(eventcounts == runinfo::fulldata.at(settingnumber)){
+    else if(eventcounts == runinfo::fulldata.at(settingnumber) &&
+            settingnumber < runinfo::fulldata.size()){
         std::cout << "Analysing full physics run Setting "
                   << settingnumber << std::endl;
         return;
     }
 
-    std::__throw_invalid_argument("Run/Setting does not exist!\n");
+    cout << "WARNING: No matching data have been found for Setting: "
+         << settingnumber << ". Using Physics Setting 0!";
 }
 
 const std::vector<std::vector<double>> setting::getHOcutval() {
@@ -202,16 +205,23 @@ const vector<double> setting::getPIDincutvalue() {
     // return cut particle for incoming beam (trans/empty only)
     if(!setting::isemptyortrans()) std::__throw_invalid_argument("Run in not empty or transmision run!\n");
 
-    if(istransmissionrun) return nancytrans::incval.at(settingnumber);
-    if(isemptyrun) return nancyempty::incval.at(settingnumber);
+    if(istransmissionrun && settingnumber < nancytrans::incval.size())
+        return nancytrans::incval.at(settingnumber);
+    if(isemptyrun && settingnumber < nancyempty::incval.size())
+        return nancyempty::incval.at(settingnumber);
+
+    cout << "WARNING: No PIDincutvalues have been found using Empty Setting 0";
+    return nancyempty::incval.at(0);
 }
 
 const vector<double> setting::getPIDoutcutvalue() {
     // return cut particle for incoming beam (trans/empty only)
     if(!setting::isemptyortrans()) std::__throw_invalid_argument("Run in not empty or transmision run!\n");
 
-    if(istransmissionrun) return nancytrans::targetval.at(settingnumber);
-    if(isemptyrun) return nancyempty::targetval.at(settingnumber);
+    if(istransmissionrun && settingnumber < nancytrans::targetval.size())
+        return nancytrans::targetval.at(settingnumber);
+    if(isemptyrun && settingnumber < nancyempty::targetval.size())
+        return nancyempty::targetval.at(settingnumber);
 }
 
 const std::string setting::getmodename() {
