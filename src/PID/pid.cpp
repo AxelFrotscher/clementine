@@ -403,7 +403,8 @@ void PID::crosssection() {
     stringout.precision(3);
     stringout << reaction << " \u03C3: " << 1E3*crosssection << " \u00b1 "
               << 1E3*cserror <<  "mb, CTS: " << reactionpid2.load() << " of "
-              << reactionpid1.load() << ", T = " << tottransmission;
+              << reactionpid1.load() << ", T = " << tottransmission << " B\u03F1 = "
+              << reactionpid2.load()/reactF5.at(1).GetEntries();
     if(set.isemptyortrans())
         stringout << " Ratio: " << 100.*reactionpid2/reactionpid1.load()
                   <<" \u00b1 "  << 100.*reactionpid2/reactionpid1.load()*
@@ -444,6 +445,9 @@ void PID::reactionparameters() {
     else if(reaction == "112TcP3P"){ incval = nancy::incval112Tc; targetval = nancy::targetval110Nb; }
     else if(reaction == "114TcP3P"){ incval = nancy::incval114Tc; targetval = nancy::targetval112Nb; }
     else if(reaction == "113MoP3P"){ incval = nancy::incval113Mo; targetval = nancy::targetval111Zr; }
+    else if(reaction == "110MoP2P"){ incval = nancy::incval110Mo; targetval = nancy::targetval109Nb; }
+    else if(reaction == "111MoP2P"){ incval = nancy::incval111Mo; targetval = nancy::targetval110Nb; }
+    else if(reaction == "112MoP2P"){ incval = nancy::incval112Mo; targetval = nancy::targetval111Nb; }
     else if(reaction == "90SeP2P"){  incval = nancy::incval90Se;  targetval = nancy::targetval89As; }
     else if(reaction == "90SeP3P"){  incval = nancy::incval90Se;  targetval = nancy::targetval88Ge; }
     else if(reaction == "89SeP2P"){  incval = nancy::incval89Se;  targetval = nancy::targetval88As; }
@@ -481,6 +485,38 @@ void PID::reactionparameters() {
     else if(reaction == "102YP3P"){  incval = nancy::incval102Y;  targetval = nancy::targetval100Rb; }
     else if(reaction == "103YP2P"){  incval = nancy::incval103Y;  targetval = nancy::targetval102Sr; }
     else if(reaction == "103YP3P"){  incval = nancy::incval103Y;  targetval = nancy::targetval101Rb; }
+    else if(reaction == "66MnP2P"){  incval = nancy::incval66Mn;  targetval = nancy::targetval65Cr;}
+    else if(reaction == "66MnP3P"){  incval = nancy::incval66Mn;  targetval = nancy::targetval64V;}
+    else if(reaction == "67MnP2P"){  incval = nancy::incval67Mn;  targetval = nancy::targetval66Cr;}
+    else if(reaction == "67MnP3P"){  incval = nancy::incval67Mn;  targetval = nancy::targetval65V;}
+    else if(reaction == "67FeP2P"){  incval = nancy::incval67Fe;  targetval = nancy::targetval66Mn;}
+    else if(reaction == "67FeP3P"){  incval = nancy::incval67Fe;  targetval = nancy::targetval65Cr;}
+    else if(reaction == "68FeP2P"){  incval = nancy::incval68Fe;  targetval = nancy::targetval67Mn;}
+    else if(reaction == "68FeP3P"){  incval = nancy::incval68Fe;  targetval = nancy::targetval66Cr;}
+    else if(reaction == "68CoP2P"){  incval = nancy::incval68Co;  targetval = nancy::targetval67Fe;}
+    else if(reaction == "68CoP3P"){  incval = nancy::incval68Co;  targetval = nancy::targetval66Mn;}
+    else if(reaction == "69CoP2P"){  incval = nancy::incval69Co;  targetval = nancy::targetval68Fe;}
+    else if(reaction == "69CoP3P"){  incval = nancy::incval69Co;  targetval = nancy::targetval67Mn;}
+    else if(reaction == "70CoP2P"){  incval = nancy::incval70Co;  targetval = nancy::targetval69Fe;}
+    else if(reaction == "70CoP3P"){  incval = nancy::incval70Co;  targetval = nancy::targetval68Mn;}
+    else if(reaction == "70NiP2P"){  incval = nancy::incval70Ni;  targetval = nancy::targetval69Co;}
+    else if(reaction == "70NiP3P"){  incval = nancy::incval70Ni;  targetval = nancy::targetval68Fe;}
+    else if(reaction == "71NiP2P"){  incval = nancy::incval71Ni;  targetval = nancy::targetval70Co;}
+    else if(reaction == "71NiP3P"){  incval = nancy::incval71Ni;  targetval = nancy::targetval69Fe;}
+    else if(reaction == "75ZnP2P"){  incval = nancy::incval75Zn;  targetval = nancy::targetval74Cu;}
+    else if(reaction == "75ZnP3P"){  incval = nancy::incval75Zn;  targetval = nancy::targetval73Ni;}
+    else if(reaction == "76ZnP2P"){  incval = nancy::incval76Zn;  targetval = nancy::targetval75Cu;}
+    else if(reaction == "76ZnP3P"){  incval = nancy::incval76Zn;  targetval = nancy::targetval74Ni;}
+    else if(reaction == "74CuP2P"){  incval = nancy::incval74Cu;  targetval = nancy::targetval73Ni;}
+    else if(reaction == "74CuP3P"){  incval = nancy::incval74Cu;  targetval = nancy::targetval72Co;}
+    else if(reaction == "75CuP2P"){  incval = nancy::incval75Cu;  targetval = nancy::targetval74Ni;}
+    else if(reaction == "75CuP3P"){  incval = nancy::incval75Cu;  targetval = nancy::targetval73Co;}
+    else if(reaction == "72NiP2P"){  incval = nancy::incval72Ni;  targetval = nancy::targetval71Co;}
+    else if(reaction == "72NiP3P"){  incval = nancy::incval72Ni;  targetval = nancy::targetval70Fe;}
+    else if(reaction == "73NiP2P"){  incval = nancy::incval73Ni;  targetval = nancy::targetval72Co;}
+    else if(reaction == "73NiP3P"){  incval = nancy::incval73Ni;  targetval = nancy::targetval71Fe;}
+    else if(reaction == "74NiP2P"){  incval = nancy::incval74Ni;  targetval = nancy::targetval73Co;}
+    else if(reaction == "74NiP3P"){  incval = nancy::incval74Ni;  targetval = nancy::targetval72Fe;}
     else __throw_invalid_argument(Form("Invalid reaction %s!\n", &reaction[0]));
 }
 

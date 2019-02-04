@@ -10,39 +10,53 @@ namespace runinfo{
                                         356'843,
                                         0,
                                         1'026'943, // Runs containing this number are transmission
-                                        31'716};
+                                        31'716,
+                                        0,
+                                        0};
     const std::vector<int> emptysize = {513'225,
                                         0,  // no empty run for this setting
                                         1'265'431,  // no empty run here either
                                         865'630,
+                                        0,
+                                        0,
                                         0};          // Empty-target measurement
     const std::vector<int> fulldata  = {36'004'149,
                                         8'051'865,
                                         38'803'327,
                                         58'865'437,
-                                        2'072'418}; // // full physics run
+                                        40'608'365,
+                                        55'363'036,
+                                        192'409'095}; // // full physics run
 
     const std::vector<std::vector<std::vector<int>>> plasticrange{
             {{480,620},{700,920},{220,330},{270,1510}},
             {{337,520},{450,750},{220,330},{330,1200}},
             {{350,550},{450,800},{215,380},{350,1100}},
             {{375,575},{450,850},{215,400},{350,1200}},
-            {{850,1250},{450,800},{320,550},{250,1500}}
+            {{850,1250},{450,800},{320,550},{250,1500}},
+            {{900,1500},{450,900},{200,800},{250,2250}},
+            {{600,1600},{450,800},{400,700},{250,2400}}
     };
 
     const std::vector<std::vector<uint>> pidZrange{
-        {200,36,46},{200,28,38},{200,29,39},{200,31,41}, {200,21,31}}; // y boundaries
+        {200,36,46},{200,28,38},{200,29,39},{200,31,41}, {200,21,31}, {200,23,33},
+        {200,25,35}}; // y boundaries
 
     const std::vector<std::vector<std::string>> reactionmodes{
-        {"110NbP0P", "111NbP2P","110NbP2P","110MoP3P","111MoP3P","112MoP3P",
-         "113MoP3P", "112TcP3P","113TcP3P","114TcP3P" },
+        {"110NbP0P", "111NbP2P","110NbP2P","110MoP2P", "111MoP2P", "112MoP2P",
+         "110MoP3P","111MoP3P","112MoP3P", "113MoP3P", "112TcP3P", "113TcP3P",
+         "114TcP3P" },
         {"88AsP2P","89AsP2P","89SeP2P","90SeP2P","89AsP3P","89SeP3P", "90SeP3P",
          "88GeP0P", "89AsP0P"},
         {"93BrP2P","94BrP2P","95BrP2P","94KrP2P","95KrP2P","96KrP2P","97RbP2P",
          "93BrP3P","94BrP3P","95BrP3P","94KrP3P","95KrP3P","96KrP3P","97RbP3P"},
         {"99RbP2P","100RbP2P","100SrP2P","101SrP2P","102SrP2P","102YP2P","103YP2P",
          "99RbP3P","100RbP3P","100SrP3P","101SrP3P","102SrP3P","102YP3P","103YP3P"},
-        {"88GeP0P"}}; // test
+        {"66MnP2P", "67MnP2P", "67FeP2P", "68FeP2P", "68CoP2P", "69CoP2P",
+         "70CoP2P", "70NiP2P", "71NiP2P", "66MnP3P", "67MnP3P", "67FeP3P",
+         "68FeP3P", "68CoP3P", "69CoP3P", "70CoP3P", "70NiP3P", "71NiP3P"},
+        {"75ZnP2P", "76ZnP2P", "74CuP2P", "75CuP2P", "72NiP2P", "73NiP2P", "74NiP2P",
+         "75ZnP3P", "76ZnP3P", "74CuP3P", "75CuP3P", "72NiP3P", "73NiP3P", "74NiP3P"}}; // test
 
     //const std::vector<double> tottransmission{ 0.8177,0.9106,0.898,0.8848};
     //const std::vector<double> tottransmissionerror;
@@ -54,11 +68,13 @@ namespace nancy{
 
     // center x, centery, radius x, radius y
     const std::vector<std::vector<std::vector<double>>> cutval{ // for corrections we use 85Ge
-            {{2.6449,42.0,0.008,0.6}, {2.6437,41.86,0.008,0.5}},
-            {{2.6509,34.0,0.006,0.6}, {2.6608,33.26,0.011,0.5}},
-            {{2.6700,36.0,0.006,0.5}, {2.6748,35.46,0.010,0.5}},  // 96Kr
-            {{2.7040,37.0,0.006,0.5}, {2.714, 36.43,0.010,0.6}},  // 100Rb
-            {{2.6374,25.1,0.007,0.6}, {2.6246,25.62,0.020,0.6}}   // 66Mn
+            {{2.6449,42.0, .008, .6}, {2.6437,41.86, .008, .5}},
+            {{2.6509,34.0, .006, .6}, {2.6608,33.26, .011, .5}},
+            {{2.6700,36.0, .006, .5}, {2.6748,35.46, .010, .5}},  // 96Kr
+            {{2.7040,37.0, .006, .5}, {2.714, 36.43, .010, .6}},  // 100Rb
+            {{2.6374,25.1, .007, .6}, {2.6246,25.62, .020, .6}},  // 66Mn
+            {{2.585, 29.0, .007, .6}, {2.585 ,29.21, .012, .6}},  // 75Cu
+            {{2.6374,25.1, .007, .6}, {2.6246,25.62, .020, .6}},  // 80Zn
     };
 
     const std::vector<calibpar> hoparame{
@@ -109,7 +125,7 @@ namespace nancy{
         { 2.638,             // F7absF5X   +     66Cr (66Mn)
          -2.432E-5,          // F7linF5X   +
          -2.687E-5,          // F7linF5A   +
-          0*2.531E-5,          // F7linF3X   +
+         -7.297E-7,          // F7linF3X   +
           cutval[4][0][0],   // F7absF5X0
           2.624,             // F11absF9X  +
          -7.632E-5,          // F11linF9X  +
@@ -117,15 +133,29 @@ namespace nancy{
           0,                 // F11linF11X +
           0*-1.092E-4,       // F11linF11A +
           cutval[4][1][0]},  // F11absF9X0
-          };
+        { 2.585,             // F7absF5X   +    75Cu (70Fe)
+         -2.455E-5,          // F7linF5X   +
+          2.277E-5,          // F7linF5A   +
+         -0*7.297E-7,          // F7linF3X +
+          cutval[5][0][0],   // F7absF5X0
+          2.589,             // F11absF9X  +
+         -5.673E-5,          // F11linF9X  +
+         -2.126E-4,          // F11linF9A  +
+          0,                 // F11linF11X
+          0*-1.092E-4,       // F11linF11A +
+          cutval[5][1][0]},  // F11absF9X0
+    };
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
     const std::vector<double> incval111Nb{
             2.7125, // center x
-            41.0,  // center y
-            0.007, // radius x
+            41.0,   // center y
+            0.009,  // radius x
             0.6,    // radius y
-            .4772, 6.892, .4668, 6.80
+            .4772,  // transmission (p,2p)
+            6.892,  // Brho acceptance cut (p,2p)
+            .4668,  // transmission (p,3p)
+            6.80    // Brho acceptance cut (p,3p)
     };
 
     // Fifth value is simulated total transmission from F7 through LH2-Target
@@ -171,37 +201,83 @@ namespace nancy{
     const std::vector<double> incval96Kr{2.670,  36.0, 0.006, 0.6, .526, 6.956, .527, 6.848};
     const std::vector<double> incval97Rb{2.6246, 37.0, 0.006, 0.6, .521, 6.959, .523, 6.853};
 
-    const std::vector<double> targetval91As{2.7622, 32.42, 0.011,0.6};
-    const std::vector<double> targetval92As{2.7933, 32.49, 0.011,0.6};
-    const std::vector<double> targetval93As{2.8236, 32.54, 0.011,0.6};
-    const std::vector<double> targetval92Se{2.7091, 33.39, 0.011,0.6};
-    const std::vector<double> targetval93Se{2.7419, 33.44, 0.011,0.6};
-    const std::vector<double> targetval94Se{2.7711, 33.49, 0.011,0.6};
-    const std::vector<double> targetval93Br{2.6627, 34.30, 0.009,0.6};
-    const std::vector<double> targetval94Br{2.6932, 34.43, 0.010,0.6};
-    const std::vector<double> targetval95Br{2.7215, 34.41, 0.012,0.6};
-    const std::vector<double> targetval96Kr{2.6756, 35.42, 0.009,0.6};
+    const std::vector<double> targetval91As{2.7622, 32.42, .011, .6};
+    const std::vector<double> targetval92As{2.7933, 32.49, .011, .6};
+    const std::vector<double> targetval93As{2.8236, 32.54, .011, .6};
+    const std::vector<double> targetval92Se{2.7091, 33.39, .011, .6};
+    const std::vector<double> targetval93Se{2.7419, 33.44, .011, .6};
+    const std::vector<double> targetval94Se{2.7711, 33.49, .011, .6};
+    const std::vector<double> targetval93Br{2.6627, 34.30, .009, .6};
+    const std::vector<double> targetval94Br{2.6932, 34.43, .010, .6};
+    const std::vector<double> targetval95Br{2.7215, 34.41, .012, .6};
+    const std::vector<double> targetval96Kr{2.6756, 35.42, .009, .6};
 
     // Fourth Setting
-    const std::vector<double> incval99Rb {2.6770, 37.00, 0.006, 0.6, .513, 6.985, .495, 6.877};
-    const std::vector<double> incval100Rb{2.7046, 37.00, 0.006, 0.6, .513, 7.007, .496, 6.898};
-    const std::vector<double> incval100Sr{2.6332, 38.00, 0.006, 0.6, .508, 6.987, .491, 6.881};
-    const std::vector<double> incval101Sr{2.6587, 38.00, 0.006, 0.6, .508, 7.008, .492, 6.903};
-    const std::vector<double> incval102Sr{2.6857, 38.00, 0.006, 0.6, .506, 7.029, .495, 6.925};
-    const std::vector<double> incval102Y {2.6172, 39.00, 0.006, 0.6, .503, 7.010, .488, 6.908};
-    const std::vector<double> incval103Y {2.6426, 39.00, 0.006, 0.6, .501, 7.031, .491, 6.930};
+    const std::vector<double> incval99Rb {2.6770, 37.00, .006, .6, .513, 6.985, .495, 6.877};
+    const std::vector<double> incval100Rb{2.7046, 37.00, .006, .6, .513, 7.007, .496, 6.898};
+    const std::vector<double> incval100Sr{2.6332, 38.00, .006, .6, .508, 6.987, .491, 6.881};
+    const std::vector<double> incval101Sr{2.6587, 38.00, .006, .6, .508, 7.008, .492, 6.903};
+    const std::vector<double> incval102Sr{2.6857, 38.00, .006, .6, .506, 7.029, .495, 6.925};
+    const std::vector<double> incval102Y {2.6172, 39.00, .006, .6, .503, 7.010, .488, 6.908};
+    const std::vector<double> incval103Y {2.6426, 39.00, .006, .6, .501, 7.031, .491, 6.930};
 
-    const std::vector<double> targetval97Br{2.7829,34.503,0.011,0.6};
-    const std::vector<double> targetval98Br{2.8115,34.553,0.011,0.6};
-    const std::vector<double> targetval98Kr{2.7333,35.422,0.011,0.6};
-    const std::vector<double> targetval99Kr{2.7613,35.485,0.011,0.5};
-    const std::vector<double> targetval100Kr{2.7891,35.506,0.011,0.6};
-    const std::vector<double> targetval99Rb{2.6874,36.389,0.011,0.6};
-    const std::vector<double> targetval100Rb{2.7145,36.412, 0.01, 0.6};
-    const std::vector<double> targetval101Rb{2.7410,36.499,0.01,0.6};
-    const std::vector<double> targetval101Sr{2.6697,37.438, 0.01, 0.6};
-    const std::vector<double> targetval102Sr{2.6966,37.467, 0.01, 0.6};
+    const std::vector<double> targetval97Br {2.7829,34.503, .011, .6};
+    const std::vector<double> targetval98Br {2.8115,34.553, .011, .6};
+    const std::vector<double> targetval98Kr {2.7333,35.422, .011, .6};
+    const std::vector<double> targetval99Kr {2.7613,35.485, .011, .5};
+    const std::vector<double> targetval100Kr{2.7891,35.506, .011, .6};
+    const std::vector<double> targetval99Rb {2.6874,36.389, .011, .6};
+    const std::vector<double> targetval100Rb{2.7145,36.412, .01,  .6};
+    const std::vector<double> targetval101Rb{2.7410,36.499, .01,  .6};
+    const std::vector<double> targetval101Sr{2.6697,37.438, .01,  .6};
+    const std::vector<double> targetval102Sr{2.6966,37.467, .01,  .6};
 
+    // Fifth Setting
+    const std::vector<double> incval66Mn{2.6372, 25.09, .006, .6};
+    const std::vector<double> incval67Mn{2.6773, 25.07, .006, .6};
+    const std::vector<double> incval67Fe{2.5738, 26.05, .006, .6};
+    const std::vector<double> incval68Fe{2.6124, 26.07, .006, .6};
+    const std::vector<double> incval68Co{2.5151, 27.03, .006, .6};
+    const std::vector<double> incval69Co{2.5524, 27.00, .006, .6};
+    const std::vector<double> incval70Co{2.5893, 27.01, .006, .6};
+    const std::vector<double> incval70Ni{2.4957, 27.98, .006, .6};
+    const std::vector<double> incval71Ni{2.5317, 27.96, .006, .6};
+
+    const std::vector<double> targetval70Co{2.6020, 26.74, .015, .6};
+    const std::vector<double> targetval69Co{2.5652, 26.70, .015, .6};
+    const std::vector<double> targetval69Fe{2.6636, 25.69, .015, .6};
+    const std::vector<double> targetval68Fe{2.6255, 25.65, .015, .6};
+    const std::vector<double> targetval67Fe{2.5887, 25.57, .015, .6};
+    const std::vector<double> targetval68Mn{2.7291, 24.61, .015, .6};
+    const std::vector<double> targetval67Mn{2.6899, 24.55, .015, .6};
+    const std::vector<double> targetval66Mn{2.6515, 24.50, .015, .6};
+    const std::vector<double> targetval66Cr{2.7611, 23.51, .015, .6};
+    const std::vector<double> targetval65Cr{2.7222, 23.44, .015, .6};
+    const std::vector<double> targetval65V {2.8366, 22.45, .015, .6};
+    const std::vector<double> targetval64V {2.8007, 22.34, .015, .6};
+
+    // Sixth setting (70Fe)
+    const std::vector<double> incval75Zn{2.4984, 29.91, .006, .6};
+    const std::vector<double> incval76Zn{2.5312, 29.91, .006, .6};
+    const std::vector<double> incval74Cu{2.5503, 28.95, .006, .6};
+    const std::vector<double> incval75Cu{2.5847, 28.98, .006, .6};
+    const std::vector<double> incval72Ni{2.5697, 27.94, .006, .6};
+    const std::vector<double> incval73Ni{2.6057, 27.98, .006, .6};
+    const std::vector<double> incval74Ni{2.6411, 28.00, .006, .6};
+
+    const std::vector<double> targetval74Cu{2.5693, 29.05, .014, .6};
+    const std::vector<double> targetval75Cu{2.6017, 29.09, .014, .6};
+    const std::vector<double> targetval73Ni{2.6193, 27.98, .014, .6};
+    const std::vector<double> targetval74Ni{2.6546, 28.02, .014, .6};
+    const std::vector<double> targetval72Ni{2.5848, 27.98, .014, .6};
+    const std::vector<double> targetval71Co{2.6436, 26.88, .014, .6};
+    const std::vector<double> targetval72Co{2.6790, 26.95, .014, .6};
+    const std::vector<double> targetval73Co{2.7146, 27.00, .014, .6};
+    //const std::vector<double> targetval70Co{2.6059, 26.87, .014, .6};
+    //const std::vector<double> targetval69Fe{2.6715, 25.76, .014, .6};
+    const std::vector<double> targetval70Fe{2.7074, 25.79, .014, .6};
+    const std::vector<double> targetval71Fe{2.7426, 25.88, .014, .6};
+    const std::vector<double> targetval72Fe{2.7784, 25.92, .014, .6};
 }
 
 namespace nancytrans{

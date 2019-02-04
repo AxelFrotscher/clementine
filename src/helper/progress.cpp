@@ -55,9 +55,9 @@ void progressbar::draw(){
 
         // Replace with speed so that it doesnt block
         string strsp = " " + to_string(speed) + "/s " +
-                       Form("%.1f", max((int(1000.*currevt.at(i)/totevent.at(i)))/10.,0.)) +
-                       "% ";
-        if(barwidth - pos.at(i) > (strsp.size() +1))
+                       Form("%.1f", max((int(1000.*currevt.at(i)/
+                       totevent.at(i)))/10.,0.)) + "% ";
+        if(barwidth - pos.at(i) > strsp.size()) // Display speed on right side
             pstr.replace(barwidth-strsp.size()+1, strsp.size(),
                          strsp);
         else if(pos.at(i) > (strsp.size()))
@@ -74,7 +74,7 @@ void progressbar::draw(){
             chrono::steady_clock::now().time_since_epoch()).count();
 
     if(currentthreads>1){
-        barwidth = 30;
+        barwidth = 31;
         this_thread::sleep_for(1s);
     }
 }

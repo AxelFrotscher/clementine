@@ -22,6 +22,7 @@
 #include "TMath.h"
 #include "TMinuit.h"
 #include <Math/Vector3D.h>
+#include "zdssetting.h"
 
 R__LOAD_LIBRARY(libanacore.so)
 R__LOAD_LIBRARY(libminos.so)
@@ -95,6 +96,11 @@ void generatetree(const string infile, const string output) {
         {300.83, -161},
         {304.17 + 0.17,    // good Offset Value for F3-F7,  empty-target run  300.85
          -161.64 - 0.08}}; // good Offset Value for F8-F11, empty-target run -160.45
+
+    class setting set;
+    if(set.getsetname() == "70Fe") tofoff.at(0) = vector<double>{300.91,-158.73};
+    if(set.getsetname() == "78Ni") tofoff.at(0) = vector<double>{300.23,-159.19};
+
 
     vector<TArtTOF *> tof{
         recopid.DefineNewTOF(&fplname[0][0][0], &fplname[0][1][0],

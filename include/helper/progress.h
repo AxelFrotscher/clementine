@@ -39,7 +39,7 @@ private:
     static long int lasttime; // in milliseconds
 
     static int barwidth;
-    static const int displaythreads = 7;
+    static const int displaythreads = 8;
     static std::atomic<int> currentthreads;  // current working (displayed) threads
     static std::mutex currevtmutex;
     bool worker = true ; // Defines a thread to be displayed

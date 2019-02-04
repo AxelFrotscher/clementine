@@ -24,7 +24,7 @@ void triggercut::innerloop(treereader *tree,
     while(i<range.at(1)){
         if(goodevents.at(i).at(0)){
             tree->getevent(i);
-            if(tree->EventInfo_fBit[0] == badtrg){
+            if(tree->EventInfo_fBit[0] == badtrg || tree->EventInfo_fBit[0] == 11){
                 for(auto &j:goodevents.at(i))  j.exchange(false);
             }
         }

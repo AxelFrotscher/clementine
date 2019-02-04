@@ -713,6 +713,7 @@ void minosana::FindStart(vector<double> pStart, vector<double> chi, vector<int> 
     chi.at(1) = myfit1->GetChisquare();
     pStart.at(2) = myfit1->GetParameter(0);
     pStart.at(3) = myfit1->GetParameter(1);
+    delete myfit1;
 }
 
 double minosana::FitFunction(double *x, double *p){

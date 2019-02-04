@@ -62,14 +62,14 @@ void setting::loadnumbers(int i) {
         }
         case 5:{ // 70Fe
             analysedfile = 346;
-            goodruns = vector<uint>{7,8,9,11,12,13,14,15,18,19,20,21,22,23,24,25,
+            goodruns = vector<uint>{9,11,12,13,14,15,18,19,20,21,22,23,24,25,
                                     26,27,28,30,31,32,33,34,35,36,37,39,40,41,42,
                                     43,44,45};
-            transmissionrun = vector<uint>{};
+            transmissionrun = vector<uint>{}; // run 7 and 8 are NOT like the others
             emptyrun = vector<uint>{};
             break;
         }
-        case 6:{
+        case 6:{  // 78Ni
             analysedfile = 395;
             goodruns = vector<uint>{8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,
                                     24,25,26,28,29,30,31,34,35,36,37,38,39,40,41,
