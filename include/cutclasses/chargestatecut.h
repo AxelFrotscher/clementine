@@ -22,7 +22,7 @@ public:
 
 private:
     //const int threads = 7;
-    int threads = std::max((int)sqrt(goodevents.size())/500,2);
+    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/750,2));
     std::vector<TH2D> cschist;
 
     std::vector<TCutG*> mycut;

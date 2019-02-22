@@ -19,7 +19,7 @@ public:
 
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 private:
-    int threads = std::max((int)sqrt(goodevents.size())/600,2);
+    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/900,2));
     std::mutex unitemutex;
 
     const int ppacoffset = 18; // [18] is F8PPAC-1A

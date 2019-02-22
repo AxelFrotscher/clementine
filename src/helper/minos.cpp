@@ -10,10 +10,11 @@
 #include "minos.h"
 #include "TH2F.h"
 #include <numeric>
+#include <functional>
 
 using std::vector, std::cerr, std::cout, std::endl, std::min, std::max,
-      std::accumulate;
-
+      std::accumulate, std::placeholders::_1,std::placeholders::_2,
+      std::placeholders::_3, std::placeholders::_4, std::placeholders::_5;
 void minosana::analyze() {
     /// MINOS 2. Modify with hough-transformation
     int padsleft = Xpad.size();
@@ -211,7 +212,10 @@ void minosana::analyze() {
             double amin, edm, errdef, chi2res1, chi2res2;
 
             FindStart(pStart_1, chi1, fitStatus, grxz_1, gryz_1);
-            min.SetFCN(SumDistance1);
+            std::function<void(int &, double *, double &sum, double *par, int)> test1 =
+                    [this](int &a, double *b, double &sum, double *par, int d){
+                return this->SumDistance1(a,b,sum,par,d);};
+            min.SetFCN(void (this->SumDistance1)(int, double, double, double, int));
             // Set starting values and step sizes for parameters
             min.mnparm(0, "x0", pStart_1.at(0), 0.1, -500, 500, iflag);
             min.mnparm(0, "Ax", pStart_1.at(1), 0.1, -10, 10, iflag);

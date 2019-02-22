@@ -97,11 +97,17 @@ struct TMinosResult{
     }
 };
 
+
 class minosana{
 public:
-    minosana(int filled_, ): filled(filled_){
+    minosana(int filled_, double TShaping_, double TimeBinElec_,
+             double DelayTrigger_, double VDrift_):
+              filled(filled_), Tshaping(TShaping_), TimeBinElec(TimeBinElec_),
+              DelayTrigger(DelayTrigger_), VDrift(VDrift_){
 
     }
+    TMinosResult getTMinosResult(){return dataresult;}
+
 private:
     void analyze();
     int Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
@@ -114,12 +120,11 @@ private:
                              TGraph *grxz, TGraph *gryz);
     double FitFunction(double *x, double *p);
     double conv_fit(double *x, double *p);
-
-    void SumDistance1(int &, double *, double &sum, double *par, int);
-    double distancelinepoint(double &x, double &y, double &z, double *p);
-    void SumDistance2(int &, double *, double &sum, double *par, int);
     void vertex(vector<double> &p, vector<double> &pp, double &xv,
                           double &yv, double &zv);
+    void SumDistance2(int &, double *, double &sum, double *par, int);
+    void SumDistance1(int &, double *, double &sum, double *par, int);
+    double distancelinepoint(double &x, double &y, double &z, double *p);
 
     vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
 
@@ -127,7 +132,14 @@ private:
             thetaz1=0, thetaz2=0;
 
     int filled =0 ;
+    double Tshaping =0;
+    double TimeBinElec = 0;
+    double DelayTrigger =0;
+    double VDrift = 0;
 
     TMinosClust fitdata;
     TMinosResult dataresult;
 };
+
+// Ugly part outside of the class, because member-functions are trickier than
+// regular functions

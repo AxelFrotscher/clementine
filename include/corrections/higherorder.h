@@ -19,7 +19,7 @@ public:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
 private:
-    int threads = std::max((int)sqrt(goodevents.size())/400,2);
+    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/600,2));
     std:: mutex unitemutex;
 
     const std::vector<int> beam{0,4}; // Evaluate Beam F3-7 (1st element)

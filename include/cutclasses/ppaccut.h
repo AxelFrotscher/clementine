@@ -20,7 +20,7 @@ public:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
 private:
-    int threads = std::max((int)sqrt(goodevents.size())/400,2);
+    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/600,2));
     const int numplane = 36;
     const int pl11position = 3; //Plastic at F11 is fourth in array
     std::vector<TH1D> effPPAC;

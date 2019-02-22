@@ -56,7 +56,11 @@ namespace runinfo{
          "70CoP2P", "70NiP2P", "71NiP2P", "66MnP3P", "67MnP3P", "67FeP3P",
          "68FeP3P", "68CoP3P", "69CoP3P", "70CoP3P", "70NiP3P", "71NiP3P"},
         {"75ZnP2P", "76ZnP2P", "74CuP2P", "75CuP2P", "72NiP2P", "73NiP2P", "74NiP2P",
-         "75ZnP3P", "76ZnP3P", "74CuP3P", "75CuP3P", "72NiP3P", "73NiP3P", "74NiP3P"}}; // test
+         "75ZnP3P", "76ZnP3P", "74CuP3P", "75CuP3P", "72NiP3P", "73NiP3P", "74NiP3P"},
+        {"82GeP2P", "83GeP2P", "80GaP2P", "81GaP2P", "82GaP2P", "78ZnP2P", "79ZnP2P",
+         "80ZnP2P", "81ZnP2P", "77CuP2P", "78CuP2P", "79CuP2P", "82GeP3P", "83GeP3P",
+         "80GaP3P", "81GaP3P", "82GaP3P", "78ZnP3P", "79ZnP3P", "80ZnP3P", "77CuP3P",
+         "78CuP3P"}}; // test
 
     //const std::vector<double> tottransmission{ 0.8177,0.9106,0.898,0.8848};
     //const std::vector<double> tottransmissionerror;
@@ -74,7 +78,7 @@ namespace nancy{
             {{2.7040,37.0, .006, .5}, {2.714, 36.43, .010, .6}},  // 100Rb
             {{2.6374,25.1, .007, .6}, {2.6246,25.62, .020, .6}},  // 66Mn
             {{2.585, 29.0, .007, .6}, {2.585 ,29.21, .012, .6}},  // 75Cu
-            {{2.6374,25.1, .007, .6}, {2.6246,25.62, .020, .6}},  // 80Zn
+            {{2.6666,29.95,.007, .6}, {2.6666,30.39, .020, .6}},  // 80Zn
     };
 
     const std::vector<calibpar> hoparame{
@@ -144,6 +148,17 @@ namespace nancy{
           0,                 // F11linF11X
           0*-1.092E-4,       // F11linF11A +
           cutval[5][1][0]},  // F11absF9X0
+        { 2.667,             // F7absF5X,   +  78Ni (80Zn)
+         -1.922E-5,          // F7linF5X    +
+          7.875E-5,          // F7linF5A    +
+          0.000'103,         // F7linF3X    +
+          cutval[6][0][0],   // F7absF5X0
+          2.672,             // F11absF9X   +
+         -6.957E-5,          // F11linF9X   +
+         -7.475E-4,          // F11linF9A   +
+          0,                 // F11linF11X
+          0*8.052E-5,        // F11linF11A  +
+          cutval[6][1][0]},  // F11absF9X0
     };
 
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
@@ -278,6 +293,36 @@ namespace nancy{
     const std::vector<double> targetval70Fe{2.7074, 25.79, .014, .6};
     const std::vector<double> targetval71Fe{2.7426, 25.88, .014, .6};
     const std::vector<double> targetval72Fe{2.7784, 25.92, .014, .6};
+
+    // Seventh Setting (78Ni)
+
+    const std::vector<double> incval82Ge{2.5612,31.85, .006, .6};
+    const std::vector<double> incval83Ge{2.593, 31.91, .006, .6};
+    const std::vector<double> incval80Ga{2.580, 30.91, .006, .6};
+    const std::vector<double> incval81Ga{2.6126,30.93, .006, .6};
+    const std::vector<double> incval82Ga{2.6446,30.93, .006, .6};
+    const std::vector<double> incval78Zn{2.5986,29.92, .006, .6};
+    const std::vector<double> incval79Zn{2.6329,29.95, .006, .6};
+    const std::vector<double> incval80Zn{2.6663,29.96, .006, .6};
+    const std::vector<double> incval81Zn{2.7007,29.96, .006, .6};
+    const std::vector<double> incval77Cu{2.6538,28.94, .006, .6};
+    const std::vector<double> incval78Cu{2.6890,28.97, .006, .6};
+    const std::vector<double> incval79Cu{2.7245,29.00, .006, .6};
+
+    const std::vector<double> targetval81Ga{2.6121, 31.46, .014, .6};
+    const std::vector<double> targetval82Ga{2.6454, 31.52, .014, .6};
+    const std::vector<double> targetval79Zn{2.6348, 30.32, .014, .6};
+    const std::vector<double> targetval80Zn{2.6668, 30.38, .014, .6};
+    const std::vector<double> targetval81Zn{2.7000, 30.41, .014, .6};
+    const std::vector<double> targetval77Cu{2.6577, 29.29, .014, .6};
+    const std::vector<double> targetval78Cu{2.6901, 29.30, .014, .6};
+    const std::vector<double> targetval79Cu{2.7237, 29.32, .014, .6};
+    const std::vector<double> targetval80Cu{2.7586, 29.40, .014, .6};
+    const std::vector<double> targetval76Ni{2.7168, 28.17, .014, .6};
+    const std::vector<double> targetval77Ni{2.7500, 28.22, .014, .6};
+    const std::vector<double> targetval78Ni{2.7857, 28.30, .014, .6};
+    const std::vector<double> targetval75Co{2.7777, 27.10, .014, .6};
+    const std::vector<double> targetval76Co{2.8148, 27.20, .014, .6};
 }
 
 namespace nancytrans{

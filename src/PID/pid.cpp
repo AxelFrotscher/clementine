@@ -177,7 +177,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         "PID/"+reaction+"/Uncorrected", "PID/"+reaction+"/Corrected",
         "PID/"+reaction+"/investigate", "PID/"+reaction+"/investigate/F5",
         "PID/"+reaction+"/investigate/F7", "PID/"+reaction+"/investigate/F9",
-        "PID/"+reaction+"/investigate/F11"};
+        "PID/"+reaction+"/investigate/F11", "PID/"+reaction+"/chargestate"};
 
     for (auto &i :folders){
         // Do not analyse the same thing twice
@@ -222,6 +222,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     // Calculate the transmission and the crosssection
     PID::offctrans();
+    PID::chargestatecut();
     PID::crosssection();
     PID::brhoprojections();
 
@@ -248,6 +249,9 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         brhoprojection.at(0).at(i).Write();
         brhoprojection.at(1).at(i).Write();
     }
+
+    output->cd(folders.at(7).c_str());
+    for(auto &elem: chargestate) elem.Write();
 }
 
 void PID::offctrans() {
@@ -388,7 +392,10 @@ void PID::crosssection() {
     const double numberdensityerror = 0.00924; // relative error
     const double tottransmissionerror = 0.05; // conservative relative error
 
-    const double crosssection = 1./numberdensity*reactionpid2/
+    // Reduce CS contribution by Brho cut
+    chargestatevictims *= reactionpid2.load()/reactF5.at(1).GetEntries();
+
+    const double crosssection = 1./numberdensity*(reactionpid2-chargestatevictims)/
                           reactionpid1/tottransmission;
     // 1% absolute error + 5% relative error
     double cserror = crosssection*pow(1./reactionpid1 + 2./reactionpid2+
@@ -400,21 +407,24 @@ void PID::crosssection() {
     setting set;
     stringstream stringout;
 
-    stringout.precision(3);
-    stringout << reaction << " \u03C3: " << 1E3*crosssection << " \u00b1 "
-              << 1E3*cserror <<  "mb, CTS: " << reactionpid2.load() << " of "
-              << reactionpid1.load() << ", T = " << tottransmission << " B\u03F1 = "
-              << reactionpid2.load()/reactF5.at(1).GetEntries();
+    stringout.precision(2);
+    stringout << reaction << " \u03C3: " << std::scientific << 1E3*crosssection
+              << " \u00b1 " << 1E3*cserror <<  "mb, CTS: " << std::defaultfloat
+              << (reactionpid2.load()-chargestatevictims) << " of "
+              << reactionpid1.load()/1. << ", T = " << tottransmission << " B\u03F1 = "
+              << reactionpid2.load()/reactF5.at(1).GetEntries() << " CSC: "
+              << chargestatevictims;
     if(set.isemptyortrans())
-        stringout << " Ratio: " << 100.*reactionpid2/reactionpid1.load()
-                  <<" \u00b1 "  << 100.*reactionpid2/reactionpid1.load()*
+        stringout << " Ratio: " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
+                  <<" \u00b1 "  << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()*
                      pow(1./reactionpid2+ 1./reactionpid1.load(),0.5) << " %";
     cout  << stringout.str() << endl;
 
     txtwriter txt;
     txt.addline(stringout.str());
 
-    cout << "Ratio " << 100.*reactionpid2/reactionpid1.load() << "% " << endl;
+    cout << "Ratio " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
+         << "% " << endl;
 }
 
 void PID::reactionparameters() {
@@ -517,7 +527,126 @@ void PID::reactionparameters() {
     else if(reaction == "73NiP3P"){  incval = nancy::incval73Ni;  targetval = nancy::targetval71Fe;}
     else if(reaction == "74NiP2P"){  incval = nancy::incval74Ni;  targetval = nancy::targetval73Co;}
     else if(reaction == "74NiP3P"){  incval = nancy::incval74Ni;  targetval = nancy::targetval72Fe;}
+    else if(reaction == "82GeP2P"){  incval = nancy::incval82Ge;  targetval = nancy::targetval81Ga;}
+    else if(reaction == "82GeP3P"){  incval = nancy::incval82Ge;  targetval = nancy::targetval80Zn;}
+    else if(reaction == "83GeP2P"){  incval = nancy::incval83Ge;  targetval = nancy::targetval82Ga;}
+    else if(reaction == "83GeP3P"){  incval = nancy::incval83Ge;  targetval = nancy::targetval81Zn;}
+    else if(reaction == "80GaP2P"){  incval = nancy::incval80Ga;  targetval = nancy::targetval79Zn;}
+    else if(reaction == "80GaP3P"){  incval = nancy::incval80Ga;  targetval = nancy::targetval78Cu;}
+    else if(reaction == "81GaP2P"){  incval = nancy::incval81Ga;  targetval = nancy::targetval80Zn;}
+    else if(reaction == "81GaP3P"){  incval = nancy::incval81Ga;  targetval = nancy::targetval79Cu;}
+    else if(reaction == "82GaP2P"){  incval = nancy::incval82Ga;  targetval = nancy::targetval81Zn;}
+    else if(reaction == "82GaP3P"){  incval = nancy::incval82Ga;  targetval = nancy::targetval80Cu;}
+    else if(reaction == "78ZnP2P"){  incval = nancy::incval78Zn;  targetval = nancy::targetval77Cu;}
+    else if(reaction == "78ZnP3P"){  incval = nancy::incval78Zn;  targetval = nancy::targetval76Ni;}
+    else if(reaction == "79ZnP2P"){  incval = nancy::incval79Zn;  targetval = nancy::targetval78Cu;}
+    else if(reaction == "79ZnP3P"){  incval = nancy::incval79Zn;  targetval = nancy::targetval77Ni;}
+    else if(reaction == "80ZnP2P"){  incval = nancy::incval80Zn;  targetval = nancy::targetval79Cu;}
+    else if(reaction == "80ZnP3P"){  incval = nancy::incval80Zn;  targetval = nancy::targetval78Ni;}
+    else if(reaction == "81ZnP2P"){  incval = nancy::incval81Zn;  targetval = nancy::targetval80Cu;}
+    //else if(reaction == "81ZnP3P"){  incval = nancy::incval81Zn;  targetval = nancy::targetval76Ni;}
+    else if(reaction == "77CuP2P"){  incval = nancy::incval77Cu;  targetval = nancy::targetval76Ni;}
+    else if(reaction == "77CuP3P"){  incval = nancy::incval77Cu;  targetval = nancy::targetval75Co;}
+    else if(reaction == "78CuP2P"){  incval = nancy::incval78Cu;  targetval = nancy::targetval77Ni;}
+    else if(reaction == "78CuP3P"){  incval = nancy::incval78Cu;  targetval = nancy::targetval76Co;}
+    else if(reaction == "79CuP2P"){  incval = nancy::incval79Cu;  targetval = nancy::targetval78Ni;}
+    //else if(reaction == "79CuP3P"){  incval = nancy::incval79Cu;  targetval = nancy::targetval75Co;}
+
     else __throw_invalid_argument(Form("Invalid reaction %s!\n", &reaction[0]));
+}
+
+void PID::chargestatecut(){
+    // Magic to get the charge state contribution
+    vector<string> chemelem ={"R",
+            "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S",
+            "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga",
+            "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc"};
+    string numbers = "0123456789";
+    int startindex = (int)reaction.find_first_not_of(numbers);
+    int projectileN = std::stoi(reaction.substr(0,startindex));
+
+    // Figure out reaction:
+    bool p3pbool = true;
+    if( reaction.find("P2P") != string::npos) p3pbool = false;
+
+    //Figure out starting Q
+    int projectileZ = 0;
+    string temp = reaction;
+    temp.erase(temp.length()-3); // Erasing the P2/3P-part
+    temp.erase(0,reaction.substr(0,startindex).size()); // Erase Number
+    for(int i=1; i<chemelem.size(); i++){
+        if(temp == chemelem.at(i)){ projectileZ = i; break;}
+    }
+
+    //cout << "Reaction: " << reaction << " Start number: " << projectileN << " Z " << projectileZ << endl;
+
+    // Apply Reaction to values
+    if (p3pbool){
+         projectileN -= 2;
+         projectileZ -= 2; }
+    else{projectileN -= 1;
+         projectileZ -= 1;}
+
+
+    double aoq = projectileN/(double)projectileZ; // AoQ of daughter Nucleus
+    double aoqoffset = aoq - targetval.at(0);
+
+    cout <<" A/Q for daughter: " << aoq << ", off by: " << aoqoffset << endl;
+
+    for(int i=-4; i<0; i++){
+        double chargestateaoq = (projectileN+i)/(double)(projectileZ-1);
+        if(abs(chargestateaoq-aoq) < 2*targetval.at(2)){ // Ellipsoids are touching
+            cout << "For Q-1, Z = " << projectileN+i << " distance is " << chargestateaoq-aoq<< endl;
+            // Calculate center of blob whose charge state is interfering
+            double aoqintruder = (projectileN+i)/(double)projectileZ - aoqoffset;
+
+            // Calculate intersecting ellipse of the part thats intruding
+            double aoqintersect = aoqintruder + chargestateaoq - aoq;
+
+            // Define upper and lower boundaries for ellipse overlap check
+            vector<int> binlow{0,0,0};
+            PIDplot.at(1).at(3).GetBinXYZ(
+                PIDplot.at(1).at(3).FindBin(aoqintruder-targetval.at(2),
+                                            targetval.at(1)-targetval.at(3)),
+                binlow.at(0), binlow.at(1), binlow.at(2));
+            vector<int> binhigh{0,0,0};
+            PIDplot.at(1).at(3).GetBinXYZ(
+                PIDplot.at(1).at(3).FindBin(aoqintruder+targetval.at(2),
+                                            targetval.at(1)+targetval.at(3)),
+                binhigh.at(0), binhigh.at(1), binhigh.at(2));
+
+            //cout << "X-bin Width " << binhigh.at(0) << " - " << binlow.at(0)
+            //     << ". Y-Bin Width " << binhigh.at(1) << " - " << binlow.at(1) << endl;
+
+            // Prepare cut diagram.
+            chargestate.emplace_back(TH2D(PIDplot.at(1).at(3)));
+            chargestate.back().Reset();
+            chargestate.back().SetName(Form("ChargestateN%i.%i",projectileN+i, projectileZ));
+            chargestate.back().SetTitle(Form("CS contr. {}^{%i}%s{}^{%i+} Calc A/Q %.4f",
+                                             projectileN +i, chemelem.at(projectileZ).c_str(),
+                                             projectileZ-1,aoqintruder));
+
+            // Loop over all bins and check for double inside ellipse
+            for(int j=binlow.at(0); j<= binhigh.at(0); j++){ // x-loop
+                double xcenter = PIDplot.at(1).at(3).GetXaxis()->GetBinCenter(j);
+                for(int k=binlow.at(1); k<=binhigh.at(1); k++){
+                    double ycenter = PIDplot.at(1).at(3).GetYaxis()->GetBinCenter(k);
+
+                    if((pow(1./targetval.at(2)*(aoqintruder-xcenter),2) +
+                        pow(1./targetval.at(3)*(targetval.at(1)-ycenter),2))<1 &&
+                       (pow(1./targetval.at(2)*(aoqintersect-xcenter),2) +
+                        pow(1./targetval.at(3)*(targetval.at(1)-ycenter),2))<1){
+                        //cout << "Charge State X: " << j << " Y: " << k << " with: "
+                        //     << PIDplot.at(1).at(3).GetBinContent(j,k) << " cts." << endl;
+                        chargestate.back().SetBinContent(j,k,PIDplot.at(1).at(3).GetBinContent(j,k)+1E-9);
+                    }
+                }
+            }
+        }
+    }
+
+    // See all charge state contributions with 1% of initial value
+    for(auto &elem: chargestate) chargestatevictims += elem.Integral()*0.01;
 }
 
 void PID::histogramsetup() {
