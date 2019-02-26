@@ -50,10 +50,10 @@ void minosana::analyze() {
 
         /// MINOS 3: Fitting the taken pads for Qmax and Ttrig information /
         padsleft -= Xpadnew.size();
-        for (int i = 0; i < minoscalib.GetNumCalibMINOS(); i++) {
-            minos = minoscalib.GetCalibMINOS(i);
-            double x_mm = minos->GetX();
-            double y_mm = minos->GetY();
+        for (int i = 0; i < minoscalibvalues.size(); i++) {
+            //minos = minoscalib.GetCalibMINOS(i);
+            double x_mm = minostrackxy.at(i).at(0); // minos->GetX();
+            double y_mm = minostrackxy.at(i).at(1); // minos->GetY();
             hfit.Reset(); // reset fitting histogram
             bool fitbool = false;
             int indexfill = 0;
@@ -67,10 +67,10 @@ void minosana::analyze() {
             }
             // Check if new channel is of interest
             if (fitbool) {
-                for (int k = 0; k < minos->GetNData(); k++) {
-                    if (minos->GetCalibValue(k) >= 0)
-                        hfit.SetBinContent(hfit.FindBin(minos->GetCalibValue(k)),
-                                           minos->GetCalibValue(k) + 250);
+                for (int k = 0; k < minoscalibvalues.at(i).size(); k++) {
+                    if (minoscalibvalues.at(i).at(k) >= 0)
+                        hfit.SetBinContent(hfit.FindBin(minoscalibvalues.at(i).at(k)),
+                                           minoscalibvalues.at(i).at(k) + 250);
                 }
                 // Fitting the hfit histogram of last ch. if not empty
                 if (hfit.GetSumOfWeights() > 0) {
@@ -212,10 +212,10 @@ void minosana::analyze() {
             double amin, edm, errdef, chi2res1, chi2res2;
 
             FindStart(pStart_1, chi1, fitStatus, grxz_1, gryz_1);
-            std::function<void(int &, double *, double &sum, double *par, int)> test1 =
-                    [this](int &a, double *b, double &sum, double *par, int d){
-                return this->SumDistance1(a,b,sum,par,d);};
-            min.SetFCN(void (this->SumDistance1)(int, double, double, double, int));
+
+            tmr = minosana::getTMinosResult();
+
+            min.SetFCN(SumDistance1);
             // Set starting values and step sizes for parameters
             min.mnparm(0, "x0", pStart_1.at(0), 0.1, -500, 500, iflag);
             min.mnparm(0, "Ax", pStart_1.at(1), 0.1, -10, 10, iflag);
@@ -265,8 +265,8 @@ void minosana::analyze() {
                               sqrt(pow(parFit_2[1], 2) + pow(parFit_2[3], 2) + 1))) *
                         180. / TMath::Pi();
 
-                par1 = parFit_1;
-                par2 = parFit_2;
+                //par1 = parFit_1;
+                //par2 = parFit_2;
             }
         } // endif trackNbr_final >= 1
 
@@ -279,6 +279,8 @@ void minosana::analyze() {
         zout.clear();
         qout.clear();
     } // loop for E(T) fits for less than 5 track evts
+
+    tmr = {}; // reset out-of-class data structure
 }
 
 int minosana::Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
@@ -720,32 +722,32 @@ void minosana::FindStart(vector<double> pStart, vector<double> chi, vector<int> 
     delete myfit1;
 }
 
-double minosana::FitFunction(double *x, double *p){
+double FitFunction(double *x, double *p){
     return p[0]+p[1]*x[0];
 }
 
-double minosana::conv_fit(double *x, double *p){
+double conv_fit(double *x, double *p){
     // Check for boundaries of x
     if(x[0]<p[1] || x[0] > 512) return 250;
     else return p[0] * exp(-3.*(x[0]-p[1])/p[2]) * sin((x[0]-p[1])/p[2]) *
                 pow((x[0]-p[1])/p[2], 3) + 250;
 }
 
-void minosana::SumDistance1(int &, double *, double &sum, double *par, int){
+void SumDistance1(int &, double *, double &sum, double *par, int){
     sum =0;
     double qtot =0;
-    for(int i=0; i<dataresult.x_mm.size(); i++){
-        if(dataresult.n_Cluster.at(i) == 1){
-            double d = distancelinepoint(dataresult.x_mm.at(i), dataresult.y_mm.at(i),
-                                         dataresult.z_mm.at(i), par);
-            sum  += d*dataresult.Chargemax.at(i);
-            qtot +=   dataresult.Chargemax.at(i);
+    for(int i=0; i<tmr.x_mm.size(); i++){
+        if(tmr.n_Cluster.at(i) == 1){
+            double d = distancelinepoint(tmr.x_mm.at(i), tmr.y_mm.at(i),
+                                         tmr.z_mm.at(i), par);
+            sum  += d*tmr.Chargemax.at(i);
+            qtot +=   tmr.Chargemax.at(i);
         }
     }
     sum /=qtot;
 }
 
-double minosana::distancelinepoint(double &x, double &y, double &z, double *p){
+double distancelinepoint(double &x, double &y, double &z, double *p){
     // Calculation of the distance between line point
     ROOT::Math::XYZVector xp(x,y,z);
     ROOT::Math::XYZVector x0(p[0],p[2],0.);
@@ -754,15 +756,15 @@ double minosana::distancelinepoint(double &x, double &y, double &z, double *p){
     return ((xp-x0).Cross(u)).Mag2();
 }
 
-void minosana::SumDistance2(int &, double *, double &sum, double *par, int){
+void SumDistance2(int &, double *, double &sum, double *par, int){
     double qtot = 0;
     sum = 0;
-    for(int i=0; i<dataresult.x_mm.size(); i++){
-        if(dataresult.n_Cluster.at(i) == 2){
-            double d = distancelinepoint(dataresult.x_mm.at(i), dataresult.y_mm.at(i),
-                                         dataresult.z_mm.at(i), par);
-            sum += d*dataresult.Chargemax.at(i);
-            qtot += dataresult.Chargemax.at(i);
+    for(int i=0; i<tmr.x_mm.size(); i++){
+        if(tmr.n_Cluster.at(i) == 2){
+            double d = distancelinepoint(tmr.x_mm.at(i), tmr.y_mm.at(i),
+                                         tmr.z_mm.at(i), par);
+            sum += d*tmr.Chargemax.at(i);
+            qtot += tmr.Chargemax.at(i);
         }
     }
     sum /= qtot;
