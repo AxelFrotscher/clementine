@@ -2,6 +2,7 @@
 // Created by afrotscher on 8/7/18.
 //
 
+#include "minos.h"
 #include <libconstant.h>
 #include "PID/pid.h"
 #include "histogram_cuts.hh"
@@ -144,7 +145,12 @@ void PID::innerloop(treereader *tree, vector<vector<atomic<bool>>> &goodevents,
                     }
                     // do the correlation between F5 and F9
                     fitplot.at(1).Fill(tree->F5X, tree->F9X);
-                }
+
+                    // make the mighty minos analysis
+                    /*minosana analysis(tree->Trackamount,tree->Tshaping,
+                            tree->TimeBinElec,tree->DelayTrig, tree->VDrift,
+                            *tree->minostrackxy, *tree->Minoscalibvalues);
+                */}
             }
         }
         progress.increaseevent();
@@ -200,7 +206,10 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     vector<string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
                         "F5X", "F5A", "F9X", "F9A", "F11X", "F11A",
-                        "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho"};
+                        "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho", "VDrift",
+                        "MinosClustX", "MinosClustY", "MinosClustQ",
+                        "DelayTrig", "Trackamount", "Minoscalibvalues",
+                        "TimeBinElec", "Tshaping", "minostrackxy"};
     for(auto &i:tree) i->setloopkeys(keys);
 
     //Constructing all the histograms
@@ -261,8 +270,8 @@ void PID::offctrans() {
     reactF5.back().Divide(new TH1D(reactF5.at(0)));
     reactF5.back().SetName("F5ratio");
 
-    if((goodevents.size() == runinfo::emptysize.at(0)) ||
-       (goodevents.size() == runinfo::transsize.at(0))){
+    setting set;
+    if(set.isemptyortrans()){
         printf("Not doing off-center transmission. No physics run.\n");
         return;
     }
@@ -556,6 +565,12 @@ void PID::reactionparameters() {
 }
 
 void PID::chargestatecut(){
+    setting set;
+    if(set.isemptyortrans()){
+        printf("Not doing charge state cut. No physics run.\n");
+        return;
+    }
+
     // Magic to get the charge state contribution
     vector<string> chemelem ={"R",
             "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S",

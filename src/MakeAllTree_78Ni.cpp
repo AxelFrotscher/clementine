@@ -333,7 +333,7 @@ void generatetree(const string infile, const string output) {
             double x_mm = minos->GetX();
             double y_mm = minos->GetY();
 
-            minostrackxy.push_back({x_mm, y_mm});
+            minostrackxy.push_back(vector<double>{x_mm, y_mm});
             if(!(abs(x_mm)<0.01 && abs(y_mm)< 0.01)){ // Cut not connected channels
                 for(int j=0; j<minos->GetNData(); j++)
                     maxcharge = max(maxcharge, minos->GetCalibValue(j));
@@ -345,6 +345,7 @@ void generatetree(const string infile, const string output) {
                 }
             }
         }
+        if(!minostrackxy.size()) minostrackxy.push_back({0,0});
 
         tree->Fill();
         neve++;

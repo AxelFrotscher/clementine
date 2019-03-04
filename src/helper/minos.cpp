@@ -801,3 +801,5 @@ void minosana::vertex(vector<double> &p, vector<double> &pp, double &xv,
     yv = (y+yp)/2;
     zv = (z+zp)/2;
 }
+
+TMinosResult tmr;

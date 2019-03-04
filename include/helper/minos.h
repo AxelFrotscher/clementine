@@ -97,11 +97,10 @@ struct TMinosResult{
     }
 };
 
-
 class minosana{
 public:
     minosana(int filled_, double TShaping_, double TimeBinElec_,
-             double DelayTrigger_, double VDrift_, double minostrackxy_,
+             double DelayTrigger_, double VDrift_, vector<vector<double>> minostrackxy_,
              vector<vector<double>> minoscalibvalues_):
               filled(filled_), Tshaping(TShaping_), TimeBinElec(TimeBinElec_),
               DelayTrigger(DelayTrigger_), VDrift(VDrift_), minostrackxy(minostrackxy_),
@@ -148,4 +147,4 @@ void SumDistance2(int &, double *, double &sum, double *par, int);
 void SumDistance1(int &, double *, double &sum, double *par, int);
 double distancelinepoint(double &x, double &y, double &z, double *p);
 double conv_fit(double *x, double *p);
-TMinosResult tmr;
+extern TMinosResult tmr;

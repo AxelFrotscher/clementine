@@ -191,13 +191,14 @@ public :
     TString         BigRIPSBeam_ripsname[2][kMaxBigRIPSBeam];
     TString         BigRIPSBeam_tofname[kMaxBigRIPSBeam];
     TString         BigRIPSBeam_icname[kMaxBigRIPSBeam];
-    vector<double>  *MinosClustX;
-    vector<double>  *MinosClustY;
-    vector<double>  *MinosClustQ;
+    vector<double>  *MinosClustX = nullptr;
+    vector<double>  *MinosClustY = nullptr;
+    vector<double>  *MinosClustQ = nullptr;
     Double_t        VDrift;
     Double_t        DelayTrig;
     Int_t           Trackamount;
-    vector<vector<double> > *Minoscalibvalues;
+    vector<vector<double> > *Minoscalibvalues = nullptr;
+    vector<vector<double> > *minostrackxy = nullptr;
     Double_t        TimeBinElec;
     Double_t        Tshaping;
     Double_t        F3X;
@@ -380,6 +381,7 @@ public :
     TBranch        *b_DelayTrigger;   //!
     TBranch        *b_Trackamount;   //!
     TBranch        *b_Minoscalibvalues;   //!
+    TBranch        *b_minostrackxy; //!
     TBranch        *b_TimeBinElec;   //!
     TBranch        *b_Tshaping;   //!
     TBranch        *b_F3X;   //!
