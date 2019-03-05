@@ -15,7 +15,7 @@
 using std::vector, std::cerr, std::cout, std::endl, std::min, std::max,
       std::accumulate, std::placeholders::_1,std::placeholders::_2,
       std::placeholders::_3, std::placeholders::_4, std::placeholders::_5;
-void minosana::analyze() {
+TMinosPass minosana::analyze() {
     /// MINOS 2. Modify with hough-transformation
     int padsleft = Xpad.size();
     vector<bool> clusterringbool;
@@ -33,7 +33,6 @@ void minosana::analyze() {
             }
             if (filter_result > 10 && clusterringbool.back()) trackNbr++;
         }
-
     }
 
     for (int i = 0; i < Xpadnew.size(); i++) {
@@ -44,6 +43,8 @@ void minosana::analyze() {
 
     /// Bonus for Tracknumber between 1 and 4
     TH1F hfit("hfit", "hfit", 512, 0, 512);
+    hfit.SetDirectory(nullptr);
+
     auto fit_function = new TF1("fit_function", conv_fit, 0, 511, 3);
     if (trackNbr > 0 && trackNbr < 4) {
         if (!filled) cerr << "Tracknumber:" << trackNbr << " but no evts." << endl;
@@ -134,6 +135,7 @@ void minosana::analyze() {
             } // end if fitbool true
             else continue;
         } // End of all entries
+        // Delete hfit histogram
 
          /// 4: MINOS Filtering the tracks off possible noise with Hough3D //
         int padsleft2 = Xpadnew.size();
@@ -278,9 +280,10 @@ void minosana::analyze() {
         yout.clear();
         zout.clear();
         qout.clear();
-    } // loop for E(T) fits for less than 5 track evts
+    } // end-if for E(T) fits for less than 5 track evts
 
     tmr = {}; // reset out-of-class data structure
+    return TMinosPass(r_vertex, thetaz1, thetaz2, phi_vertex, trackNbr, trackNbr_FINAL);
 }
 
 int minosana::Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,

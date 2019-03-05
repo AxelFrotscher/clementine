@@ -97,20 +97,38 @@ struct TMinosResult{
     }
 };
 
+struct TMinosPass{
+    double r_vertex;
+    double thetaz1;
+    double thetaz2;
+    double phi_vertex;
+    double trackNbr;
+    double trackNbr_final;
+
+    TMinosPass(double r_vertex_, double thetaz1_, double thetaz2_,
+               double phi_vertex_, double trackNbr_, double trackNbr_Final):
+               r_vertex(r_vertex_), thetaz1(thetaz1_), thetaz2(thetaz2_),
+               phi_vertex(phi_vertex_),trackNbr(trackNbr_),
+               trackNbr_final(trackNbr_Final) {}
+};
+
 class minosana{
 public:
     minosana(int filled_, double TShaping_, double TimeBinElec_,
-             double DelayTrigger_, double VDrift_, vector<vector<double>> minostrackxy_,
-             vector<vector<double>> minoscalibvalues_):
-              filled(filled_), Tshaping(TShaping_), TimeBinElec(TimeBinElec_),
-              DelayTrigger(DelayTrigger_), VDrift(VDrift_), minostrackxy(minostrackxy_),
-              minoscalibvalues(minoscalibvalues_){
+             double DelayTrigger_, double VDrift_,
+             vector<vector<double>> minostrackxy_,
+             vector<vector<double>> minoscalibvalues_, vector<double> xpad_,
+             vector<double> ypad_, vector<double> qpad_):
+             filled(filled_), Tshaping(TShaping_), TimeBinElec(TimeBinElec_),
+             DelayTrigger(DelayTrigger_), VDrift(VDrift_),
+             minostrackxy(minostrackxy_), minoscalibvalues(minoscalibvalues_),
+             Xpad(xpad_), Ypad(ypad_), Qpad(qpad_){
 
     }
     TMinosResult getTMinosResult(){return dataresult;}
+    TMinosPass analyze();
 
 private:
-    void analyze();
     int Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
                          vector<double> &x_out,vector<double> &y_out,
                          vector<double> &q_out, vector<bool> &ringbool);

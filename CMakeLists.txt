@@ -2,7 +2,6 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(clementine)
 
-set(CMAKE_CXX_FLAGS "-DCMAKE_BUILD_TYPE=Release")
 set(CMAKE_CXX_STANDARD 17)
 
 #Find ROOT installation
@@ -44,5 +43,11 @@ target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread -lMinuit
    -L/home/afrotscher/soft/minos/minosv1.1.1/install/pentium-linux-release/lib
         -lminos-fem -lmordicus-utl -lUtilities
    -L/home/afrotscher/soft/minos/liboffline -lminos ${ROOT_LIBRARIES})
+
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC DEBUG=1)
+elseif(CMAKE_BUILD_TYPE MATCHES Release)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC DEBUG=0)
+endif()
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)

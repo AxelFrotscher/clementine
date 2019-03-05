@@ -17,10 +17,11 @@
 using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
       std::stringstream, std::to_string, std::__throw_invalid_argument, std::min;
 
-void PID::innerloop(treereader *tree, vector<vector<atomic<bool>>> &goodevents,
-                    vector<uint> range) {
+void PID::innerloop(treereader *tree, treereader *minostree,
+                    vector<vector<atomic<bool>>> &goodevents, vector<uint> range) {
     // Step 1: duplicate the data structure
     vector<TH1D>         _reactF5;
+    vector<TH2D>         _minosresults;
     vector<vector<TH2D>> _reactPPAC;
     vector<vector<TH2D>> _PIDplot;
 
@@ -37,6 +38,8 @@ void PID::innerloop(treereader *tree, vector<vector<atomic<bool>>> &goodevents,
         for(auto &j:i) temp.emplace_back(TH2D(j));
         _PIDplot.emplace_back(temp);
     }
+
+    for(auto &i: minosresults) _minosresults.emplace_back(TH2D(i));
 
     double maxbrho = 10; // Tm, higher than all my values
     if(incval.size() == 8){
@@ -147,10 +150,18 @@ void PID::innerloop(treereader *tree, vector<vector<atomic<bool>>> &goodevents,
                     fitplot.at(1).Fill(tree->F5X, tree->F9X);
 
                     // make the mighty minos analysis
-                    /*minosana analysis(tree->Trackamount,tree->Tshaping,
-                            tree->TimeBinElec,tree->DelayTrig, tree->VDrift,
-                            *tree->minostrackxy, *tree->Minoscalibvalues);
-                */}
+                    minostree->getevent(eventcounter);
+
+                    minosana analysis(minostree->Trackamount, minostree->Tshaping,
+                                      minostree->TimeBinElec, minostree->DelayTrig,
+                                      minostree->VDrift, *minostree->minostrackxy,
+                                      *minostree->Minoscalibvalues,
+                                      *minostree->MinosClustX, *minostree->MinosClustY,
+                                      *minostree->MinosClustQ);
+                    TMinosPass minres = analysis.analyze();
+                    minosresults.at(0).Fill(minres.thetaz1, minres.thetaz2);
+                    minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
+                }
             }
         }
         progress.increaseevent();
@@ -159,11 +170,16 @@ void PID::innerloop(treereader *tree, vector<vector<atomic<bool>>> &goodevents,
     // Step 3: rejoining data structure
     unitemutex.lock();
     for(uint i=0;i<reactF5.size();i++) reactF5.at(i).Add(new TH1D(_reactF5.at(i)));
+
+    for(uint i=0;i<minosresults.size();i++)
+        minosresults.at(i).Add(new TH2D(_minosresults.at(i)));
+
     for(uint i=0;i<reactPPAC.size();i++){
         for(uint j=0; j<reactPPAC.at(0).size(); j++){
             reactPPAC.at(i).at(j).Add(new TH2D(_reactPPAC.at(i).at(j)));
         }
     }
+
     for(uint i=0;i<PIDplot.size();i++){
         for(uint j=0;j<PIDplot.at(0).size();j++){
             PIDplot.at(i).at(j).Add(new TH2D(_PIDplot.at(i).at(j)));
@@ -183,7 +199,8 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         "PID/"+reaction+"/Uncorrected", "PID/"+reaction+"/Corrected",
         "PID/"+reaction+"/investigate", "PID/"+reaction+"/investigate/F5",
         "PID/"+reaction+"/investigate/F7", "PID/"+reaction+"/investigate/F9",
-        "PID/"+reaction+"/investigate/F11", "PID/"+reaction+"/chargestate"};
+        "PID/"+reaction+"/investigate/F11", "PID/"+reaction+"/chargestate",
+        "PID/"+reaction+"/MINOS"};
 
     for (auto &i :folders){
         // Do not analyse the same thing twice
@@ -193,6 +210,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     printf("Making PID with %i threads now...\n", threads);
 
+    /// Make regular TChain for fast input
     vector<TChain*> chain;
     for(int i=0; i<threads; i++){
         chain.emplace_back(new TChain("tree"));
@@ -206,11 +224,26 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     vector<string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
                         "F5X", "F5A", "F9X", "F9A", "F11X", "F11A",
-                        "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho", "VDrift",
-                        "MinosClustX", "MinosClustY", "MinosClustQ",
-                        "DelayTrig", "Trackamount", "Minoscalibvalues",
-                        "TimeBinElec", "Tshaping", "minostrackxy"};
+                        "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho"};
     for(auto &i:tree) i->setloopkeys(keys);
+
+    /// Make slow chain for MINOS readout
+    vector<TChain*> minoschain;
+    for(int i=0; i<threads; i++){
+        minoschain.emplace_back(new TChain("tree"));
+        for(auto &h: input) minoschain.back()->Add(h.c_str());
+    }
+
+    vector<treereader*> minostree;
+    for(auto *i:minoschain){
+        minostree.emplace_back(new treereader(i));
+    }
+
+    vector<string> minoskeys{"VDrift", "MinosClustX", "MinosClustY",
+                             "MinosClustQ", "DelayTrig", "Trackamount",
+                             "Minoscalibvalues", "TimeBinElec", "Tshaping",
+                             "minostrackxy"};
+    for(auto &i: minostree) i->setloopkeys(minoskeys);
 
     //Constructing all the histograms
     PID::histogramsetup();
@@ -221,7 +254,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&PID::innerloop, this,
-                               tree.at(i),ref(goodevents), ranges));
+                               tree.at(i), minostree.at(i), ref(goodevents), ranges));
     }
 
     for(auto &t : th) t.detach();
@@ -261,6 +294,9 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     output->cd(folders.at(7).c_str());
     for(auto &elem: chargestate) elem.Write();
+
+    output->cd(folders.at(8).c_str());
+    for(auto &elem: minosresults) elem.Write();
 }
 
 void PID::offctrans() {
@@ -402,15 +438,17 @@ void PID::crosssection() {
     const double tottransmissionerror = 0.05; // conservative relative error
 
     // Reduce CS contribution by Brho cut
-    chargestatevictims *= reactionpid2.load()/reactF5.at(1).GetEntries();
+    if(reactF5.at(1).GetEntries())
+        chargestatevictims *= reactionpid2.load()/reactF5.at(1).GetEntries();
 
-    const double crosssection = 1./numberdensity*(reactionpid2-chargestatevictims)/
+    double crosssection = 1./numberdensity*(reactionpid2-chargestatevictims)/
                           reactionpid1/tottransmission;
     // 1% absolute error + 5% relative error
     double cserror = crosssection*pow(1./reactionpid1 + 2./reactionpid2+
                          pow(tottransmissionerror+ 0.02/tottransmission,2)+
                          pow(numberdensityerror,2), 0.5);  // Error on Transm.
     if(isnan(cserror)) cserror = 0;
+    if(isnan(crosssection)) crosssection = 0;
 
     // make cross section string:
     setting set;
@@ -719,6 +757,17 @@ void PID::histogramsetup() {
                                250,-40*k,40*k,brhoslice,bl[0],bl[1]));
         reactPPAC.emplace_back(temp);
     }
+
+
+    minosresults.emplace_back(TH2D("theta", "#theta correlation", 90,0,3.14,90,0,3.14));
+    minosresults.emplace_back(TH2D("tracknbr", "Track No. vs. Final Track No.", 10,0.5,9.5,10,0.5,9.5));
+
+    minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} °");
+    minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / °");
+    minosresults.at(1).GetXaxis()->SetTitle("Track Number");
+    minosresults.at(1).GetYaxis()->SetTitle("Final Track Number");
+
+    for(auto &i: minosresults) i.SetOption("colz");
 
     fitplot.emplace_back(TH2D("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,
                               binning, binning-1,1,binning));

@@ -9,8 +9,9 @@
 
 class PID {
 public:
-    void innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
-    &goodevents, std::vector<uint> range);
+    void innerloop(treereader *tree, treereader *minostree,
+                   std::vector<std::vector<std::atomic<bool>>> &goodevents,
+                   std::vector<uint> range);
     void analyse(const std::vector<std::string> &input, TFile* output);
     void offctrans();
     void crosssection();
@@ -28,7 +29,7 @@ public:
 private:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
-    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/525,2));
+    int threads =1; //= std::min(25, std::max((int)sqrt(goodevents.size())/525,2));
     std::string reaction = "";
 
     std::vector<std::vector<TH2D>> PIDplot;
@@ -36,6 +37,7 @@ private:
     std::vector<std::vector<TH2D>> reactPPAC; // F7,F9,F11
     std::vector<std::vector<TH1D>> brhoprojection; // F5,7,9,11(Brho)
     std::vector<TH2D> chargestate;
+    std::vector<TH2D> minosresults;
 
     std::vector<double> incval; // cut on incoming particles (F7)
     std::vector<double> targetval; // second cut to detected particles (F11)
