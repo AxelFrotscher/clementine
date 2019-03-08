@@ -7,6 +7,8 @@
 #include <vector>
 #include <iostream>
 #include "TGraph.h"
+#include <mutex>
+#include "TH2D.h"
 using std::vector;
 
 struct TMinosClust{
@@ -118,11 +120,13 @@ public:
              double DelayTrigger_, double VDrift_,
              vector<vector<double>> minostrackxy_,
              vector<vector<double>> minoscalibvalues_, vector<double> xpad_,
-             vector<double> ypad_, vector<double> qpad_):
+             vector<double> ypad_, vector<double> qpad_, int threadno_,
+             vector<TH2D> &minossingleevent_):
              filled(filled_), Tshaping(TShaping_), TimeBinElec(TimeBinElec_),
              DelayTrigger(DelayTrigger_), VDrift(VDrift_),
              minostrackxy(minostrackxy_), minoscalibvalues(minoscalibvalues_),
-             Xpad(xpad_), Ypad(ypad_), Qpad(qpad_){
+             Xpad(xpad_), Ypad(ypad_),Qpad(qpad_), threadno(threadno_),
+             minossingleevent(minossingleevent_){
 
     }
     TMinosResult getTMinosResult(){return dataresult;}
@@ -139,6 +143,7 @@ private:
                              TGraph *grxz, TGraph *gryz);
     void vertex(vector<double> &p, vector<double> &pp, double &xv,
                           double &yv, double &zv);
+    void debug();
 
     vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
 
@@ -150,11 +155,14 @@ private:
     double TimeBinElec = 0;
     double DelayTrigger =0;
     double VDrift = 0;
+    double threadno=0;
     vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostrackxy;
+    vector<TH2D> &minossingleevent;
 
     TMinosClust fitdata;
     TMinosResult dataresult;
+    static std::mutex minos5;
 };
 
 // Ugly part outside of the class, because member-functions are trickier than

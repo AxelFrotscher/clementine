@@ -197,8 +197,9 @@ public :
     Double_t        VDrift;
     Double_t        DelayTrig;
     Int_t           Trackamount;
-    vector<vector<double> > *Minoscalibvalues = nullptr;
-    vector<vector<double> > *minostrackxy = nullptr;
+    vector<vector<double>> *Minoscalibvalues = nullptr;
+    vector<vector<double>> *minostrackxy = nullptr;
+    vector<vector<double>> *minostime = nullptr;
     Double_t        TimeBinElec;
     Double_t        Tshaping;
     Double_t        F3X;
@@ -382,6 +383,7 @@ public :
     TBranch        *b_Trackamount;   //!
     TBranch        *b_Minoscalibvalues;   //!
     TBranch        *b_minostrackxy; //!
+    TBranch        *b_minostime;   //!
     TBranch        *b_TimeBinElec;   //!
     TBranch        *b_Tshaping;   //!
     TBranch        *b_F3X;   //!

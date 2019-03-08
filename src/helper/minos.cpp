@@ -11,10 +11,14 @@
 #include "TH2F.h"
 #include <numeric>
 #include <functional>
+#include <mutex>
 
 using std::vector, std::cerr, std::cout, std::endl, std::min, std::max,
       std::accumulate, std::placeholders::_1,std::placeholders::_2,
       std::placeholders::_3, std::placeholders::_4, std::placeholders::_5;
+
+std::mutex minosana::minos5;
+
 TMinosPass minosana::analyze() {
     /// MINOS 2. Modify with hough-transformation
     int padsleft = Xpad.size();
@@ -42,11 +46,12 @@ TMinosPass minosana::analyze() {
     }
 
     /// Bonus for Tracknumber between 1 and 4
-    TH1F hfit("hfit", "hfit", 512, 0, 512);
-    hfit.SetDirectory(nullptr);
-
-    auto fit_function = new TF1("fit_function", conv_fit, 0, 511, 3);
     if (trackNbr > 0 && trackNbr < 4) {
+        minos5.lock();
+        TH1F hfit("hfit", "hfit", 512, 0, 512);
+
+        auto fit_function = new TF1("fit_function", conv_fit, 0, 511, 3);
+
         if (!filled) cerr << "Tracknumber:" << trackNbr << " but no evts." << endl;
 
         /// MINOS 3: Fitting the taken pads for Qmax and Ttrig information /
@@ -67,6 +72,7 @@ TMinosPass minosana::analyze() {
                 }
             }
             // Check if new channel is of interest
+            // if so, we read Q(t), and fill vectors w/ t&Q info after fitting E(t)
             if (fitbool) {
                 for (int k = 0; k < minoscalibvalues.at(i).size(); k++) {
                     if (minoscalibvalues.at(i).at(k) >= 0)
@@ -148,7 +154,19 @@ TMinosPass minosana::analyze() {
         auto gryz_2 = new TGraph;
         auto grxz_2 = new TGraph;
         for (int i = 0; i < padsleft2; i++) {
-            if (xin.size() && ((cluster_temp != int(clusternbr[i]) && !i) ||
+
+            // if-Loop executed only at the End
+            if(cluster_temp == clusternbr[i] && i==(Xpadnew.size()-1) &&
+               clusterpads[i]>=10 && clusterringbool[i] == true &&
+               Zpadnew[i] >-10000 && Zpadnew[i] <=520){  // 320=>520 debug
+                xin.push_back(Xpadnew[i]);
+                yin.push_back(Ypadnew[i]);
+                zin.push_back(Zpadnew[i]);
+                qin.push_back(Qpadnew[i]);
+            }
+
+            // x vector not empty AND (new track OR last entry of the loop
+            if (!xin.empty() && ((cluster_temp != clusternbr[i] && !i) ||
                                i == (Xpadnew.size() - 1))) {
                 Hough_filter(xin, yin, zin, qin, xout, yout, zout, qout);
 
@@ -160,7 +178,6 @@ TMinosPass minosana::analyze() {
                 for (auto &j: ringtouch) if (j > 0) ringsum++;
                 if (zmax > 290) ringsum = 16;
                 if (xout.size() > 10 && ringsum >= 15) {
-                    cout << xout.size() << " " << ringsum << " Padsleft2" << endl;
                     trackNbr_FINAL++;
                     //cluster1 = cluster_temp; delete if no use
                     for (int l = 0; l < xout.size(); l++) {
@@ -188,16 +205,15 @@ TMinosPass minosana::analyze() {
             }
 
             cluster_temp = clusternbr[i];
-            if (!(clusterpads[i] >= 10 && clusterringbool[i] == true &&
-                  Zpadnew[i] > -1E4 && Zpadnew[i] <= 320))
-                continue;
-            else {
+            if (clusterpads[i] >= 10 && clusterringbool[i] == true &&
+                  Zpadnew[i] > -1E4 && Zpadnew[i] <= 520){  // 320 => 520 debug
                 xin.push_back(Xpadnew[i]);
                 yin.push_back(Ypadnew[i]);
                 zin.push_back(Zpadnew[i]);
                 qin.push_back(Qpadnew[i]);
                 //npoint_temp++;
             }
+            else continue;
         } // end of loop on pads
 
         /// 5. MINOS Fitting filtered tracks in 3D (weight by charge, TMinuit) //
@@ -280,9 +296,14 @@ TMinosPass minosana::analyze() {
         yout.clear();
         zout.clear();
         qout.clear();
+
+        tmr = {}; // reset out-of-class data structure
+        minos5.unlock();
     } // end-if for E(T) fits for less than 5 track evts
 
-    tmr = {}; // reset out-of-class data structure
+    // Look at some events
+    debug();
+
     return TMinosPass(r_vertex, thetaz1, thetaz2, phi_vertex, trackNbr, trackNbr_FINAL);
 }
 
@@ -723,6 +744,20 @@ void minosana::FindStart(vector<double> pStart, vector<double> chi, vector<int> 
     pStart.at(2) = myfit1->GetParameter(0);
     pStart.at(3) = myfit1->GetParameter(1);
     delete myfit1;
+}
+
+
+void minosana::debug(){
+    // Look at some raw spectrums
+    if(minossingleevent.size() < 5 && Xpad.size() > 15){
+        minossingleevent.emplace_back(TH2D(Form("t%.0fEvt%lu",threadno,minossingleevent.size()),
+                                           Form("Thread %.0f, Event %lu",threadno,minossingleevent.size()),
+                                           100,-100,100,100,-100,100));
+        for(int i=0; i<Xpad.size();i++) minossingleevent.back().Fill(
+                    Xpad.at(i),Ypad.at(i));
+        minossingleevent.back().GetXaxis()->SetTitle("X [mm]");
+        minossingleevent.back().GetYaxis()->SetTitle("Y [mm]");
+    }
 }
 
 double FitFunction(double *x, double *p){

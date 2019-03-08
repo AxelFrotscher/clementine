@@ -73,7 +73,7 @@ void progressbar::draw(){
     lasttime = chrono::duration_cast<chrono::milliseconds>(
             chrono::steady_clock::now().time_since_epoch()).count();
 
-    if(currentthreads>1){
+    if(currentthreads>1 || !worker){
         barwidth = 31;
         this_thread::sleep_for(1s);
     }

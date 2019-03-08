@@ -29,7 +29,7 @@ public:
 private:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
-    int threads =1; //= std::min(25, std::max((int)sqrt(goodevents.size())/525,2));
+    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/525,2));
     std::string reaction = "";
 
     std::vector<std::vector<TH2D>> PIDplot;
@@ -38,6 +38,7 @@ private:
     std::vector<std::vector<TH1D>> brhoprojection; // F5,7,9,11(Brho)
     std::vector<TH2D> chargestate;
     std::vector<TH2D> minosresults;
+    std::vector<TH2D> minossingleevent; // Contains histograms for single events
 
     std::vector<double> incval; // cut on incoming particles (F7)
     std::vector<double> targetval; // second cut to detected particles (F11)

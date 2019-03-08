@@ -175,6 +175,9 @@ void generatetree(const string infile, const string output) {
     vector<vector<double>> minostrackxy; // Coordinates of minos pads hit {{x1,y1},{x2,y2},...}
     tree->Branch("minostrackxy", &minostrackxy);
 
+    vector<vector<double>> minostime;
+    tree->Branch("minostime", &minostime);
+
     //Parameters for MINOS analysis
     double minosthresh = 25, TimeBinElec = 30, Tshaping = 333;
     ifstream minosconfigfile("../config/db/ConfigMINOSDrift_fixed.txt");
@@ -324,16 +327,18 @@ void generatetree(const string infile, const string output) {
         Qpad.clear();
         minoscalibvalues.clear();
         minostrackxy.clear();
+        minostime.clear();
         auto *minos = new TArtCalibMINOSData;
         for(int i=0; i<minoscalib->GetNumCalibMINOS(); i++){
             minos = minoscalib->GetCalibMINOS(i);
             minoscalibvalues.push_back(*minos->GetCalibValueArray());
+            minostime.push_back(*minos->GetCalibTimeArray());
 
             double maxcharge =0;
             double x_mm = minos->GetX();
             double y_mm = minos->GetY();
-
             minostrackxy.push_back(vector<double>{x_mm, y_mm});
+
             if(!(abs(x_mm)<0.01 && abs(y_mm)< 0.01)){ // Cut not connected channels
                 for(int j=0; j<minos->GetNData(); j++)
                     maxcharge = max(maxcharge, minos->GetCalibValue(j));

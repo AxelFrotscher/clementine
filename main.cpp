@@ -9,6 +9,7 @@
 #include <boost/algorithm/string.hpp>
 #include "libconstant.h"
 #include "TArtStoreManager.hh"
+#include "TH1.h"
 
 R__LOAD_LIBRARY(libanacore.so)
 
@@ -31,6 +32,7 @@ vector<string> getlist(const char *instring){
 
 int main(int argc, char**argv){
     ROOT::EnableThreadSafety();
+    TH1::AddDirectory(kFALSE);
 
     // The Scope of this project is to analyse the 2015 SEASTAR
     printf("Welcome to the analysis program for 2014/2015 SEASTAR DATA\n"

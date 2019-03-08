@@ -24,6 +24,8 @@ void PID::innerloop(treereader *tree, treereader *minostree,
     vector<TH2D>         _minosresults;
     vector<vector<TH2D>> _reactPPAC;
     vector<vector<TH2D>> _PIDplot;
+    // MINOS with single events
+    vector<TH2D> _minossingleevent;
 
     for(auto &i: reactF5) _reactF5.emplace_back(TH1D(i));
 
@@ -151,13 +153,13 @@ void PID::innerloop(treereader *tree, treereader *minostree,
 
                     // make the mighty minos analysis
                     minostree->getevent(eventcounter);
-
                     minosana analysis(minostree->Trackamount, minostree->Tshaping,
                                       minostree->TimeBinElec, minostree->DelayTrig,
                                       minostree->VDrift, *minostree->minostrackxy,
                                       *minostree->Minoscalibvalues,
                                       *minostree->MinosClustX, *minostree->MinosClustY,
-                                      *minostree->MinosClustQ);
+                                      *minostree->MinosClustQ, (int)threadno,
+                                      _minossingleevent);
                     TMinosPass minres = analysis.analyze();
                     minosresults.at(0).Fill(minres.thetaz1, minres.thetaz2);
                     minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
@@ -185,6 +187,9 @@ void PID::innerloop(treereader *tree, treereader *minostree,
             PIDplot.at(i).at(j).Add(new TH2D(_PIDplot.at(i).at(j)));
         }
     }
+    minossingleevent.insert(minossingleevent.end(), _minossingleevent.begin(),
+                            _minossingleevent.end());
+
     unitemutex.unlock();
 
     progress.reset();
@@ -200,7 +205,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         "PID/"+reaction+"/investigate", "PID/"+reaction+"/investigate/F5",
         "PID/"+reaction+"/investigate/F7", "PID/"+reaction+"/investigate/F9",
         "PID/"+reaction+"/investigate/F11", "PID/"+reaction+"/chargestate",
-        "PID/"+reaction+"/MINOS"};
+        "PID/"+reaction+"/MINOS", "PID/"+reaction+"/MINOS/events"};
 
     for (auto &i :folders){
         // Do not analyse the same thing twice
@@ -297,6 +302,9 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     output->cd(folders.at(8).c_str());
     for(auto &elem: minosresults) elem.Write();
+
+    output->cd(folders.at(9).c_str());
+    for(auto &elem: minossingleevent) elem.Write();
 }
 
 void PID::offctrans() {
@@ -759,8 +767,10 @@ void PID::histogramsetup() {
     }
 
 
-    minosresults.emplace_back(TH2D("theta", "#theta correlation", 90,0,3.14,90,0,3.14));
-    minosresults.emplace_back(TH2D("tracknbr", "Track No. vs. Final Track No.", 10,0.5,9.5,10,0.5,9.5));
+    minosresults.emplace_back(TH2D("theta", "#theta correlation",
+                                   90,0,3.14,90,0,3.14));
+    minosresults.emplace_back(TH2D("tracknbr", "Track No. vs. Final Track No.",
+                                   10,-0.5,9.5,10,-0.5,9.5));
 
     minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} °");
     minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / °");

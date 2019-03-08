@@ -304,6 +304,7 @@ void treereader::Init(TTree *tree){
     fChain->SetBranchAddress("Trackamount", &Trackamount, &b_Trackamount);
     fChain->SetBranchAddress("Minoscalibvalues", &Minoscalibvalues, &b_Minoscalibvalues);
     fChain->SetBranchAddress("minostrackxy", &minostrackxy, &b_minostrackxy);
+    fChain->SetBranchAddress("minostime", &minostime, &b_minostime);
     fChain->SetBranchAddress("TimeBinElec", &TimeBinElec, &b_TimeBinElec);
     fChain->SetBranchAddress("TimeBinElec", &TimeBinElec, &b_TimeBinElec);
     fChain->SetBranchAddress("Tshaping", &Tshaping, &b_Tshaping);
