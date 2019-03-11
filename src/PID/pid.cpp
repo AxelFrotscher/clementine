@@ -22,6 +22,7 @@ void PID::innerloop(treereader *tree, treereader *minostree,
     // Step 1: duplicate the data structure
     vector<TH1D>         _reactF5;
     vector<TH2D>         _minosresults;
+    vector<TH1D>         _minos1dresults;
     vector<vector<TH2D>> _reactPPAC;
     vector<vector<TH2D>> _PIDplot;
     // MINOS with single events
@@ -155,14 +156,16 @@ void PID::innerloop(treereader *tree, treereader *minostree,
                     minostree->getevent(eventcounter);
                     minosana analysis(minostree->Trackamount, minostree->Tshaping,
                                       minostree->TimeBinElec, minostree->DelayTrig,
-                                      minostree->VDrift, *minostree->minostrackxy,
-                                      *minostree->Minoscalibvalues,
-                                      *minostree->MinosClustX, *minostree->MinosClustY,
-                                      *minostree->MinosClustQ, (int)threadno,
+                                      minostree->VDrift, minostree->minostrackxy,
+                                      minostree->Minoscalibvalues, minostree->minostime,
+                                      minostree->MinosClustX, minostree->MinosClustY,
+                                      minostree->MinosClustQ, (int)threadno,
                                       _minossingleevent);
                     TMinosPass minres = analysis.analyze();
-                    minosresults.at(0).Fill(minres.thetaz1, minres.thetaz2);
-                    minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
+                    _minosresults.at(0).Fill(minres.thetaz1, minres.thetaz2);
+                    _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
+                    _minos1dresults.at(0).Fill(minres.z_vertex);
+                    _minos1dresults.at(1).Fill(minres.phi_vertex);
                 }
             }
         }
@@ -175,6 +178,9 @@ void PID::innerloop(treereader *tree, treereader *minostree,
 
     for(uint i=0;i<minosresults.size();i++)
         minosresults.at(i).Add(new TH2D(_minosresults.at(i)));
+
+    for(uint i=0; i<minos1dresults.size(); i++)
+        minos1dresults.at(i).Add(new TH1D(_minos1dresults.at(i)));
 
     for(uint i=0;i<reactPPAC.size();i++){
         for(uint j=0; j<reactPPAC.at(0).size(); j++){
@@ -247,7 +253,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     vector<string> minoskeys{"VDrift", "MinosClustX", "MinosClustY",
                              "MinosClustQ", "DelayTrig", "Trackamount",
                              "Minoscalibvalues", "TimeBinElec", "Tshaping",
-                             "minostrackxy"};
+                             "minostrackxy", "minostime"};
     for(auto &i: minostree) i->setloopkeys(minoskeys);
 
     //Constructing all the histograms
@@ -302,6 +308,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     output->cd(folders.at(8).c_str());
     for(auto &elem: minosresults) elem.Write();
+    for(auto &elem: minos1dresults) elem.Write();
 
     output->cd(folders.at(9).c_str());
     for(auto &elem: minossingleevent) elem.Write();
@@ -768,14 +775,22 @@ void PID::histogramsetup() {
 
 
     minosresults.emplace_back(TH2D("theta", "#theta correlation",
-                                   90,0,3.14,90,0,3.14));
+                                   90,0,90,90,0,90));
     minosresults.emplace_back(TH2D("tracknbr", "Track No. vs. Final Track No.",
                                    10,-0.5,9.5,10,-0.5,9.5));
 
-    minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} °");
-    minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / °");
+    minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} #circ");
+    minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / #circ");
     minosresults.at(1).GetXaxis()->SetTitle("Track Number");
     minosresults.at(1).GetYaxis()->SetTitle("Final Track Number");
+
+    minos1dresults.emplace_back(TH1D("zdistr", "Reaction distribution", 100,-100,100));
+    minos1dresults.emplace_back(TH1D("phidistr", "Reaction angle distribution", 90, 0,180));
+
+    minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
+    minos1dresults.at(0).GetYaxis()->SetTitle("N");
+    minos1dresults.at(1).GetXaxis()->SetTitle("#phi / #circ");
+    minos1dresults.at(1).GetYaxis()->SetTitle("N");
 
     for(auto &i: minosresults) i.SetOption("colz");
 

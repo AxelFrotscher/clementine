@@ -247,16 +247,16 @@ namespace nancy{
     const std::vector<double> targetval101Sr{2.6697,37.438, .01,  .6};
     const std::vector<double> targetval102Sr{2.6966,37.467, .01,  .6};
 
-    // Fifth Setting
-    const std::vector<double> incval66Mn{2.6372, 25.09, .006, .6};
-    const std::vector<double> incval67Mn{2.6773, 25.07, .006, .6};
-    const std::vector<double> incval67Fe{2.5738, 26.05, .006, .6};
-    const std::vector<double> incval68Fe{2.6124, 26.07, .006, .6};
-    const std::vector<double> incval68Co{2.5151, 27.03, .006, .6};
-    const std::vector<double> incval69Co{2.5524, 27.00, .006, .6};
-    const std::vector<double> incval70Co{2.5893, 27.01, .006, .6};
-    const std::vector<double> incval70Ni{2.4957, 27.98, .006, .6};
-    const std::vector<double> incval71Ni{2.5317, 27.96, .006, .6};
+    // Fifth Setting                                              , T(P,2P) Brhocut(P,2P),..
+    const std::vector<double> incval66Mn{2.6372, 25.09, .006, .6, .595, 6.937, .596, 6.772};
+    const std::vector<double> incval67Mn{2.6773, 25.07, .006, .6, .593, 6.958, .593, 6.793};
+    const std::vector<double> incval67Fe{2.5738, 26.05, .006, .6, .593, 6.944, .593, 6.786};
+    const std::vector<double> incval68Fe{2.6124, 26.07, .006, .6, .590, 6.965, .591, 6.807};
+    const std::vector<double> incval68Co{2.5151, 27.03, .006, .6, .589, 6.953, .590, 6.803};
+    const std::vector<double> incval69Co{2.5524, 27.00, .006, .6, .587, 6.974, .587, 6.824};
+    const std::vector<double> incval70Co{2.5893, 27.01, .006, .6, .584, 6.995, .585, 6.845};
+    const std::vector<double> incval70Ni{2.4957, 27.98, .006, .6, .584, 6.981, .585, 6.838};
+    const std::vector<double> incval71Ni{2.5317, 27.96, .006, .6, .582, 7.002, .582, 6.859};
 
     const std::vector<double> targetval70Co{2.6020, 26.74, .015, .6};
     const std::vector<double> targetval69Co{2.5652, 26.70, .015, .6};

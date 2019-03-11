@@ -106,27 +106,30 @@ struct TMinosPass{
     double phi_vertex;
     double trackNbr;
     double trackNbr_final;
+    double z_vertex;
 
     TMinosPass(double r_vertex_, double thetaz1_, double thetaz2_,
-               double phi_vertex_, double trackNbr_, double trackNbr_Final):
+               double phi_vertex_, double trackNbr_, double trackNbr_Final,
+               double z_vertex_):
                r_vertex(r_vertex_), thetaz1(thetaz1_), thetaz2(thetaz2_),
                phi_vertex(phi_vertex_),trackNbr(trackNbr_),
-               trackNbr_final(trackNbr_Final) {}
+               trackNbr_final(trackNbr_Final), z_vertex(z_vertex_){}
 };
 
 class minosana{
 public:
     minosana(int filled_, double TShaping_, double TimeBinElec_,
              double DelayTrigger_, double VDrift_,
-             vector<vector<double>> minostrackxy_,
-             vector<vector<double>> minoscalibvalues_, vector<double> xpad_,
-             vector<double> ypad_, vector<double> qpad_, int threadno_,
+             vector<vector<double>> *minostrackxy_,
+             vector<vector<double>> *minoscalibvalues_,
+             vector<vector<double>> *minostime_, vector<double> *xpad_,
+             vector<double> *ypad_, vector<double> *qpad_, int threadno_,
              vector<TH2D> &minossingleevent_):
              filled(filled_), Tshaping(TShaping_), TimeBinElec(TimeBinElec_),
              DelayTrigger(DelayTrigger_), VDrift(VDrift_),
-             minostrackxy(minostrackxy_), minoscalibvalues(minoscalibvalues_),
-             Xpad(xpad_), Ypad(ypad_),Qpad(qpad_), threadno(threadno_),
-             minossingleevent(minossingleevent_){
+             minostrackxy(*minostrackxy_), minoscalibvalues(*minoscalibvalues_),
+             minostime(*minostime_), Xpad(*xpad_), Ypad(*ypad_),Qpad(*qpad_),
+             threadno(threadno_), minossingleevent(minossingleevent_){
 
     }
     TMinosResult getTMinosResult(){return dataresult;}
@@ -139,8 +142,8 @@ private:
     void Hough_filter(vector<double> &x,vector<double> &y,vector<double> &z,
                       vector<double> &q,vector<double> &x_out,vector<double> &y_out,
                       vector<double> &z_out,vector<double> &q_out);
-    void FindStart(vector<double> pStart, vector<double> chi, vector<int> fitstatus,
-                             TGraph *grxz, TGraph *gryz);
+    void FindStart(vector<double> &pStart, vector<double> &chi, vector<int> &fitstatus,
+                             TGraph &grxz, TGraph &gryz);
     void vertex(vector<double> &p, vector<double> &pp, double &xv,
                           double &yv, double &zv);
     void debug();
@@ -158,6 +161,7 @@ private:
     double threadno=0;
     vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostrackxy;
+    vector<vector<double>> minostime;
     vector<TH2D> &minossingleevent;
 
     TMinosClust fitdata;
@@ -171,6 +175,6 @@ private:
 double FitFunction(double *x, double *p);
 void SumDistance2(int &, double *, double &sum, double *par, int);
 void SumDistance1(int &, double *, double &sum, double *par, int);
-double distancelinepoint(double &x, double &y, double &z, double *p);
+double distancelinepoint(double x, double y, double z, double *p);
 double conv_fit(double *x, double *p);
 extern TMinosResult tmr;

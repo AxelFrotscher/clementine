@@ -47,7 +47,8 @@ calibpar p1;
 
     // Initialize ROOT and txt outputfile
     auto outputfile = new TFile(gentxt(".root").c_str(), "RECREATE");
-    if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
+    //if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
+    
     txtwriter writetotxt(gentxt(".txt")); // Writer class
 
      { // Make everything go out of scope to prevent memory overflow

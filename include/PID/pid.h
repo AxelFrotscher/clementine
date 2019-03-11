@@ -39,6 +39,7 @@ private:
     std::vector<TH2D> chargestate;
     std::vector<TH2D> minosresults;
     std::vector<TH2D> minossingleevent; // Contains histograms for single events
+    std::vector<TH1D> minos1dresults;
 
     std::vector<double> incval; // cut on incoming particles (F7)
     std::vector<double> targetval; // second cut to detected particles (F11)
