@@ -43,6 +43,7 @@ void PID::innerloop(treereader *tree, treereader *minostree,
     }
 
     for(auto &i: minosresults) _minosresults.emplace_back(TH2D(i));
+    for(auto &i: minos1dresults) _minos1dresults.emplace_back(TH1D(i));
 
     double maxbrho = 10; // Tm, higher than all my values
     if(incval.size() == 8){
@@ -784,7 +785,7 @@ void PID::histogramsetup() {
     minosresults.at(1).GetXaxis()->SetTitle("Track Number");
     minosresults.at(1).GetYaxis()->SetTitle("Final Track Number");
 
-    minos1dresults.emplace_back(TH1D("zdistr", "Reaction distribution", 100,-100,100));
+    minos1dresults.emplace_back(TH1D("zdistr", "Reaction distribution", 100,-70,130));
     minos1dresults.emplace_back(TH1D("phidistr", "Reaction angle distribution", 90, 0,180));
 
     minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");

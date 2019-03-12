@@ -173,6 +173,7 @@ private:
 // regular functions
 
 double FitFunction(double *x, double *p);
+void SumDistance3(int &, double *, double &sum, double *par, int);
 void SumDistance2(int &, double *, double &sum, double *par, int);
 void SumDistance1(int &, double *, double &sum, double *par, int);
 double distancelinepoint(double x, double y, double z, double *p);

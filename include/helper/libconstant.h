@@ -272,13 +272,13 @@ namespace nancy{
     const std::vector<double> targetval64V {2.8007, 22.34, .015, .6};
 
     // Sixth setting (70Fe)
-    const std::vector<double> incval75Zn{2.4984, 29.91, .006, .6};
-    const std::vector<double> incval76Zn{2.5312, 29.91, .006, .6};
-    const std::vector<double> incval74Cu{2.5503, 28.95, .006, .6};
-    const std::vector<double> incval75Cu{2.5847, 28.98, .006, .6};
-    const std::vector<double> incval72Ni{2.5697, 27.94, .006, .6};
-    const std::vector<double> incval73Ni{2.6057, 27.98, .006, .6};
-    const std::vector<double> incval74Ni{2.6411, 28.00, .006, .6};
+    const std::vector<double> incval75Zn{2.4984, 29.91, .006, .6, .579, 6.890, .579, 6.763};
+    const std::vector<double> incval76Zn{2.5312, 29.91, .006, .6, .576, 6.911, .577, 6.782};
+    const std::vector<double> incval74Cu{2.5503, 28.95, .006, .6, .582, 6.883, .582, 6.750};
+    const std::vector<double> incval75Cu{2.5847, 28.98, .006, .6, .579, 6.904, .580, 6.771};
+    const std::vector<double> incval72Ni{2.5697, 27.94, .006, .6, .587, 6.855, .587, 6.715};
+    const std::vector<double> incval73Ni{2.6057, 27.98, .006, .6, .585, 6.876, .585, 6.736};
+    const std::vector<double> incval74Ni{2.6411, 28.00, .006, .6, .582, 6.900, .582, 6.760};
 
     const std::vector<double> targetval74Cu{2.5693, 29.05, .014, .6};
     const std::vector<double> targetval75Cu{2.6017, 29.09, .014, .6};
