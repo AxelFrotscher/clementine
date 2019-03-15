@@ -6,6 +6,7 @@
 #include "helper/treereader.hh"
 #include "TH2D.h"
 #include <atomic>
+#include "TGraphErrors.h"
 
 class PID {
 public:
@@ -21,8 +22,8 @@ public:
     void chargestatecut();
 
     PID(const std::vector<std::string> &input, std::vector<std::vector<std::atomic<bool>>>
-    &goodevents_, TFile* output, const std::string &reaction_):
-    goodevents(goodevents_),reaction(reaction_){
+    &goodevents_, TFile* output, const std::string &reaction_, TGraphErrors &tcross_):
+    goodevents(goodevents_),reaction(reaction_), tcross(tcross_){
         analyse(input, output);
     };
 
@@ -63,4 +64,9 @@ private:
 
     double offcentertransmission = 1;
     double offcentertransmissionerror = 0;
+
+    //TGraph to store all cross sections
+    TGraphErrors &tcross;
+    int projectileN = 0;
+    int ncross =0;
 };

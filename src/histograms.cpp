@@ -11,6 +11,7 @@
 #include "txtwriter.h"
 #include <numeric>
 #include "zdssetting.h"
+#include "TGraphErrors.h"
 
 using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_string,
       std::__throw_invalid_argument;
@@ -48,7 +49,7 @@ calibpar p1;
     // Initialize ROOT and txt outputfile
     auto outputfile = new TFile(gentxt(".root").c_str(), "RECREATE");
     //if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
-    
+
     txtwriter writetotxt(gentxt(".txt")); // Writer class
 
      { // Make everything go out of scope to prevent memory overflow
@@ -65,11 +66,19 @@ calibpar p1;
     // Get Z vs. A/Q
     const vector<string> reactionmodes = set.getreactions();
 
-    // 111NbPPN, 111NbPP2N, 110NbPPN
-    for(auto &i: reactionmodes){
-        PID(input,goodevents,outputfile,i);
+    // All reaction modes:
+    TGraphErrors crosssection;
+    crosssection.SetName(Form("cs%s", set.getsetname().c_str()));
+    crosssection.SetTitle("Cross Sections Frotscher 2019");
 
+    for(auto &i: reactionmodes){
+        PID(input,goodevents,outputfile,i, crosssection);
     }
+
+    TGraphErrors nancytcs = nancycs(set.getsetnumber());
+    outputfile->cd();
+    nancytcs.Write();
+    crosssection.Write();
 
     printf("Made PID histograms in %s\n", gentxt(".root").c_str());
     //Get ADC Spectra for DALI
@@ -78,3 +87,47 @@ calibpar p1;
 
     outputfile->Close();
 }
+
+TGraphErrors nancycs(const int &setnumber){
+     // Create a TGraph with Nancies values
+     TGraphErrors temp;
+     temp.SetTitle("Cross Sections Hupin 2019");
+     temp.SetName("csnancy");
+
+     vector<vector<double>> massnumbers{
+         {110,110,111,111,112,113},  //nb,mo,nb,mo,mo,tc
+         {},
+         {95,95,96,97},  //br,kr,kr,rb
+         {100},
+         {67,68,68,69,70}, // fe,fe,co,co,ni
+         {72,73,74,74,75}, // ni,ni,ni,cu,cu
+         {78,79,81}        // zn,zn,ga
+     };
+
+     vector<vector<double>> crosssections{
+         {3.0,8,4.3,5.9,7.4,6.5},
+         {},
+         {2.5,6,6.7,4.7},
+         {9},
+         {7,9.2,5.4,8.0,12},
+         {10,7.0,7.3,4.8,6.6},
+         {8,5.3,4.7}
+     };
+
+     vector<vector<double>> crosssectione{
+         {0.4,1,0.9,0.7,0.8,0.7},
+         {},
+         {0.7,3,0.7,0.6},
+         {1},
+         {0.3,0.6,0.5,0.5,1},
+         {1,0.4,0.4,0.3,0.5},
+         {1,0.4,0.3}
+     };
+
+     for(int i=0; i<massnumbers.at(setnumber).size(); i++){
+         temp.SetPoint(temp.GetN(),massnumbers.at(setnumber).at(i),
+                                   crosssections.at(setnumber).at(i));
+         temp.SetPointError(temp.GetN()-1, 0, crosssectione.at(setnumber).at(i));
+     }
+     return temp;
+ }

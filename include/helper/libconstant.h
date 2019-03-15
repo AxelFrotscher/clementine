@@ -45,7 +45,7 @@ namespace runinfo{
     const std::vector<std::vector<std::string>> reactionmodes{
         {"110NbP0P", "111NbP2P","110NbP2P","110MoP2P", "111MoP2P", "112MoP2P",
          "110MoP3P","111MoP3P","112MoP3P", "113MoP3P", "112TcP3P", "113TcP3P",
-         "114TcP3P" },
+         "114TcP3P"},
         {"88AsP2P","89AsP2P","89SeP2P","90SeP2P","89AsP3P","89SeP3P", "90SeP3P",
          "88GeP0P", "89AsP0P"},
         {"93BrP2P","94BrP2P","95BrP2P","94KrP2P","95KrP2P","96KrP2P","97RbP2P",

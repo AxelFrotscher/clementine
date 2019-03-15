@@ -40,6 +40,7 @@ public:
     std::vector<uint> transmissionrun;
     std::vector<uint> emptyrun;
     uint analysedfile = 0;
+    const int getsetnumber(){return settingnumber;};
 
 private:
     static int settingnumber;

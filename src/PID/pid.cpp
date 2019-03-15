@@ -154,19 +154,21 @@ void PID::innerloop(treereader *tree, treereader *minostree,
                     fitplot.at(1).Fill(tree->F5X, tree->F9X);
 
                     // make the mighty minos analysis
-                    minostree->getevent(eventcounter);
-                    minosana analysis(minostree->Trackamount, minostree->Tshaping,
-                                      minostree->TimeBinElec, minostree->DelayTrig,
-                                      minostree->VDrift, minostree->minostrackxy,
-                                      minostree->Minoscalibvalues, minostree->minostime,
-                                      minostree->MinosClustX, minostree->MinosClustY,
-                                      minostree->MinosClustQ, (int)threadno,
-                                      _minossingleevent);
-                    TMinosPass minres = analysis.analyze();
-                    _minosresults.at(0).Fill(minres.thetaz1, minres.thetaz2);
-                    _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
-                    _minos1dresults.at(0).Fill(minres.z_vertex);
-                    _minos1dresults.at(1).Fill(minres.phi_vertex);
+                    if(reaction.find("P0P") == string::npos){
+                        minostree->getevent(eventcounter);
+                        minosana analysis(minostree->Trackamount, minostree->Tshaping,
+                                          minostree->TimeBinElec, minostree->DelayTrig,
+                                          minostree->VDrift, minostree->minostrackxy,
+                                          minostree->Minoscalibvalues, minostree->minostime,
+                                          minostree->MinosClustX, minostree->MinosClustY,
+                                          minostree->MinosClustQ, (int)threadno,
+                                          _minossingleevent);
+                        TMinosPass minres = analysis.analyze();
+                        _minosresults.at(0).Fill(minres.thetaz1, minres.thetaz2);
+                        _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
+                        _minos1dresults.at(0).Fill(minres.z_vertex);
+                        _minos1dresults.at(1).Fill(minres.phi_vertex);
+                    }
                 }
             }
         }
@@ -457,8 +459,8 @@ void PID::crosssection() {
     if(reactF5.at(1).GetEntries())
         chargestatevictims *= reactionpid2.load()/reactF5.at(1).GetEntries();
 
-    double crosssection = 1./numberdensity*(reactionpid2-chargestatevictims)/
-                          reactionpid1/tottransmission;
+    double crosssection = std::max(0., 1./numberdensity*(reactionpid2-chargestatevictims)/
+                          reactionpid1/tottransmission);
     // 1% absolute error + 5% relative error
     double cserror = crosssection*pow(1./reactionpid1 + 2./reactionpid2+
                          pow(tottransmissionerror+ 0.02/tottransmission,2)+
@@ -488,6 +490,10 @@ void PID::crosssection() {
 
     cout << "Ratio " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
          << "% " << endl;
+
+    // Add Cross Section to the TGraph;
+    tcross.SetPoint(tcross.GetN(), ncross, 1E3*crosssection);
+    tcross.SetPointError(tcross.GetN()-1, 0, 1E3*cserror);
 }
 
 void PID::reactionparameters() {
@@ -632,7 +638,8 @@ void PID::chargestatecut(){
             "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc"};
     string numbers = "0123456789";
     int startindex = (int)reaction.find_first_not_of(numbers);
-    int projectileN = std::stoi(reaction.substr(0,startindex));
+    projectileN = std::stoi(reaction.substr(0,startindex));
+    ncross = projectileN; // Set Mass number for plotting
 
     // Figure out reaction:
     bool p3pbool = true;

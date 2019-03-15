@@ -37,7 +37,7 @@ add_executable(${PROJECT_NAME} main.cpp
     src/helper/zdssetting.cpp
     src/helper/minos.cpp)
 
-target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread -lMinuit
+target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread -lMinuit -lMinuit2
    -L/home/afrotscher/soft/anaroot/4.5.36/lib -lanaroot -lanacore -lanabrips -lanadali -lanaminos
         -lXMLParser
    -L/home/afrotscher/soft/minos/minosv1.1.1/install/pentium-linux-release/lib

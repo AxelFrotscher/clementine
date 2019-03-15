@@ -1,3 +1,5 @@
+#include "TH1.h"
+#include <boost/algorithm/string/replace.hpp>
 #include "histograms.hh"
 #include "MakeAllTree_78Ni.hh"
 #include "zdssetting.h"
@@ -6,10 +8,9 @@
 #include <thread>
 #include <fstream>
 #include <vector>
-#include <boost/algorithm/string.hpp>
+#include <Math/MinimizerOptions.h>
 #include "libconstant.h"
 #include "TArtStoreManager.hh"
-#include "TH1.h"
 
 R__LOAD_LIBRARY(libanacore.so)
 
@@ -32,7 +33,10 @@ vector<string> getlist(const char *instring){
 
 int main(int argc, char**argv){
     ROOT::EnableThreadSafety();
+    ROOT::GetROOT()->SetObjectStat(false);
     TH1::AddDirectory(kFALSE);
+    gErrorIgnoreLevel = kWarning;
+    ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
 
     // The Scope of this project is to analyse the 2015 SEASTAR
     printf("Welcome to the analysis program for 2014/2015 SEASTAR DATA\n"

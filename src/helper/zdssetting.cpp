@@ -13,7 +13,8 @@ int setting::settingnumber = 2'000'000'000;
 int setting::eventcounts = 0;
 bool setting::istransmissionrun = false;
 bool setting::isemptyrun = false;
-const vector<std::string> setting::setname{"110Nb", "88Ge", "94Se", "100Kr", "66Cr", "70Fe", "78Ni"};
+const vector<std::string> setting::setname{"110Nb", "88Ge", "94Se", "100Kr",
+                                           "66Cr", "70Fe", "78Ni"};
 
 void setting::loadnumbers(int i) {
     // Loading the right numbers for th right setting
@@ -53,9 +54,9 @@ void setting::loadnumbers(int i) {
         }
         case 4:{ //66Cr
             analysedfile = 277;
-            goodruns = vector<uint>{38,40,41,42,43,44,45,46,47,48,49,50,51,52,53,
-                                    54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,
-                                    69};
+            goodruns = vector<uint>{38,40,41,42,43,44,45,46,47,48,49,50,51,52,
+                                    53,54,55,56,57,58,59,60,61,62,63,64,65,66,
+                                    67,68, 69};
             transmissionrun = vector<uint>{299};
             emptyrun = vector<uint>{279};
             break;
@@ -63,27 +64,28 @@ void setting::loadnumbers(int i) {
         case 5:{ // 70Fe
             analysedfile = 346;
             goodruns = vector<uint>{9,11,12,13,14,15,18,19,20,21,22,23,24,25,
-                                    26,27,28,30,31,32,33,34,35,36,37,39,40,41,42,
-                                    43,44,45};
-            transmissionrun = vector<uint>{}; // run 7 and 8 are NOT like the others
+                                    26,27,28,30,31,32,33,34,35,36,37,39,40,41,
+                                    42,43,44,45};
+            transmissionrun = vector<uint>{}; // run 7 and 8 are NOT like others
             emptyrun = vector<uint>{};
             break;
         }
         case 6:{  // 78Ni
             analysedfile = 395;
             goodruns = vector<uint>{8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,
-                                    24,25,26,28,29,30,31,34,35,36,37,38,39,40,41,
-                                    42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,
-                                    57,58,59,62,63,64,65,66,67,68,69,70,71,72,73,
-                                    74,75,76,77,78,79,81,82,83,84,85,80,90,91,93,
-                                    94,95,96,97,98,99,100,101,102,103,104,105,106,
-                                    108};
+                                    24,25,26,28,29,30,31,34,35,36,37,38,39,40,
+                                    41,42,43,44,45,46,47,48,49,50,51,52,53,54,
+                                    55,56,57,58,59,62,63,64,65,66,67,68,69,70,
+                                    71,72,73,74,75,76,77,78,79,81,82,83,84,85,
+                                    80,90,91,93,94,95,96,97,98,99,100,101,102,
+                                    103,104,105,106,108};
             for(int i=110; i<156; i++) goodruns.push_back(i);
             transmissionrun = vector<uint>{394};
             emptyrun = vector<uint>{393};
             break;
         }
-        default: std::__throw_invalid_argument("Chosen setting is not implemented.\n");
+        default: std::__throw_invalid_argument("Chosen setting is not "
+                                               "implemented.\n");
     }
 }
 
@@ -137,7 +139,7 @@ const calibpar setting::getHOparameters() {
     if(settingnumber < nancy::hoparame.size())
         return nancy::hoparame.at(settingnumber);
 
-    cout << "WARNING: No HO-Parameters for Setting " << settingnumber << " using"
+    cout << "WARNING: No HO-Parameters for Setting " << settingnumber << " use"
             " Setting 0" << endl;
     return nancy::hoparame.at(0);
 }
@@ -152,7 +154,8 @@ TCutG* setting::getbrhocut() {
     if(!(cutfile.IsOpen())) std::__throw_invalid_argument(
             "Could not open cut file at config/cut.root\n");
 
-    if (istransmissionrun && ((TCutG*)cutfile.Get(nam("trans").c_str()) != nullptr)){
+    if (istransmissionrun &&
+        ((TCutG*)cutfile.Get(nam("trans").c_str()) != nullptr)){
         return (TCutG*)cutfile.Get(nam("trans").c_str());
     }
     if (isemptyrun && ((TCutG*)cutfile.Get(nam("empty").c_str()) != nullptr)){
@@ -161,7 +164,8 @@ TCutG* setting::getbrhocut() {
     if ((TCutG*)cutfile.Get(nam("data").c_str()) != nullptr)
         return (TCutG*)cutfile.Get(nam("data").c_str());
 
-    cout << "WARNING! Couldn't load cut for " << setname.at(settingnumber) << endl;
+    cout << "WARNING! Couldn't load cut for " << setname.at(settingnumber)
+         << endl;
     return nullptr;
 }
 
@@ -203,7 +207,8 @@ const vector<std::string> setting::getreactions() {
 
 const vector<double> setting::getPIDincutvalue() {
     // return cut particle for incoming beam (trans/empty only)
-    if(!setting::isemptyortrans()) std::__throw_invalid_argument("Run in not empty or transmision run!\n");
+    if(!setting::isemptyortrans())
+        std::__throw_invalid_argument("Run in not empty or transmision run!\n");
 
     if(istransmissionrun && settingnumber < nancytrans::incval.size())
         return nancytrans::incval.at(settingnumber);
@@ -216,12 +221,16 @@ const vector<double> setting::getPIDincutvalue() {
 
 const vector<double> setting::getPIDoutcutvalue() {
     // return cut particle for incoming beam (trans/empty only)
-    if(!setting::isemptyortrans()) std::__throw_invalid_argument("Run in not empty or transmision run!\n");
+    if(!setting::isemptyortrans())
+        std::__throw_invalid_argument("Run in not empty or transmision run!\n");
 
     if(istransmissionrun && settingnumber < nancytrans::targetval.size())
         return nancytrans::targetval.at(settingnumber);
     if(isemptyrun && settingnumber < nancyempty::targetval.size())
         return nancyempty::targetval.at(settingnumber);
+
+    std::__throw_invalid_argument(Form("Empty or Transruns but Trans: %i and "
+                                  "Empty %i\n", istransmissionrun, isemptyrun));
 }
 
 const std::string setting::getmodename() {

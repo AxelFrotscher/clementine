@@ -103,16 +103,17 @@ struct TMinosPass{
     double r_vertex;
     double thetaz1;
     double thetaz2;
+    double thetaz3;
     double phi_vertex;
     double trackNbr;
     double trackNbr_final;
     double z_vertex;
 
-    TMinosPass(double r_vertex_, double thetaz1_, double thetaz2_,
+    TMinosPass(double r_vertex_, double thetaz1_, double thetaz2_, double thetaz3_,
                double phi_vertex_, double trackNbr_, double trackNbr_Final,
                double z_vertex_):
                r_vertex(r_vertex_), thetaz1(thetaz1_), thetaz2(thetaz2_),
-               phi_vertex(phi_vertex_),trackNbr(trackNbr_),
+               thetaz3(thetaz3_), phi_vertex(phi_vertex_),trackNbr(trackNbr_),
                trackNbr_final(trackNbr_Final), z_vertex(z_vertex_){}
 };
 
@@ -151,14 +152,14 @@ private:
     vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
 
     double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0, phi_vertex=0,
-            thetaz1=0, thetaz2=0;
+            thetaz1=0, thetaz2=0, thetaz3 =0;
 
     int filled =0 ;
     double Tshaping =0;
     double TimeBinElec = 0;
     double DelayTrigger =0;
     double VDrift = 0;
-    double threadno=0;
+    int threadno=0;
     vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostrackxy;
     vector<vector<double>> minostime;
@@ -167,6 +168,7 @@ private:
     TMinosClust fitdata;
     TMinosResult dataresult;
     static std::mutex minos5;
+    static std::mutex minos6;
 };
 
 // Ugly part outside of the class, because member-functions are trickier than
