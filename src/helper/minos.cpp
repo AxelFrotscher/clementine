@@ -8,13 +8,12 @@
 #include <Math/Vector3D.h>
 #include "minos.h"
 #include <numeric>
+#include "TCanvas.h"
+#include "TMinuitMinimizer.h"
 
 using std::vector, std::cerr, std::cout, std::endl, std::min, std::max,
       std::accumulate, std::placeholders::_1,std::placeholders::_2,
       std::placeholders::_3, std::placeholders::_4, std::placeholders::_5;
-
-std::mutex minosana::minos5;
-std::mutex minosana::minos6;
 
 TMinosPass minosana::analyze() {
     /// MINOS 2. Modify with hough-transformation
@@ -34,11 +33,7 @@ TMinosPass minosana::analyze() {
             }
             if (filter_result > 10 && clusterringbool.back()) trackNbr++;
         }
-
-        // Look at some events
-        debug();
     }
-
 
     for (int i = 0; i < Xpadnew.size(); i++) {
         fitdata.add(Xpadnew[i], Ypadnew[i], -1E4, -1E4, Qpadnew[i],
@@ -46,310 +41,330 @@ TMinosPass minosana::analyze() {
         Zpadnew.push_back(-1E4);
     }
 
+    if(trackNbr <1 || trackNbr > 4)
+        return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
+                          z_vertex, {});
+
     /// Bonus for Tracknumber between 1 and 4
-    if (trackNbr > 0 && trackNbr < 5) {
-        if (!filled) cerr << "Trackno.:" << trackNbr << " but no evts." << endl;
+    if (!filled) cerr << "Trackno.:" << trackNbr << " but no evts." << endl;
 
-        /// MINOS 3: Fitting the taken pads for Qmax and Ttrig information /
-        padsleft -= Xpadnew.size();
-        minos5.lock();
-        for (int i = 0; i < minoscalibvalues.size(); i++) {
-            //minos = minoscalib.GetCalibMINOS(i);
-            double x_mm = minostrackxy.at(i).at(0); // minos->GetX();
-            double y_mm = minostrackxy.at(i).at(1); // minos->GetY();
-            bool fitbool = false;
-            int indexfill = 0;
+    /// MINOS 3: Fitting the taken pads for Qmax and Ttrig information /
+    padsleft -= Xpadnew.size();
+    for (int i = 0; i < minoscalibvalues.size(); i++) {
+        //minos = minoscalib.GetCalibMINOS(i);
+        double x_mm = minostrackxy.at(i).at(0);
+        double y_mm = minostrackxy.at(i).at(1);
+        bool fitbool = false;
+        int indexfill = 0;
 
-            for (int j = 0; j < Xpadnew.size(); j++) {
-                if (abs(Xpadnew[j] - x_mm) < 0.01 && abs(Ypadnew[j] - y_mm) < 0.01) {
-                    fitbool = true;
-                    indexfill = j;
-                    break;
-                }
+        for (int j = 0; j < Xpadnew.size(); j++) {
+            if (abs(Xpadnew[j] - x_mm) < 0.01 && abs(Ypadnew[j] - y_mm) < 0.01) {
+                fitbool = true;
+                indexfill = j;
+                break;
             }
-            // Check if new channel is of interest
-            // if so, we read Q(t), and fill vectors w/ t&Q info after fitting E(t)
-            if (fitbool) {
-                TH1F hfit(Form("hfit%i",threadno), Form("hfit%i",threadno), 512, 0, 512);
-                for (int k = 0; k < minoscalibvalues.at(i).size(); k++) {
-                    if (minoscalibvalues.at(i).at(k) >= 0)
-                        hfit.SetBinContent(hfit.FindBin(minostime.at(i).at(k)),
-                                           minoscalibvalues.at(i).at(k) + 250);
-                }
-                // Fitting the hfit histogram of last ch. if not empty
-                if (hfit.GetSumOfWeights() > 0) {
-                    hfit.GetXaxis()->SetRange(0, 510);
-                    double hfit_max = hfit.GetMaximum();
-                    double hfit_max_T = hfit.GetMaximumBin();
+        }
+        // Check if new channel is of interest
+        if (!fitbool) continue;
 
-                    // Find T_min and T_max limits for non-0 signals
-                    double T_min = hfit.FindLastBinAbove(250);
-                    double T_max = hfit.FindFirstBinAbove(0) - 1;
+        // if so, we read Q(t), and fill vectors w/ t&Q info after fitting E(t)
+        TH1F hfit(Form("hfit%i",threadno), Form("hfit%i",threadno), 512, 0, 512);
+        for (int k = 0; k < minoscalibvalues.at(i).size(); k++) {
+            if (minoscalibvalues.at(i).at(k) >= 0)
+                hfit.SetBinContent(hfit.FindBin(minostime.at(i).at(k)),
+                                            minoscalibvalues.at(i).at(k) + 250);
+        }
+        // Fitting the hfit histogram of last ch. if not empty
+        if (!hfit.GetSumOfWeights() > 0) continue;
 
-                    // Take only 1.5*shaping time before max if other signals
-                    // before
-                    if (hfit_max_T - 3.5 * (Tshaping / TimeBinElec) > T_min)
-                        T_min = hfit_max_T - 2 * Tshaping / TimeBinElec;
-                    if ((hfit_max_T + 10) < T_max || T_max == -1)
-                        T_max = hfit_max_T + 10;
+        hfit.GetXaxis()->SetRange(0, 510);
+        double hfit_max = hfit.GetMaximum();
+        double hfit_max_T = hfit.GetMaximumBin();
 
-                    T_min = std::max(T_min, 0.);
-                    T_max = std::min(T_max, 510.);
+        // Find T_min and T_max limits for non-0 signals
+        double T_min = hfit.FindLastBinAbove(250);
+        double T_max = hfit.FindFirstBinAbove(0) - 1;
 
-                    // Set fit parameters
+        // Take only 1.5*shaping time before max if other signals before
+        if (hfit_max_T - 3.5 * (Tshaping / TimeBinElec) > T_min)
+            T_min = hfit_max_T - 2 * Tshaping / TimeBinElec;
+        if ((hfit_max_T + 10) < T_max || T_max == -1) T_max = hfit_max_T + 10;
 
-                    TF1 fit_function(Form("fit_function%i",threadno), conv_fit, 0, 511, 3);
+        T_min = std::max(T_min, 0.);
+        T_max = std::min(T_max, 510.);
 
-                    fit_function.SetParameters(
-                        hfit_max - 250,
-                        hfit_max_T - Tshaping / TimeBinElec,
-                        Tshaping / TimeBinElec);
-                    fit_function.SetParLimits(0, 0, 1E5);
-                    fit_function.SetParLimits(1, -20, 512);
-                    fit_function.SetParLimits(2, 0, 512);
+        // Set fit parameters
+        TF1 fit_function(Form("fit_function%i",threadno), conv_fit, 0, 511, 3);
 
-                    TF1* temp = &fit_function;
-                    int fit2DStatus = hfit.Fit(temp, "Q", "", T_min, T_max);
+        fit_function.SetParameters( hfit_max - 250,
+                   hfit_max_T - Tshaping / TimeBinElec, Tshaping / TimeBinElec);
+        fit_function.SetParLimits(0, 0, 1E5);
+        fit_function.SetParLimits(1, -20, 512);
+        fit_function.SetParLimits(2, 0, 512);
 
-                    double fit_function_max = 0, fit_function_Tpad = 0, Chi2 = 0;
+        // --> parameter n (no store no draw) crucial for multithread <--
+        int fit2DStatus = hfit.Fit(&fit_function, "QN", "", T_min, T_max);
 
-                    if (!fit2DStatus) {
-                        auto fit_result = hfit.GetFunction(Form("fit_function%i",threadno));
-                        Chi2 = fit_result->GetChisquare();
-                        fit_function_max = fit_function.GetMaximum();
-                        fit_function_Tpad = fit_function.GetParameter(1);
-                    }
+        double fit_function_max = 0, fit_function_Tpad = 0, Chi2 = 0;
 
-                    // attribute q_pad and z_mm value
-                    double q_pad = 0, z_mm = 0, t_pad = 0;
-                    if (fit2DStatus || fit_function_max <= 20 ||
-                        fit_function_max > 1E5 || fit_function_Tpad < .15 ||
-                        fit_function_Tpad > 512 || fit_function.GetParameter(2) < .15 ||
-                        fit_function.GetParameter(2) > 512) {
-                    // No correct fit here :(
-                        q_pad = hfit_max - 250;
-                        z_mm = -1E4;
-                    }
-                    else { // Add to the variables the fit parameter
-                        t_pad = fit_function_Tpad;
-                        z_mm = (t_pad * TimeBinElec - DelayTrigger) * VDrift;
-                        q_pad = fit_function_max - 250;
-                    }
+        if (!fit2DStatus) {
+            Chi2 = fit_function.GetChisquare();
+            fit_function_max = fit_function.GetMaximum();
+            fit_function_Tpad = fit_function.GetParameter(1);
+        }
 
-                    fitdata.replace(Xpadnew[indexfill], Ypadnew[indexfill],
-                                    t_pad * TimeBinElec, z_mm, q_pad,
-                                    clusternbr[indexfill], clusterpads[indexfill],
-                                    Chi2, indexfill);
-                    Zpadnew[indexfill] = z_mm;
-                    Qpadnew[indexfill] = q_pad;
-                } // End if histogram not empty
-            } // end if fitbool true
-            else continue;
-        } // End of all entries
+        // attribute q_pad and z_mm value
+        double q_pad = 0, z_mm = 0, t_pad = 0;
+        if (fit2DStatus || fit_function_max <= 20 ||
+            fit_function_max > 1E5 || fit_function_Tpad < .15 ||
+            fit_function_Tpad > 512 || fit_function.GetParameter(2) < .15 ||
+            fit_function.GetParameter(2) > 512) {
+            // No correct fit here :(
+            q_pad = hfit_max - 250;
+            z_mm = -1E4;
+        }
+        else { // Add to the variables the fit parameter
+            t_pad = fit_function_Tpad;
+            z_mm = (t_pad * TimeBinElec - DelayTrigger) * VDrift;
+            q_pad = fit_function_max - 250;
+        }
 
-         /// 4: MINOS Filtering the tracks off possible noise with Hough3D //
+        fitdata.replace(Xpadnew[indexfill], Ypadnew[indexfill],
+                        t_pad * TimeBinElec, z_mm, q_pad, clusternbr[indexfill],
+                        clusterpads[indexfill], Chi2, indexfill);
+        Zpadnew[indexfill] = z_mm;
+        Qpadnew[indexfill] = q_pad;
+    } // End of all entries
+    // Look at some events
+    debug();
 
-        int padsleft2 = Xpadnew.size();
-        vector<double> xin, yin, zin, qin, xout, yout, zout, qout;
-        int cluster_temp = 0, npoint1 = 0, npoint2 = 0, npoint3 = 0, array_final = 0;
+    /// 4: MINOS Filtering the tracks off possible noise with Hough3D //
 
-        TGraph gryz_1, grxz_1, gryz_2, grxz_2, gryz_3, grxz_3;
+    int padsleft2 = Xpadnew.size();
+    vector<double> xin, yin, zin, qin, xout, yout, zout, qout;
+    int cluster_temp = 0, npoint1 = 0, npoint2 = 0, npoint3 = 0, array_final = 0;
 
-        for (int i = 0; i < padsleft2; i++) {
-            // if-Loop executed only at the End
-            if(cluster_temp == clusternbr[i] && i==(Xpadnew.size()-1) &&
-               clusterpads[i]>=10 && clusterringbool[i] == true &&
-               Zpadnew[i] >-10000 && Zpadnew[i] <=320){
-                xin.push_back(Xpadnew[i]);
-                yin.push_back(Ypadnew[i]);
-                zin.push_back(Zpadnew[i]);
-                qin.push_back(Qpadnew[i]);
-            }
+    TGraph gryz_1, grxz_1, gryz_2, grxz_2, gryz_3, grxz_3;
 
-            // x vector not empty AND (new track OR last entry of the loop
-            if (!xin.empty() && ((cluster_temp +1 == clusternbr[i] && i) ||
-                               i == (Xpadnew.size() - 1))) {
-                int ringsum = 0;
-                double zmax = 0;
-                vector<int> ringtouch(18, 0);
-                Hough_filter(xin, yin, zin, qin, xout, yout, zout, qout);
+    for (int i = 0; i < padsleft2; i++) {
+        // if-Loop executed only at the End
+        if(cluster_temp == clusternbr[i] && i==(Xpadnew.size()-1) &&
+           clusterpads[i]>=10 && clusterringbool[i] == true &&
+           Zpadnew[i] >-10000 && Zpadnew[i] <=320){
+            xin.push_back(Xpadnew[i]);
+            yin.push_back(Ypadnew[i]);
+            zin.push_back(Zpadnew[i]);
+            qin.push_back(Qpadnew[i]);
+        }
 
-                for (int k = 0; k < xout.size(); k++) {
-                    zmax = max(zmax, zout[k]);
-                    ringtouch.at(max(0, int((sqrt(pow(xout[k], 2.) +
+        // x vector not empty AND (new track OR last entry of the loop
+        if (!xin.empty() && ((cluster_temp +1 == clusternbr[i] && i) ||
+                           i == (Xpadnew.size() - 1))) {
+            int ringsum = 0;
+            double zmax = 0;
+            vector<int> ringtouch(18, 0);
+            Hough_filter(xin, yin, zin, qin, xout, yout, zout, qout);
+
+            for (int k = 0; k < xout.size(); k++) {
+                zmax = max(zmax, zout[k]);
+                ringtouch.at(max(0, int((sqrt(pow(xout[k], 2.) +
                                            pow(yout[k], 2.)) - 45.2) / 2.1)))++;
-                }
-                for (auto &j: ringtouch) if (j > 0) ringsum++;
-                if (zmax > 290) ringsum = 16;
-                if (xout.size() > 10 && ringsum >= 15) {
-                    trackNbr_FINAL++;
-                    //cluster1 = cluster_temp; delete if no use
-                    for (int l = 0; l < xout.size(); l++) {
-                        dataresult.add(xout[l], yout[l], zout[l],
-                                    qout[l], trackNbr_FINAL, xout.size(), zmax);
-                        array_final++;
-                        if (trackNbr_FINAL == 1){
-                            grxz_1.SetPoint(npoint1, zout[l], xout[l]);
-                            gryz_1.SetPoint(npoint1, zout[l], yout[l]);
-                            npoint1++;
-                        }
-                        else if (trackNbr_FINAL == 2){
-                            grxz_2.SetPoint(npoint2, zout[l], xout[l]);
-                            gryz_2.SetPoint(npoint2, zout[l], yout[l]);
-                            npoint2++;
-                        }
-                        else if (trackNbr_FINAL == 3){
-                            grxz_3.SetPoint(npoint3, zout[l], xout[l]);
-                            gryz_3.SetPoint(npoint3, zout[l], yout[l]);
-                            npoint3++;
-                        }
+            }
+            for (auto &j: ringtouch) if (j > 0) ringsum++;
+            if (zmax > 290) ringsum = 16;
+
+            // Decide whether we have a track, and add to 2D-plane TGraphs
+            if (xout.size() > 10 && ringsum >= 15) {
+                trackNbr_FINAL++;
+                //cluster1 = cluster_temp; delete if no use
+                for (int l = 0; l < xout.size(); l++) {
+                    dataresult.add(xout[l], yout[l], zout[l],
+                                   qout[l], trackNbr_FINAL, xout.size(), zmax);
+                    array_final++;
+                    switch(trackNbr_FINAL){
+                        case 1: grxz_1.SetPoint(npoint1, zout[l], xout[l]);
+                                gryz_1.SetPoint(npoint1, zout[l], yout[l]);
+                                npoint1++;
+                                break;
+                        case 2: grxz_2.SetPoint(npoint2, zout[l], xout[l]);
+                                gryz_2.SetPoint(npoint2, zout[l], yout[l]);
+                                npoint2++;
+                                break;
+                        case 3: grxz_3.SetPoint(npoint3, zout[l], xout[l]);
+                                gryz_3.SetPoint(npoint3, zout[l], yout[l]);
+                                npoint3++;
+                                break;
+                        default:;
                     }
                 }
-
-                for (auto a:{&xin, &yin, &zin, &qin, &xout, &yout, &zout, &qout})
-                    a->clear();
             }
 
-            cluster_temp = clusternbr[i];
-            if (clusterpads[i] >= 10 && clusterringbool[i] == true &&
-                  Zpadnew[i] > -1E4 && Zpadnew[i] <= 320){  // 320 => 520 debug
-                xin.push_back(Xpadnew[i]);
-                yin.push_back(Ypadnew[i]);
-                zin.push_back(Zpadnew[i]);
-                qin.push_back(Qpadnew[i]);
-            }
-            else continue;
-        } // end of loop on pads
+            for (auto a:{&xin, &yin, &zin, &qin, &xout, &yout, &zout, &qout})
+                a->clear();
+        }
 
-        /// 5. Fitting filtered tracks in 3D (weight by charge, TMinuit) //
-        if (trackNbr_FINAL > 0) {
-            vector<double> pStart_1{0, 1, 0, 1}, pStart_2{0, 1, 0, 1},
-                           pStart_3{0, 1, 0, 1}, parFit_1(4), err_1(4),
-                           parFit_2(4), parFit_3(4), err_2(4), err_3(4),
-                           chi1(2), chi2(2), chi3(2), arglist(10);
-            vector<int> fitStatus(2);
+        cluster_temp = clusternbr[i];
+        if (clusterpads[i] >= 10 && clusterringbool[i] == true &&
+              Zpadnew[i] > -1E4 && Zpadnew[i] <= 320){  // 320 => 520 debug
+            xin.push_back(Xpadnew[i]);
+            yin.push_back(Ypadnew[i]);
+            zin.push_back(Zpadnew[i]);
+            qin.push_back(Qpadnew[i]);
+        }
+        //else continue;
+    } // end of loop on pads
 
-            TMinuit min(4);
-            min.SetPrintLevel(-1);
-            arglist.at(0) = 3;
-            int iflag, nvpar, nparx;
-            double amin, edm, errdef, chi2res1, chi2res2;
+    if(trackNbr_FINAL == 0){
+        return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
+                          z_vertex, {});
+    }
 
-            // Get fit for xz-yz plane, for the reconstruction
-            FindStart(pStart_1, chi1, fitStatus, grxz_1, gryz_1);
+    /// 5. Fitting filtered tracks in 3D (weight by charge, TMinuit) //
+    vector<double> pStart_1{0,1,0,1}, pStart_2{0,1,0,1},pStart_3{0,1,0,1},
+                   parFit_1(4), err_1(4), parFit_2(4), parFit_3(4), err_2(4),
+                   err_3(4), chi1(2), chi2(2), chi3(2), arglist(10);
+    vector<int> fitStatus(2);
 
-            tmr = minosana::getTMinosResult();
+    int iflag, nvpar, nparx;
+    double amin, edm, errdef, chi2res1, chi2res2;
+    arglist.at(0) = 3;
+    // Get fit for xz-yz plane, for the reconstruction
+    FindStart(pStart_1, chi1, fitStatus, grxz_1, gryz_1);
 
-            min.SetFCN(SumDistance1);
-            // Set starting values and step sizes for parameters
-            min.mnparm(0, "x0", pStart_1.at(0), 0.1, -500, 500, iflag);
-            min.mnparm(1, "Ax", pStart_1.at(1), 0.1, -10, 10, iflag);
-            min.mnparm(2, "y0", pStart_1.at(2), 0.1, -500, 500, iflag);
-            min.mnparm(3, "Ay", pStart_1.at(3), 0.1, -10, 10, iflag);
-            arglist.at(0) = 100; // Number of function calls
-            arglist.at(1) = 1E-6;// tolerance
-            min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
-            // get current status of minimization
-            min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
-            for (int i = 0; i < 4; i++)
-                min.GetParameter(i, parFit_1.at(i), err_1.at(i));
+    minos5.lock();
+    TMinuit min(4);
+    min.SetPrintLevel(-1);
 
-            if (trackNbr_FINAL == 1) parFit_2 = {0, 0, 0, 0};
-            else{
-                FindStart(pStart_2, chi2, fitStatus, grxz_2, gryz_2);
-                min.SetFCN(SumDistance2);
+    tmr = minosana::getTMinosResult();
 
-                min.mnparm(0, "x0", pStart_2.at(0), 0.1, -500, 500, iflag);
-                min.mnparm(1, "Ax", pStart_2.at(1), 0.1, -10, 10, iflag);
-                min.mnparm(2, "y0", pStart_2.at(2), 0.1, -500, 500, iflag);
-                min.mnparm(3, "Ay", pStart_2.at(3), 0.1, -10, 10, iflag);
-                arglist.at(0) = 100; // Number of function calls
-                arglist.at(1) = 1E-6;// tolerance
-                min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
-                // get currecnt status of minimization
-                min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
-                for (int i = 0; i < parFit_2.size(); i++)
-                    min.GetParameter(i, parFit_2.at(i), err_2.at(i));
-            }
-            if(trackNbr_FINAL > 2){
-                FindStart(pStart_3, chi3, fitStatus, grxz_3, gryz_3);
-                min.SetFCN(SumDistance3);
+    min.SetFCN(SumDistance1);
+    // Set starting values and step sizes for parameters
+    min.mnparm(0, "x0", pStart_1.at(0), 0.1, -500, 500, iflag);
+    min.mnparm(1, "Ax", pStart_1.at(1), 0.1, -10, 10, iflag);
+    min.mnparm(2, "y0", pStart_1.at(2), 0.1, -500, 500, iflag);
+    min.mnparm(3, "Ay", pStart_1.at(3), 0.1, -10, 10, iflag);
+    arglist.at(0) = 100; // Number of function calls
+    arglist.at(1) = 1E-6;// tolerance
+    min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
+    // get current status of minimization
+    min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
+    for (int i = 0; i < 4; i++)
+        min.GetParameter(i, parFit_1.at(i), err_1.at(i));
 
-                min.mnparm(0, "x0", pStart_3.at(0), 0.1, -500, 500, iflag);
-                min.mnparm(1, "Ax", pStart_3.at(1), 0.1, -10, 10, iflag);
-                min.mnparm(2, "y0", pStart_3.at(2), 0.1, -500, 500, iflag);
-                min.mnparm(3, "Ay", pStart_3.at(3), 0.1, -10, 10, iflag);
-                arglist.at(0) = 100; // Number of function calls
-                arglist.at(1) = 1E-6;// tolerance
-                min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
-                // get currecnt status of minimization
-                min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
-                for (int i = 0; i < parFit_3.size(); i++)
-                    min.GetParameter(i, parFit_3.at(i), err_3.at(i));
-            }
-            else parFit_3 = {0,0,0,0};
+    if (trackNbr_FINAL == 1) parFit_2 = {0, 0, 0, 0};
+    else {
+        FindStart(pStart_2, chi2, fitStatus, grxz_2, gryz_2);
+        min.SetFCN(SumDistance2);
 
-            int sumerr_1 = accumulate(begin(err_1), end(err_1), 0);
-            int sumerr_2 = accumulate(begin(err_2), end(err_2), 0);
-            int sumerr_3 = accumulate(begin(err_3), end(err_3), 0);
+        min.mnparm(0, "x0", pStart_2.at(0), 0.1, -500, 500, iflag);
+        min.mnparm(1, "Ax", pStart_2.at(1), 0.1, -10, 10, iflag);
+        min.mnparm(2, "y0", pStart_2.at(2), 0.1, -500, 500, iflag);
+        min.mnparm(3, "Ay", pStart_2.at(3), 0.1, -10, 10, iflag);
+        arglist.at(0) = 100; // Number of function calls
+        arglist.at(1) = 1E-6;// tolerance
+        min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
+        // get currecnt status of minimization
+        min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
+        for (int i = 0; i < parFit_2.size(); i++)
+            min.GetParameter(i, parFit_2.at(i), err_2.at(i));
+    }
+    if(trackNbr_FINAL > 2){
+        FindStart(pStart_3, chi3, fitStatus, grxz_3, gryz_3);
+        min.SetFCN(SumDistance3);
 
-            chi2res1 = (chi1.at(0) + chi1.at(1)) / npoint1;
-            chi2res2 = (chi2.at(0) + chi2.at(1)) / npoint2;
+        min.mnparm(0, "x0", pStart_3.at(0), 0.1, -500, 500, iflag);
+        min.mnparm(1, "Ax", pStart_3.at(1), 0.1, -10, 10, iflag);
+        min.mnparm(2, "y0", pStart_3.at(2), 0.1, -500, 500, iflag);
+        min.mnparm(3, "Ay", pStart_3.at(3), 0.1, -10, 10, iflag);
+        arglist.at(0) = 100; // Number of function calls
+        arglist.at(1) = 1E-6;// tolerance
+        min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
+        // get currecnt status of minimization
+        min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
+        for (int i = 0; i < parFit_3.size(); i++)
+            min.GetParameter(i, parFit_3.at(i), err_3.at(i));
+    }
+    else parFit_3 = {0,0,0,0};
 
-            //Rotate from MINOS to beamline
-            double rot = 30*TMath::Pi()/180;
-            vector<double> parFit_1r{
-                    cos(rot)*parFit_1.at(0)-sin(rot)*parFit_1.at(2),
-                    cos(rot)*parFit_1.at(1)-sin(rot)*parFit_1.at(3),
-                    sin(rot)*parFit_1.at(0)+cos(rot)*parFit_1.at(2),
-                    sin(rot)*parFit_1.at(1)+cos(rot)*parFit_1.at(3)
-                };
-            // Rotate second track (if it does exist)
-            vector<double> parFit_2r{
-                    cos(rot)*parFit_2.at(0)-sin(rot)*parFit_2.at(2),
-                    cos(rot)*parFit_2.at(1)-sin(rot)*parFit_2.at(3),
-                    sin(rot)*parFit_2.at(0)+cos(rot)*parFit_2.at(2),
-                    sin(rot)*parFit_2.at(1)+cos(rot)*parFit_2.at(3)
-            };
-            // Rotate second track (if it does exist)
-            vector<double> parFit_3r{
-                    cos(rot)*parFit_3.at(0)-sin(rot)*parFit_3.at(2),
-                    cos(rot)*parFit_3.at(1)-sin(rot)*parFit_3.at(3),
-                    sin(rot)*parFit_3.at(0)+cos(rot)*parFit_3.at(2),
-                    sin(rot)*parFit_3.at(1)+cos(rot)*parFit_3.at(3)
-            };
+    tmr = {}; // reset out-of-class data structure
+    minos5.unlock();
 
-            //Get x,y,z reaction vertex from fitted parameters
-            vertex(parFit_1r, parFit_2r, x_vertex, y_vertex, z_vertex);
+    int sumerr_1 = accumulate(begin(err_1), end(err_1), 0);
+    int sumerr_2 = accumulate(begin(err_2), end(err_2), 0);
+    int sumerr_3 = accumulate(begin(err_3), end(err_3), 0);
 
-            r_vertex = sqrt(pow(x_vertex, 2) + pow(y_vertex, 2));
+    chi2res1 = (chi1.at(0) + chi1.at(1)) / npoint1;
+    chi2res2 = (chi2.at(0) + chi2.at(1)) / npoint2;
 
-            // cos theta = v1*v2/(|v1|*|v2|), v1 = (0,0,1)^T, v2 = (m1,m3,1)^T
-            thetaz1 = acos(1/pow(1+ pow(parFit_1r.at(1), 2)+
-                                 pow(parFit_1r.at(3), 2) ,.5))*180./ TMath::Pi();
-            thetaz2 = acos(1/pow(1+ pow(parFit_2r.at(1), 2)+
-                                 pow(parFit_2r.at(3), 2) ,.5))*180./ TMath::Pi();
-            thetaz3 = acos(1/pow(1+ pow(parFit_3r.at(1), 2)+
-                                 pow(parFit_3r.at(3), 2) ,.5))*180./ TMath::Pi();
+    //Rotate from MINOS to beamline
+    double rot = 30*TMath::Pi()/180;
+    vector<double> parFit_1r{
+        cos(rot)*parFit_1.at(0)-sin(rot)*parFit_1.at(2),
+        cos(rot)*parFit_1.at(1)-sin(rot)*parFit_1.at(3),
+        sin(rot)*parFit_1.at(0)+cos(rot)*parFit_1.at(2),
+        sin(rot)*parFit_1.at(1)+cos(rot)*parFit_1.at(3)
+    };
+        // Rotate second track (if it does exist)
+    vector<double> parFit_2r{
+        cos(rot)*parFit_2.at(0)-sin(rot)*parFit_2.at(2),
+        cos(rot)*parFit_2.at(1)-sin(rot)*parFit_2.at(3),
+        sin(rot)*parFit_2.at(0)+cos(rot)*parFit_2.at(2),
+        sin(rot)*parFit_2.at(1)+cos(rot)*parFit_2.at(3)
+    };
+        // Rotate second track (if it does exist)
+    vector<double> parFit_3r{
+        cos(rot)*parFit_3.at(0)-sin(rot)*parFit_3.at(2),
+        cos(rot)*parFit_3.at(1)-sin(rot)*parFit_3.at(3),
+        sin(rot)*parFit_3.at(0)+cos(rot)*parFit_3.at(2),
+        sin(rot)*parFit_3.at(1)+cos(rot)*parFit_3.at(3)
+    };
 
-            phi_vertex =
-                acos((parFit_1r[1]*parFit_2r[1] + parFit_1r[3]*parFit_2r[3] + 1) /
-                     (sqrt(pow(parFit_1r[1], 2) + pow(parFit_1r[3], 2) + 1) *
-                      sqrt(pow(parFit_2r[1], 2) + pow(parFit_2r[3], 2) + 1))) *
-                    180. / TMath::Pi();
-        } // endif trackNbr_final >= 1
+    //Get x,y,z reaction vertex from fitted parameters
+    vertex(parFit_1r, parFit_2r, x_vertex, y_vertex, z_vertex);
 
-        tmr = {}; // reset out-of-class data structure
-        minos5.unlock();
-    } // end-if for E(T) fits for less than 5 track evts
+    r_vertex = sqrt(pow(x_vertex, 2) + pow(y_vertex, 2));
 
-    return TMinosPass(r_vertex, thetaz1, thetaz2, thetaz3, phi_vertex, trackNbr,
-                      trackNbr_FINAL, z_vertex);
+    // cos theta = v1*v2/(|v1|*|v2|), v1 = (0,0,1)^T, v2 = (m1,m3,1)^T
+    theta.at(0) = acos(1/pow(1+ pow(parFit_1r.at(1), 2)+
+                                pow(parFit_1r.at(3), 2),.5)) *180./ TMath::Pi();
+    theta.at(1) = acos(1/pow(1+ pow(parFit_2r.at(1), 2)+
+                                pow(parFit_2r.at(3), 2),.5)) *180./ TMath::Pi();
+    theta.at(2) = acos(1/pow(1+ pow(parFit_3r.at(1), 2)+
+                                pow(parFit_3r.at(3), 2),.5)) *180./ TMath::Pi();
+
+    vector<double> lambda2d{ // angles in xy-plane for all tracks
+        atan2(parFit_1r.at(3), parFit_1r.at(1))*180/TMath::Pi(),
+        atan2(parFit_2r.at(3), parFit_2r.at(1))*180/TMath::Pi(),
+        atan2(parFit_3r.at(3), parFit_3r.at(1))*180/TMath::Pi()
+    };
+
+    // Transform fomr neg. angles to positive
+    for(auto &i:lambda2d) if(i<0) i = 360 +i;
+    sort(lambda2d.begin(), lambda2d.end());
+
+    vector<double> lambda2dc{
+        lambda2d.at(2)-lambda2d.at(1),
+        lambda2d.at(1)-lambda2d.at(0),
+        lambda2d.at(0)+360-lambda2d.at(2)
+    };
+
+    // Delete largest angle
+    lambda2dc.erase(std::max_element(lambda2dc.begin(), lambda2dc.end()));
+
+    phi_vertex = acos((parFit_1r[1]*parFit_2r[1] + parFit_1r[3]*parFit_2r[3] +1)/
+                      (sqrt(pow(parFit_1r[1], 2) + pow(parFit_1r[3], 2) + 1) *
+                       sqrt(pow(parFit_2r[1], 2) + pow(parFit_2r[3], 2) + 1))) *
+                       180. / TMath::Pi();
+
+    if(trackNbr_FINAL != 3) lambda2dc = {}; // Filter out other events
+    return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
+                      z_vertex, lambda2dc);
 }
 
-int minosana::Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
-                     vector<double> &x_out,vector<double> &y_out,
-                     vector<double> &q_out, vector<bool> &ringbool){
+int minosana::Obertelli_filter(vector<double> &x, vector<double> &y,
+                               vector<double> &q, vector<double> &x_out,
+                               vector<double> &y_out, vector<double> &q_out,
+                               vector<bool> &ringbool){
     double bint1=2.;
     double bint2=2.;
     int maxt = 360;
@@ -521,9 +536,10 @@ int minosana::Obertelli_filter(vector<double> &x,vector<double> &y,vector<double
     return filter_result;
 }
 
-void minosana::Hough_filter(vector<double> &x,vector<double> &y,vector<double> &z,
-                  vector<double> &q,vector<double> &x_out,vector<double> &y_out,
-                  vector<double> &z_out,vector<double> &q_out) {
+void minosana::Hough_filter(vector<double> &x, vector<double> &y,
+                            vector<double> &z, vector<double> &q,
+                            vector<double> &x_out, vector<double> &y_out,
+                            vector<double> &z_out, vector<double> &q_out) {
     int nt_xy = 180, nt_xz = 180, nt_yz = 180,
             nr_xy = 45,  nr_xz = 300, nr_yz = 300;
     double bint_xy = 2., bint_xz = 2., bint_yz = 2.,
@@ -770,33 +786,34 @@ void minosana::Hough_filter(vector<double> &x,vector<double> &y,vector<double> &
      */
 }
 
-void minosana::FindStart(vector<double> &pStart, vector<double> &chi, vector<int> &fitstatus,
-               TGraph &grxz, TGraph &gryz){
-    TF1 *myfit1 = new TF1(Form("fit%i",threadno), FitFunction, -100,500,2);
-    myfit1->SetParameters(0,10);
+void minosana::FindStart(vector<double> &pStart, vector<double> &chi,
+                         vector<int> &fitstatus, TGraph &grxz, TGraph &gryz){
+    TF1 myfit1(Form("fit%i",threadno), FitFunction, -100,500,2);
+    myfit1.SetParameters(0,10);
     fitstatus = {0,0};
-    grxz.Fit(myfit1, "RQM");
-    chi.at(0) = myfit1->GetChisquare();
-    pStart.at(0) = myfit1->GetParameter(0);
-    pStart.at(1) = myfit1->GetParameter(1);
-    gryz.Fit(myfit1, "RQM");
-    chi.at(1) = myfit1->GetChisquare();
-    pStart.at(2) = myfit1->GetParameter(0);
-    pStart.at(3) = myfit1->GetParameter(1);
-    delete myfit1;
+    grxz.Fit(&myfit1, "RQMN");
+    chi.at(0) = myfit1.GetChisquare();
+    pStart.at(0) = myfit1.GetParameter(0);
+    pStart.at(1) = myfit1.GetParameter(1);
+    gryz.Fit(&myfit1, "RQMN");
+    chi.at(1) = myfit1.GetChisquare();
+    pStart.at(2) = myfit1.GetParameter(0);
+    pStart.at(3) = myfit1.GetParameter(1);
 }
 
 
 void minosana::debug(){
     // Look at some raw spectrums
     if(minossingleevent.size() < 5 && filled){
-        minossingleevent.emplace_back(TH2D(Form("t%iEvt%lu",threadno,minossingleevent.size()),
-                                           Form("Thread %i, Event %lu",threadno,minossingleevent.size()),
-                                           100,-100,100,100,-100,100));
+        minossingleevent.emplace_back(
+                TH3D(Form("t%iEvt%lu",threadno,minossingleevent.size()),
+                     Form("Thread %i, Event %lu",threadno,minossingleevent.size()),
+                     100,-100,100,100,-100,100,100,-100,100));
         for(int i=0; i<Xpadnew.size();i++) minossingleevent.back().Fill(
-                    Xpadnew.at(i),Ypadnew.at(i));
+                                    Xpadnew.at(i),Ypadnew.at(i), Zpadnew.at(i));
         minossingleevent.back().GetXaxis()->SetTitle("X [mm]");
         minossingleevent.back().GetYaxis()->SetTitle("Y [mm]");
+        minossingleevent.back().GetZaxis()->SetTitle("Z [mm]");
     }
 }
 

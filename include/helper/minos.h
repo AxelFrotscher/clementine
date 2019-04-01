@@ -8,6 +8,7 @@
 #include <iostream>
 #include "TGraph.h"
 #include <mutex>
+#include "TH3D.h"
 #include "TH2D.h"
 using std::vector;
 
@@ -101,20 +102,19 @@ struct TMinosResult{
 
 struct TMinosPass{
     double r_vertex;
-    double thetaz1;
-    double thetaz2;
-    double thetaz3;
+    vector<double> thetaz;
     double phi_vertex;
     double trackNbr;
     double trackNbr_final;
     double z_vertex;
+    vector<double> lambda2d;
 
-    TMinosPass(double r_vertex_, double thetaz1_, double thetaz2_, double thetaz3_,
+    TMinosPass(double r_vertex_, vector<double> thetaz_,
                double phi_vertex_, double trackNbr_, double trackNbr_Final,
-               double z_vertex_):
-               r_vertex(r_vertex_), thetaz1(thetaz1_), thetaz2(thetaz2_),
-               thetaz3(thetaz3_), phi_vertex(phi_vertex_),trackNbr(trackNbr_),
-               trackNbr_final(trackNbr_Final), z_vertex(z_vertex_){}
+               double z_vertex_, vector<double> lambda2d_):
+               r_vertex(r_vertex_), thetaz(thetaz_), phi_vertex(phi_vertex_),
+               trackNbr(trackNbr_), trackNbr_final(trackNbr_Final),
+               z_vertex(z_vertex_), lambda2d(lambda2d_){}
 };
 
 class minosana{
@@ -125,7 +125,7 @@ public:
              vector<vector<double>> *minoscalibvalues_,
              vector<vector<double>> *minostime_, vector<double> *xpad_,
              vector<double> *ypad_, vector<double> *qpad_, int threadno_,
-             vector<TH2D> &minossingleevent_):
+             vector<TH3D> &minossingleevent_):
              filled(filled_), Tshaping(TShaping_), TimeBinElec(TimeBinElec_),
              DelayTrigger(DelayTrigger_), VDrift(VDrift_),
              minostrackxy(*minostrackxy_), minoscalibvalues(*minoscalibvalues_),
@@ -151,8 +151,7 @@ private:
 
     vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
 
-    double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0, phi_vertex=0,
-            thetaz1=0, thetaz2=0, thetaz3 =0;
+    double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0, phi_vertex=0;
 
     int filled =0 ;
     double Tshaping =0;
@@ -163,12 +162,12 @@ private:
     vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostrackxy;
     vector<vector<double>> minostime;
-    vector<TH2D> &minossingleevent;
+    vector<TH3D> &minossingleevent;
+    vector<double> theta{0,0,0};
 
     TMinosClust fitdata;
     TMinosResult dataresult;
-    static std::mutex minos5;
-    static std::mutex minos6;
+    inline static std::mutex minos5;
 };
 
 // Ugly part outside of the class, because member-functions are trickier than

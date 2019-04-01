@@ -15,10 +15,12 @@
 #include <sstream>
 
 using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
-      std::stringstream, std::to_string, std::__throw_invalid_argument, std::min;
+      std::stringstream, std::to_string, std::__throw_invalid_argument,
+      std::min;
 
 void PID::innerloop(treereader *tree, treereader *minostree,
-                    vector<vector<atomic<bool>>> &goodevents, vector<uint> range) {
+                    vector<vector<atomic<bool>>> &goodevents,vector<uint> range,
+                    const bool minosanalyse) {
     // Step 1: duplicate the data structure
     vector<TH1D>         _reactF5;
     vector<TH2D>         _minosresults;
@@ -26,7 +28,7 @@ void PID::innerloop(treereader *tree, treereader *minostree,
     vector<vector<TH2D>> _reactPPAC;
     vector<vector<TH2D>> _PIDplot;
     // MINOS with single events
-    vector<TH2D> _minossingleevent;
+    vector<TH3D> _minossingleevent;
 
     for(auto &i: reactF5) _reactF5.emplace_back(TH1D(i));
 
@@ -59,125 +61,130 @@ void PID::innerloop(treereader *tree, treereader *minostree,
     const vector<int> ppacFpositions{12,17,25,33}; //F5-2B, F7-2B, F9-2B, F11-2B
     const vector<int> ppacangledistance{650,945,700,500}; // in mm
 
-    for(uint eventcounter=range.at(0);eventcounter<range.at(1);eventcounter++){
-        if(goodevents.at(eventcounter).at(0)){
-            tree->getevent(eventcounter);
-            double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
-                                 (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
-                                 tree->F5A*p1.F7linF5A -
-                                 tree->F3X*p1.F7linF3X;
-
-            double beamaoqcorr2 = tree->BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
-                                  (p1.F11absF9X+tree->F9X*p1.F11linF9X) -
-                                  tree->F9A*p1.F11linF9A -
-                                  tree->F11A*p1.F11linF11A;
-
-            //Loop over all elements in the tree
-            valinc.push_back({tree->BigRIPSBeam_aoq[0],tree->BigRIPSBeam_aoq[1]});
-            valinc.push_back({tree->BigRIPSBeam_zet[0],tree->BigRIPSBeam_zet[1]});
-            if(closeness(valinc.at(0)) && closeness(valinc.at(1))){
-                // Cut Particles that have variating aoq or zet
-                _PIDplot.at(0).at(0).Fill(tree->BigRIPSBeam_aoq[0],
-                                     tree->BigRIPSBeam_zet[0]);
-                _PIDplot.at(1).at(0).Fill(beamaoqcorr, tree->BigRIPSBeam_zet[0]);
-            }
-
-            valinc.push_back({tree->BigRIPSBeam_aoq[2],tree->BigRIPSBeam_aoq[3],
-                              tree->BigRIPSBeam_aoq[4]});
-            valinc.push_back({tree->BigRIPSBeam_zet[2],tree->BigRIPSBeam_zet[3],
-                              tree->BigRIPSBeam_zet[4]});
-
-            // F7-F11 part
-            if(closeness(valinc.at(2)) && closeness(valinc.at(3)) &&
-               goodevents.at(eventcounter).at(1)){
-                _PIDplot.at(0).at(1).Fill(tree->BigRIPSBeam_aoq[4],
-                                     tree->BigRIPSBeam_zet[4]);
-                _PIDplot.at(1).at(1).Fill(beamaoqcorr2,tree->BigRIPSBeam_zet[4]);
-            }
-            valinc.clear();
-
-            // We now fill the cut data (cut by ellipsoid and brho)
-
-            if((pow(1./incval.at(2)*(beamaoqcorr-incval.at(0)),2) +
-                pow(1/incval.at(3)*(tree->BigRIPSBeam_zet[0]-incval.at(1)),2))
-                < 1 ){
-                _PIDplot.at(0).at(2).Fill(tree->BigRIPSBeam_aoq[0],
-                                     tree->BigRIPSBeam_zet[0]);
-                _PIDplot.at(1).at(2).Fill(beamaoqcorr,tree->BigRIPSBeam_zet[0]);
-
-                if(goodevents.at(eventcounter).at(1)) { // F7-F11 part
-                    _PIDplot.at(0).at(3).Fill(tree->BigRIPSBeam_aoq[4],
-                                              tree->BigRIPSBeam_zet[4]);
-                    _PIDplot.at(1).at(3).Fill(beamaoqcorr2,
-                                              tree->BigRIPSBeam_zet[4]);
-                }
-                // cut on energy(Brho) to avoid offcenter Transmission
-                if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid1++;
-
-                // Fill F7 value with PID
-                _reactF5.at(0).Fill(tree->F5X);
-
-                // Second ellipsoid for cross section F7-F11 part
-                if((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
-                    pow(1./targetval.at(3)*
-                    (tree->BigRIPSBeam_zet[4]-targetval.at(1)),2))<1
-                    && goodevents.at(eventcounter).at(1)) {
-                    // cut on energy(Brho) to avoid offcenter Transmission
-                    if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid2++;
-                    // Investigate F7 position of (p,2p) ions (off center effects)
-                    _reactF5.at(1).Fill(tree->F5X);
-
-                    //Check double cut particles
-                    _PIDplot.at(0).at(4).Fill(tree->BigRIPSBeam_aoq[4],
-                                              tree->BigRIPSBeam_zet[4]);
-                    _PIDplot.at(1).at(4).Fill(beamaoqcorr2,
-                                              tree->BigRIPSBeam_zet[4]);
-
-                    // Fill Information to the beam profile/shape/energy
-                    // 17 == F7PPAC-2B, 15 == F7PPAC-1B
-                    for(int i=0; i<_reactPPAC.size();i++){
-                        _reactPPAC.at(i).at(0).Fill(
-                                tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
-                                tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]);
-                        _reactPPAC.at(i).at(1).Fill(
-                            1E3*atan2(tree->BigRIPSPPAC_fX[ppacFpositions.at(i)]-
-                                      tree->BigRIPSPPAC_fX[ppacFpositions.at(i)-2],
-                                      ppacangledistance.at(i)),
-                            1E3*atan2(tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]-
-                                      tree->BigRIPSPPAC_fY[ppacFpositions.at(i)-2],
-                                      ppacangledistance.at(i)));
-                        _reactPPAC.at(i).at(2).Fill(
-                                     tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
-                                     tree->BigRIPSRIPS_brho[1]);
-                    }
-                    // do the correlation between F5 and F9
-                    fitplot.at(1).Fill(tree->F5X, tree->F9X);
-
-                    // make the mighty minos analysis
-                    if(reaction.find("P0P") == string::npos){
-                        minostree->getevent(eventcounter);
-                        minosana analysis(minostree->Trackamount, minostree->Tshaping,
-                                          minostree->TimeBinElec, minostree->DelayTrig,
-                                          minostree->VDrift, minostree->minostrackxy,
-                                          minostree->Minoscalibvalues, minostree->minostime,
-                                          minostree->MinosClustX, minostree->MinosClustY,
-                                          minostree->MinosClustQ, (int)threadno,
-                                          _minossingleevent);
-                        TMinosPass minres = analysis.analyze();
-                        _minosresults.at(0).Fill(minres.thetaz1, minres.thetaz2);
-                        _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
-                        _minos1dresults.at(0).Fill(minres.z_vertex);
-                        _minos1dresults.at(1).Fill(minres.phi_vertex);
-                    }
-                }
-            }
-        }
+    for(int eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
+        // Don't take sorted out events
         progress.increaseevent();
+        if(!goodevents.at(eventcounter).at(0)) continue;
+
+        tree->getevent(eventcounter);
+        double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
+                (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
+                tree->F5A*p1.F7linF5A -
+                tree->F3X*p1.F7linF3X;
+
+        double beamaoqcorr2 = tree->BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
+                (p1.F11absF9X+tree->F9X*p1.F11linF9X) -
+                tree->F9A*p1.F11linF9A -
+                tree->F11A*p1.F11linF11A;
+
+        //Loop over all elements in the tree
+        valinc.push_back({tree->BigRIPSBeam_aoq[0],tree->BigRIPSBeam_aoq[1]});
+        valinc.push_back({tree->BigRIPSBeam_zet[0],tree->BigRIPSBeam_zet[1]});
+        if(closeness(valinc.at(0)) && closeness(valinc.at(1))){
+            // Cut Particles that have variating aoq or zet
+            _PIDplot.at(0).at(0).Fill(tree->BigRIPSBeam_aoq[0],
+                    tree->BigRIPSBeam_zet[0]);
+            _PIDplot.at(1).at(0).Fill(beamaoqcorr, tree->BigRIPSBeam_zet[0]);
+        }
+
+        valinc.push_back({tree->BigRIPSBeam_aoq[2],tree->BigRIPSBeam_aoq[3],
+                          tree->BigRIPSBeam_aoq[4]});
+        valinc.push_back({tree->BigRIPSBeam_zet[2],tree->BigRIPSBeam_zet[3],
+                          tree->BigRIPSBeam_zet[4]});
+
+        // F7-F11 part
+        if(closeness(valinc.at(2)) && closeness(valinc.at(3)) &&
+            goodevents.at(eventcounter).at(1)){
+            _PIDplot.at(0).at(1).Fill(tree->BigRIPSBeam_aoq[4],
+                    tree->BigRIPSBeam_zet[4]);
+            _PIDplot.at(1).at(1).Fill(beamaoqcorr2,tree->BigRIPSBeam_zet[4]);
+        }
+        valinc.clear();
+
+        // We now fill the cut data (cut by ellipsoid and brho)
+        if((pow(1./incval.at(2)*(beamaoqcorr-incval.at(0)),2) +
+            pow(1/incval.at(3)*(tree->BigRIPSBeam_zet[0]-incval.at(1)),2))
+            >= 1 ) continue;
+
+        _PIDplot.at(0).at(2).Fill(tree->BigRIPSBeam_aoq[0],
+                tree->BigRIPSBeam_zet[0]);
+        _PIDplot.at(1).at(2).Fill(beamaoqcorr,tree->BigRIPSBeam_zet[0]);
+
+        if(goodevents.at(eventcounter).at(1)) { // F7-F11 part
+            _PIDplot.at(0).at(3).Fill(tree->BigRIPSBeam_aoq[4],
+                    tree->BigRIPSBeam_zet[4]);
+            _PIDplot.at(1).at(3).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
+        }
+        // cut on energy(Brho) to avoid offcenter Transmission
+        if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid1++;
+
+        // Fill F7 value with PID
+        _reactF5.at(0).Fill(tree->F5X);
+
+        // Second ellipsoid for cross section F7-F11 part
+        if(!((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
+              pow(1./targetval.at(3)*(tree->BigRIPSBeam_zet[4]-
+                                      targetval.at(1)),2))<1
+            && goodevents.at(eventcounter).at(1))) continue;
+
+        // cut on energy(Brho) to avoid offcenter Transmission
+        if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid2++;
+        // Investigate F7 position of (p,2p) ions (off center effects)
+        _reactF5.at(1).Fill(tree->F5X);
+
+        //Check double cut particles
+        _PIDplot.at(0).at(4).Fill(tree->BigRIPSBeam_aoq[4],
+                                  tree->BigRIPSBeam_zet[4]);
+        _PIDplot.at(1).at(4).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
+
+        // Fill Information to the beam profile/shape/energy
+        // 17 == F7PPAC-2B, 15 == F7PPAC-1B
+        for(int i=0; i<_reactPPAC.size();i++){
+            _reactPPAC.at(i).at(0).Fill(
+                    tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
+                    tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]);
+            _reactPPAC.at(i).at(1).Fill(
+                    1E3*atan2(tree->BigRIPSPPAC_fX[ppacFpositions.at(i)]-
+                              tree->BigRIPSPPAC_fX[ppacFpositions.at(i)-2],
+                              ppacangledistance.at(i)),
+                    1E3*atan2(tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]-
+                              tree->BigRIPSPPAC_fY[ppacFpositions.at(i)-2],
+                              ppacangledistance.at(i)));
+            _reactPPAC.at(i).at(2).Fill(
+                    tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
+                    tree->BigRIPSRIPS_brho[1]);
+        }
+        // do the correlation between F5 and F9
+        fitplot.at(1).Fill(tree->F5X, tree->F9X);
+
+        // make the mighty minos analysis
+        if(reaction.find("P0P") == string::npos && minosanalyse){
+            minostree->getevent(eventcounter);
+            minosana analysis(minostree->Trackamount, minostree->Tshaping,
+                    minostree->TimeBinElec, minostree->DelayTrig,
+                    minostree->VDrift, minostree->minostrackxy,
+                    minostree->Minoscalibvalues, minostree->minostime,
+                    minostree->MinosClustX, minostree->MinosClustY,
+                    minostree->MinosClustQ, (int)threadno, _minossingleevent);
+            TMinosPass minres = analysis.analyze();
+
+            if(minres.thetaz.size() > 1)
+                _minosresults.at(0).Fill(minres.thetaz[1], minres.thetaz[2]);
+
+            _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
+
+            if(minres.lambda2d.size() > 1)
+                _minosresults.at(2).Fill(minres.lambda2d.at(0),
+                                         minres.lambda2d.at(1));
+            _minos1dresults.at(0).Fill(minres.z_vertex);
+            _minos1dresults.at(1).Fill(minres.phi_vertex);
+        }
     }
 
     // Step 3: rejoining data structure
     unitemutex.lock();
-    for(uint i=0;i<reactF5.size();i++) reactF5.at(i).Add(new TH1D(_reactF5.at(i)));
+    for(uint i=0;i<reactF5.size();i++)
+        reactF5.at(i).Add(new TH1D(_reactF5.at(i)));
 
     for(uint i=0;i<minosresults.size();i++)
         minosresults.at(i).Add(new TH2D(_minosresults.at(i)));
@@ -262,13 +269,16 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     //Constructing all the histograms
     PID::histogramsetup();
 
+    //Get Minos status
+    setting set;
     //Making threads
     vector<thread> th;
     for(uint i=0; i<threads;i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&PID::innerloop, this,
-                               tree.at(i), minostree.at(i), ref(goodevents), ranges));
+                               tree.at(i), minostree.at(i), ref(goodevents),
+                               ranges, set.getminos()));
     }
 
     for(auto &t : th) t.detach();
@@ -358,7 +368,8 @@ void PID::offctrans() {
                     reactF5.back().GetBinCenter(i),
                     reactF5.back().GetBinCenter(j),1);
             reactF5.back().Fit(corrfit, "NRQ");
-            if(corrfit->GetNDF() >= (minrange - 1) && corrfit->GetParameter(0) > 0.95*mean)
+            if(corrfit->GetNDF() >= (minrange - 1) &&
+               corrfit->GetParameter(0) > 0.95*mean)
                 fitplot.at(0).SetBinContent(i,j-i,corrfit->GetChisquare()/
                                             corrfit->GetNDF());
             temp.push_back(corrfit);
@@ -374,7 +385,8 @@ void PID::offctrans() {
     vector<int> backupfit{0,0};
     double minchisq = 10E8; // current minimum chi-sq.
 
-    for(int i= (fitplot.at(0).GetNbinsY()-1); i>=minrange; i--){ // switch for effect (current normal)
+    // switch for effect (current normal)
+    for(int i= (fitplot.at(0).GetNbinsY()-1); i>=minrange; i--){
         for(int j=startbin; j<fitplot.at(0).GetNbinsX(); j++){
             //Backup preparation:
             if((fitplot.at(0).GetBinContent(j,i) < minchisq) &&
@@ -389,7 +401,7 @@ void PID::offctrans() {
 
                 reactF5.push_back(reactF5.at(0));
                 reactF5.back().Scale(
-                        fitstyle.at(j-startbin).at(i-minrange)->GetParameter(0));
+                       fitstyle.at(j-startbin).at(i-minrange)->GetParameter(0));
                 reactF5.back().SetTitle("F5 scaled beam profile");
                 bestfit = fitstyle.at(j-startbin).at(i-minrange);
 
@@ -446,8 +458,10 @@ void PID::crosssection() {
     // Find out reaction type
     double tottransmission = 1;
     if(incval.size() == 8){
-        if(     reaction.find("P2P") != string::npos) tottransmission = incval.at(4);
-        else if(reaction.find("P3P") != string::npos) tottransmission = incval.at(6);
+        if(     reaction.find("P2P") != string::npos)
+            tottransmission = incval.at(4);
+        else if(reaction.find("P3P") != string::npos)
+            tottransmission = incval.at(6);
     }
 
     // Calculate the final crosssection for this run
@@ -459,8 +473,9 @@ void PID::crosssection() {
     if(reactF5.at(1).GetEntries())
         chargestatevictims *= reactionpid2.load()/reactF5.at(1).GetEntries();
 
-    double crosssection = std::max(0., 1./numberdensity*(reactionpid2-chargestatevictims)/
-                          reactionpid1/tottransmission);
+    double crosssection = std::max(0.,
+                             1./numberdensity*(reactionpid2-chargestatevictims)/
+                             reactionpid1/tottransmission);
     // 1% absolute error + 5% relative error
     double cserror = crosssection*pow(1./reactionpid1 + 2./reactionpid2+
                          pow(tottransmissionerror+ 0.02/tottransmission,2)+
@@ -786,11 +801,15 @@ void PID::histogramsetup() {
                                    90,0,90,90,0,90));
     minosresults.emplace_back(TH2D("tracknbr", "Track No. vs. Final Track No.",
                                    10,-0.5,9.5,10,-0.5,9.5));
+    minosresults.emplace_back(TH2D("lambda", "Two smaller 2d angles for p,3p",
+                                   90,0,180, 90, 0, 180));
 
     minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} #circ");
     minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / #circ");
     minosresults.at(1).GetXaxis()->SetTitle("Track Number");
     minosresults.at(1).GetYaxis()->SetTitle("Final Track Number");
+    minosresults.at(2).GetXaxis()->SetTitle("smaller angle / #circ");
+    minosresults.at(2).GetYaxis()->SetTitle("larger angle / #circ");
 
     minos1dresults.emplace_back(TH1D("zdistr", "Reaction distribution", 100,-70,130));
     minos1dresults.emplace_back(TH1D("phidistr", "Reaction angle distribution", 90, 0,180));

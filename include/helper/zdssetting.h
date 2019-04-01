@@ -41,11 +41,14 @@ public:
     std::vector<uint> emptyrun;
     uint analysedfile = 0;
     const int getsetnumber(){return settingnumber;};
+    void setminos(bool minosbool){minos = minosbool;};
+    const bool getminos(){return minos;};
 
 private:
     static int settingnumber;
     static int eventcounts;
     static bool istransmissionrun;
     static bool isemptyrun;
+    static bool minos;
     static const std::vector<std::string> setname;
 };

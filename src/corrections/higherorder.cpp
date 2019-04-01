@@ -168,7 +168,7 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
             vector<TProfile*> proftemp1d;
             for(uint i_corr=0; i_corr<=corrcount;i_corr++){
                 proftemp1d.push_back(elem2.at(i_corr).ProfileY());
-                proftemp1d.back()->Fit("Linear Fit","Q");
+                proftemp1d.back()->Fit(corrlinfit,"Q");
             }
             proftemp2d.push_back(proftemp1d);
         }

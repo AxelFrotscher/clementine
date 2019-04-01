@@ -38,9 +38,8 @@ void triggercut::innerloop(treereader *tree,
 void triggercut::analyse(const vector<string> input){
     setting set;
     txtwriter txt;
-
-    const bool cuttrigger = true;
-    if(!set.isemptyortrans() && cuttrigger){
+    
+    if(!set.isemptyortrans() && set.getminos()){
         cout << "Physics Run. Omitting trigger cut to gain statistics" << endl;
         txt.addline("No trigger cut on DALI Trigger applied.");
         return;

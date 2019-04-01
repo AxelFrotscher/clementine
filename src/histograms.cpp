@@ -40,10 +40,16 @@ calibpar p1;
     set.setcountno((int)chain.GetEntries());
     const string settingname = set.getsetname();
     const string modename = set.getmodename();
+    const bool minosbool = set.getminos();
 
-    auto gentxt = [input, settingname, modename](auto suffix){ // lambda to generate expression
-        return "output/"+ settingname + "_" + modename + "_" +
-               input.at(0).substr(34,9) + "hist" + to_string(input.size()) + suffix;
+     // lambda to generate expression
+    auto gentxt = [input, settingname, modename, minosbool](auto suffix){
+        if(minosbool){
+            return "output/"+ settingname + "_" + modename + "_MINOS_" +
+                   input.at(0).substr(34,9) + suffix;
+        }
+        else return "output/"+ settingname + "_" + modename + "_CS_" +
+               input.at(0).substr(34,9) + suffix;
     };
 
     // Initialize ROOT and txt outputfile
@@ -81,9 +87,8 @@ calibpar p1;
     crosssection.Write();
 
     printf("Made PID histograms in %s\n", gentxt(".root").c_str());
-    //Get ADC Spectra for DALI
-    //dalicalib(alt4dtree, outputfile);
-    writetotxt.writetofile();
+
+    if(!minosbool) writetotxt.writetofile();
 
     outputfile->Close();
 }
@@ -129,5 +134,7 @@ TGraphErrors nancycs(const int &setnumber){
                                    crosssections.at(setnumber).at(i));
          temp.SetPointError(temp.GetN()-1, 0, crosssectione.at(setnumber).at(i));
      }
+     temp.SetPoint(temp.GetN(), 50,0);
+     temp.SetPoint(temp.GetN(), 120,0);
      return temp;
  }

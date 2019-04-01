@@ -1,4 +1,5 @@
 #include "TH1.h"
+#include "TF1.h"
 #include <boost/algorithm/string/replace.hpp>
 #include "histograms.hh"
 #include "MakeAllTree_78Ni.hh"
@@ -11,6 +12,7 @@
 #include <Math/MinimizerOptions.h>
 #include "libconstant.h"
 #include "TArtStoreManager.hh"
+#include "TMinuitMinimizer.h"
 
 R__LOAD_LIBRARY(libanacore.so)
 
@@ -32,11 +34,20 @@ vector<string> getlist(const char *instring){
 }
 
 int main(int argc, char**argv){
+    // Make ROOT Thread-aware
     ROOT::EnableThreadSafety();
+    // Do not store TObject's in ROOT static class
     ROOT::GetROOT()->SetObjectStat(false);
+    // Do not store TH1 (And derived) in ROOT static class
     TH1::AddDirectory(kFALSE);
+    // Do not store TF1 in ROOT static class
+    TF1::DefaultAddToGlobalList(kFALSE);
+    // Set Loglevel to warning (no canvas creation notice)
     gErrorIgnoreLevel = kWarning;
+    // Set minimizer to Minuit2, successor of TMinuit, threadsafe
     ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2");
+    // Set TMinuit not to use static TMinuit instance by gMinuit
+    TMinuitMinimizer::UseStaticMinuit(kFALSE);
 
     // The Scope of this project is to analyse the 2015 SEASTAR
     printf("Welcome to the analysis program for 2014/2015 SEASTAR DATA\n"
@@ -130,6 +141,11 @@ int main(int argc, char**argv){
             if(!(cin >> choose)) throw invalid_argument("WTH no int");
             switch(choose){
                 case 0:{
+                    //Add Minos choice
+                    bool minoschoice = false;
+                    cout << "MINOS Analysis? [0] no, [1] yes " << endl;
+                    if(!(cin >> minoschoice)) throw invalid_argument("WTH!");
+                    s.setminos(minoschoice);
                     makehistograms(output);
                     break;
                 }
