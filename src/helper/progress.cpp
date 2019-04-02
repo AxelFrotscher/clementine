@@ -57,11 +57,11 @@ void progressbar::draw(){
         string strsp = " " + to_string(speed) + "/s " +
                        Form("%.1f", max((int(1000.*currevt.at(i)/
                        totevent.at(i)))/10.,0.)) + "% ";
-        if(barwidth - pos.at(i) > strsp.size()) // Display speed on right side
-            pstr.replace(barwidth-strsp.size()+1, strsp.size(),
-                         strsp);
-        else if(pos.at(i) > (strsp.size()))
+
+        if(pos.at(i) > (strsp.size()))
             pstr.replace(2, strsp.size(), strsp);
+        else if(barwidth - pos.at(i) > strsp.size()) // Display speed on right side
+            pstr.replace(barwidth-strsp.size()+1, strsp.size(), strsp);
 
         cout << pstr;
         lastevent.at(i) = currevt.at(i); // Replace value for next draw() call

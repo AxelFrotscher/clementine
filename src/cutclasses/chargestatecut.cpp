@@ -43,7 +43,7 @@ void ccsc::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>
     // Step 3: rejoin the data
     unitemutex.lock();
     for(uint i=0; i<_cschist.size();i++)
-        cschist.at(i).Add(new TH2D(_cschist.at(i)));
+        cschist.at(i).Add(&_cschist.at(i));
     unitemutex.unlock();
     progress.reset();
 }
@@ -112,4 +112,6 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     output->cd("CSC");
     for(auto hist: cschist) hist.Write();
     output->cd("");
+
+    for(auto &I: tree ) delete I;
 }

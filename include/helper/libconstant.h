@@ -26,7 +26,7 @@ namespace runinfo{
                                         58'865'437,
                                         40'608'365,
                                         55'363'036,
-                                        192'409'095}; // // full physics run
+                                        160'490'664};//192'409'095}; full physics run
 
     const std::vector<std::vector<std::vector<int>>> plasticrange{
             {{480,620},{700,920},{220,330},{270,1510}},

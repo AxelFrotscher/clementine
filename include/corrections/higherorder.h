@@ -40,7 +40,7 @@ private:
     std::vector<std::vector<double>> cutval;
 
     // Get linear fits of the projected means
-    std::vector<std::vector<std::vector<TProfile *>>> projections;
+    std::vector<std::vector<std::vector<TProfile* >>> projections;
     const double cutfrac = 0.8; // fraction to consider for fit
 
     const std::vector<std::vector<std::string>> folders{

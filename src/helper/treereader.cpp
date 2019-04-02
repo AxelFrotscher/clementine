@@ -98,8 +98,13 @@ treereader::treereader(TTree *tree) : fChain(0)
 
 treereader::~treereader()
 {
+    //std::cout << "Destroying tree..." << std::endl;
     if (!fChain) return;
-    //delete fChain->GetCurrentFile(); - stack objects don't need this
+    delete fChain->GetCurrentFile(); //- stack objects don't need this
+    fChain->ResetBranchAddresses();
+    fChain->Delete();
+    for(auto a: {MinosClustX, MinosClustY, MinosClustQ}) delete a;
+    for(auto a: {Minoscalibvalues, minostrackxy, minostime}) delete a;
 }
 
 Int_t treereader::GetEntry(Long64_t entry)

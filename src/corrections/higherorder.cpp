@@ -84,8 +84,7 @@ void higherorder::innerloop(treereader *tree, std::vector<std::vector<std::atomi
     for(uint i=0; i<culpritdiag.size();i++){
         for(uint j=0; j<culpritdiag.at(0).size();j++){
             for(uint k=0; k<culpritdiag.at(0).at(0).size();k++){
-                culpritdiag.at(i).at(j).at(k).Add(
-                        new TH2D(_culpritdiag.at(i).at(j).at(k)));
+                culpritdiag.at(i).at(j).at(k).Add(&_culpritdiag.at(i).at(j).at(k));
             }
         }
     }
@@ -138,9 +137,9 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
                 temp1d.back().GetXaxis()->SetTitle("A/Q");
                 temp1d.back().GetYaxis()->SetTitle(arrname.at(i).at(j).c_str());
             }
-            temp2d.push_back(temp1d);
+            temp2d.emplace_back(temp1d);
         }
-        culpritdiag.push_back(temp2d);
+        culpritdiag.emplace_back(temp2d);
     }
 
     printf("Successfully generated Histograms for higher order...\n");
@@ -196,4 +195,9 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
 
     output->cd("");
     printf("Finished with higher order corrections!\n");
+
+    //Clean up tree
+    for(auto &i: projections) for(auto &j: i) for(auto &k:j) k->Delete();
+    corrlinfit->Delete();
+    for(auto &I: tree )  delete I;
 }

@@ -87,7 +87,7 @@ void targetcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
     // Step 3: rejoining histograms
     unitemutex.lock();
     for(uint i=0; i<tarhist.size();i++){
-        tarhist.at(i).Add(new TH2D(_tarhist.at(i)));
+        tarhist.at(i).Add(&_tarhist.at(i));
     }
     unitemutex.unlock();
     progress.reset();
@@ -146,4 +146,7 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
     output->cd("Target");
     for(auto hist: tarhist) hist.Write();
     output->cd("");
+
+    //Clean up tree
+    for(auto &I: tree )  delete I;
 }

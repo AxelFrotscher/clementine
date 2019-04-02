@@ -85,11 +85,11 @@ void ppaccut::innerloop(treereader *tree,
     // Step 4 reuniting the diagrams
     unitemutex.lock();
     for(uint i=0;i<effPPAC.size();i++){
-        effPPAC.at(i).Add(new TH1D(_effPPAC.at(i)));
+        effPPAC.at(i).Add(&_effPPAC.at(i));
     }
     for(uint i=0; i<sumdiffppac.size();i++){
         for(uint j=0; j<sumdiffppac.at(0).size(); j++){
-            sumdiffppac.at(i).at(j).Add(new TH2D(_sumdiffppac.at(i).at(j)));
+            sumdiffppac.at(i).at(j).Add(&_sumdiffppac.at(i).at(j));
         }
     }
     unitemutex.unlock();
@@ -203,4 +203,7 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
     printf("\nPPAC Cut out %i F1-7 Events (%f %%) %i F1-11 Events (%f %%) \n",
            cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
            cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
+
+    //Clean up tree
+    for(auto &I: tree )  delete I;
 }

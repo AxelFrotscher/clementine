@@ -84,4 +84,7 @@ void triggercut::analyse(const vector<string> input){
 
     txt.addline(Form("Trigger Cut for DALI %i events (%.2f %%).", cutout,
                      100*(1-cutout/(double)goodevents.size())));
+
+    // Free up memory
+    for(auto &I: tree) delete I;
 }

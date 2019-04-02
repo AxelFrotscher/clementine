@@ -55,7 +55,7 @@ void iccut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool
     unitemutex.lock();
     for(uint i=0; i<comparediag.size(); i++){
         for(uint j=0;j<comparediag.at(0).size();j++){
-            comparediag.at(i).at(j).Add(new TH2D(_comparediag.at(i).at(j)));
+            comparediag.at(i).at(j).Add(&_comparediag.at(i).at(j));
         }
     }
     unitemutex.unlock();
@@ -133,4 +133,6 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
     for(auto &elem: comparediag) elem.at(1).Write();
     output->cd("");
 
+    //Clean up tree
+    for(auto &I: tree )  delete I;
 }

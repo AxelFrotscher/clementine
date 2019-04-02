@@ -67,9 +67,9 @@ void plasticcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
 
     // Step 3 reuniting the diagrams
     unitemutex.lock();
-    for(uint i=0;i<_qcorr.size();i++) qcorr.at(i).Add(new TH1D(_qcorr.at(i)));
-    for(uint i=0;i<_qcorr2D.size();i++) qcorr2D.at(i).Add(new TH2D(_qcorr2D.at(i)));
-    for(uint i=0;i<_tqcorr2D.size();i++) tqcorr2D.at(i).Add(new TH2D(_tqcorr2D.at(i)));
+    for(uint i=0;i<_qcorr.size();i++) qcorr.at(i).Add(&_qcorr.at(i));
+    for(uint i=0;i<_qcorr2D.size();i++) qcorr2D.at(i).Add(&_qcorr2D.at(i));
+    for(uint i=0;i<_tqcorr2D.size();i++) tqcorr2D.at(i).Add(&_tqcorr2D.at(i));
     unitemutex.unlock();
 
     progress.reset();
@@ -181,4 +181,7 @@ void plasticcut::analyse(const vector<string> input, TFile *output) {
     printf("\nPlastic Cut out %i F1-7 Events (%.3f %%) %i F1-11 Events (%.3f %%) \n",
            cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
            cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
+
+    //Clean up tree
+    for(auto &I: tree )  delete I;
 }

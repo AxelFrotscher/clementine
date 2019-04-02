@@ -148,6 +148,7 @@ private:
     void vertex(vector<double> &p, vector<double> &pp, double &xv,
                           double &yv, double &zv);
     void debug();
+    vector<double> rotatesp(double &rot, vector<double> &initialvector);
 
     vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
 

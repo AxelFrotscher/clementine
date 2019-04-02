@@ -169,7 +169,7 @@ void PID::innerloop(treereader *tree, treereader *minostree,
             TMinosPass minres = analysis.analyze();
 
             if(minres.thetaz.size() > 1)
-                _minosresults.at(0).Fill(minres.thetaz[1], minres.thetaz[2]);
+                _minosresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1]);
 
             _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
 
@@ -184,23 +184,23 @@ void PID::innerloop(treereader *tree, treereader *minostree,
     // Step 3: rejoining data structure
     unitemutex.lock();
     for(uint i=0;i<reactF5.size();i++)
-        reactF5.at(i).Add(new TH1D(_reactF5.at(i)));
+        reactF5.at(i).Add(&_reactF5.at(i));
 
     for(uint i=0;i<minosresults.size();i++)
-        minosresults.at(i).Add(new TH2D(_minosresults.at(i)));
+        minosresults.at(i).Add(&_minosresults.at(i));
 
     for(uint i=0; i<minos1dresults.size(); i++)
-        minos1dresults.at(i).Add(new TH1D(_minos1dresults.at(i)));
+        minos1dresults.at(i).Add(&_minos1dresults.at(i));
 
     for(uint i=0;i<reactPPAC.size();i++){
         for(uint j=0; j<reactPPAC.at(0).size(); j++){
-            reactPPAC.at(i).at(j).Add(new TH2D(_reactPPAC.at(i).at(j)));
+            reactPPAC.at(i).at(j).Add(&_reactPPAC.at(i).at(j));
         }
     }
 
     for(uint i=0;i<PIDplot.size();i++){
         for(uint j=0;j<PIDplot.at(0).size();j++){
-            PIDplot.at(i).at(j).Add(new TH2D(_PIDplot.at(i).at(j)));
+            PIDplot.at(i).at(j).Add(&_PIDplot.at(i).at(j));
         }
     }
     minossingleevent.insert(minossingleevent.end(), _minossingleevent.begin(),
@@ -325,15 +325,19 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     output->cd(folders.at(9).c_str());
     for(auto &elem: minossingleevent) elem.Write();
+
+    //Clean up tree
+    for(auto &I: tree )  delete I;
+    for(auto &I: minostree )  delete I;
+    for(auto &i: fitstyle) for(auto &j:i) j->Delete();
 }
 
 void PID::offctrans() {
     // Calculating raw beam ratio:
     reactF5.push_back(reactF5.at(1));
     for (auto &i:reactF5) i.Sumw2();
-    reactF5.back().Divide(new TH1D(reactF5.at(0)));
+    reactF5.back().Divide(&reactF5.at(0));
     reactF5.back().SetName("F5ratio");
-
     setting set;
     if(set.isemptyortrans()){
         printf("Not doing off-center transmission. No physics run.\n");
@@ -364,7 +368,7 @@ void PID::offctrans() {
     for(int i=startbin; i<=stopbin; i++){ // Startbin loop
         vector<TF1*> temp;
         for(int j=i+minrange; j<=stopbin; j++){ // Length loop
-            auto corrfit = new TF1(Form("Fit %i-%i", i,j),constfit,
+            auto corrfit= new TF1(Form("Fit %i-%i", i,j),constfit,
                     reactF5.back().GetBinCenter(i),
                     reactF5.back().GetBinCenter(j),1);
             reactF5.back().Fit(corrfit, "NRQ");
@@ -876,13 +880,14 @@ void PID::brhoprojections(){
     // Fill histograms of i.e. F5X(Brho), needs to be done afterwards
     for(int i=0; i<brhoprojection.at(0).size(); i++){ // Loop over all Focal Planes
         for(int j=1; j<reactPPAC.at(i).at(2).GetNbinsY(); j++){ // Loop over all bins
-            TH1D* temp = reactPPAC.at(i).at(2).ProjectionX(Form("_pfx%i",j),j,j,"e");
+            TH1D *temp = reactPPAC.at(i).at(2).ProjectionX(Form("_pfx%i",j),j,j,"e");
             double mean = temp->GetMean();
             double stddev = temp->GetStdDev();
             brhoprojection.at(0).at(i).SetBinContent(j, mean);
             brhoprojection.at(0).at(i).SetBinError(j, temp->GetMeanError());
             brhoprojection.at(1).at(i).SetBinContent(j, stddev);
             brhoprojection.at(1).at(i).SetBinError(j, temp->GetStdDevError());
+            temp->Delete();
         }
     }
 }

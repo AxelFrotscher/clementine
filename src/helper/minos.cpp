@@ -142,9 +142,9 @@ TMinosPass minosana::analyze() {
 
     int padsleft2 = Xpadnew.size();
     vector<double> xin, yin, zin, qin, xout, yout, zout, qout;
-    int cluster_temp = 0, npoint1 = 0, npoint2 = 0, npoint3 = 0, array_final = 0;
+    int cluster_temp = 0, array_final = 0;
 
-    TGraph gryz_1, grxz_1, gryz_2, grxz_2, gryz_3, grxz_3;
+    vector<TGraph> grxz(trackNbr), gryz(trackNbr);
 
     for (int i = 0; i < padsleft2; i++) {
         // if-Loop executed only at the End
@@ -181,21 +181,11 @@ TMinosPass minosana::analyze() {
                     dataresult.add(xout[l], yout[l], zout[l],
                                    qout[l], trackNbr_FINAL, xout.size(), zmax);
                     array_final++;
-                    switch(trackNbr_FINAL){
-                        case 1: grxz_1.SetPoint(npoint1, zout[l], xout[l]);
-                                gryz_1.SetPoint(npoint1, zout[l], yout[l]);
-                                npoint1++;
-                                break;
-                        case 2: grxz_2.SetPoint(npoint2, zout[l], xout[l]);
-                                gryz_2.SetPoint(npoint2, zout[l], yout[l]);
-                                npoint2++;
-                                break;
-                        case 3: grxz_3.SetPoint(npoint3, zout[l], xout[l]);
-                                gryz_3.SetPoint(npoint3, zout[l], yout[l]);
-                                npoint3++;
-                                break;
-                        default:;
-                    }
+                    if(trackNbr_FINAL > grxz.size()) continue;
+                    grxz.at(trackNbr_FINAL-1).
+                     SetPoint(grxz.at(trackNbr_FINAL-1).GetN(),zout[l],xout[l]);
+                    gryz.at(trackNbr_FINAL-1).
+                     SetPoint(gryz.at(trackNbr_FINAL-1).GetN(),zout[l],yout[l]);
                 }
             }
 
@@ -229,7 +219,7 @@ TMinosPass minosana::analyze() {
     double amin, edm, errdef, chi2res1, chi2res2;
     arglist.at(0) = 3;
     // Get fit for xz-yz plane, for the reconstruction
-    FindStart(pStart_1, chi1, fitStatus, grxz_1, gryz_1);
+    FindStart(pStart_1, chi1, fitStatus, grxz.at(0), gryz.at(0));
 
     minos5.lock();
     TMinuit min(4);
@@ -253,7 +243,7 @@ TMinosPass minosana::analyze() {
 
     if (trackNbr_FINAL == 1) parFit_2 = {0, 0, 0, 0};
     else {
-        FindStart(pStart_2, chi2, fitStatus, grxz_2, gryz_2);
+        FindStart(pStart_2, chi2, fitStatus, grxz.at(1), gryz.at(1));
         min.SetFCN(SumDistance2);
 
         min.mnparm(0, "x0", pStart_2.at(0), 0.1, -500, 500, iflag);
@@ -269,7 +259,7 @@ TMinosPass minosana::analyze() {
             min.GetParameter(i, parFit_2.at(i), err_2.at(i));
     }
     if(trackNbr_FINAL > 2){
-        FindStart(pStart_3, chi3, fitStatus, grxz_3, gryz_3);
+        FindStart(pStart_3, chi3, fitStatus, grxz.at(2), gryz.at(2));
         min.SetFCN(SumDistance3);
 
         min.mnparm(0, "x0", pStart_3.at(0), 0.1, -500, 500, iflag);
@@ -293,31 +283,14 @@ TMinosPass minosana::analyze() {
     int sumerr_2 = accumulate(begin(err_2), end(err_2), 0);
     int sumerr_3 = accumulate(begin(err_3), end(err_3), 0);
 
-    chi2res1 = (chi1.at(0) + chi1.at(1)) / npoint1;
-    chi2res2 = (chi2.at(0) + chi2.at(1)) / npoint2;
+    chi2res1 = (chi1.at(0) + chi1.at(1)) / grxz.at(0).GetN();
+    if(grxz.size() > 1) chi2res2 = (chi2.at(0) + chi2.at(1)) / grxz.at(1).GetN();
 
-    //Rotate from MINOS to beamline
+    //Rotate from MINOS to beamline for all tracks
     double rot = 30*TMath::Pi()/180;
-    vector<double> parFit_1r{
-        cos(rot)*parFit_1.at(0)-sin(rot)*parFit_1.at(2),
-        cos(rot)*parFit_1.at(1)-sin(rot)*parFit_1.at(3),
-        sin(rot)*parFit_1.at(0)+cos(rot)*parFit_1.at(2),
-        sin(rot)*parFit_1.at(1)+cos(rot)*parFit_1.at(3)
-    };
-        // Rotate second track (if it does exist)
-    vector<double> parFit_2r{
-        cos(rot)*parFit_2.at(0)-sin(rot)*parFit_2.at(2),
-        cos(rot)*parFit_2.at(1)-sin(rot)*parFit_2.at(3),
-        sin(rot)*parFit_2.at(0)+cos(rot)*parFit_2.at(2),
-        sin(rot)*parFit_2.at(1)+cos(rot)*parFit_2.at(3)
-    };
-        // Rotate second track (if it does exist)
-    vector<double> parFit_3r{
-        cos(rot)*parFit_3.at(0)-sin(rot)*parFit_3.at(2),
-        cos(rot)*parFit_3.at(1)-sin(rot)*parFit_3.at(3),
-        sin(rot)*parFit_3.at(0)+cos(rot)*parFit_3.at(2),
-        sin(rot)*parFit_3.at(1)+cos(rot)*parFit_3.at(3)
-    };
+    vector<double> parFit_1r = rotatesp(rot, parFit_1);
+    vector<double> parFit_2r = rotatesp(rot, parFit_2);
+    vector<double> parFit_3r = rotatesp(rot, parFit_3);
 
     //Get x,y,z reaction vertex from fitted parameters
     vertex(parFit_1r, parFit_2r, x_vertex, y_vertex, z_vertex);
@@ -815,6 +788,20 @@ void minosana::debug(){
         minossingleevent.back().GetYaxis()->SetTitle("Y [mm]");
         minossingleevent.back().GetZaxis()->SetTitle("Z [mm]");
     }
+}
+
+vector<double> minosana::rotatesp(double &rot, vector<double> &initialvector){
+    // This function can rotate the results slopes derived from the 2D planes
+    if(initialvector.size() != 4 )
+        cout << "WARNING: Rotation vector dimension is " << initialvector.size()
+             << " but should be 4!! " << endl << endl;
+
+    return vector<double> {
+            cos(rot)*initialvector.at(0)-sin(rot)*initialvector.at(2),
+            cos(rot)*initialvector.at(1)-sin(rot)*initialvector.at(3),
+            sin(rot)*initialvector.at(0)+cos(rot)*initialvector.at(2),
+            sin(rot)*initialvector.at(1)+cos(rot)*initialvector.at(3)
+    };
 }
 
 double FitFunction(double *x, double *p){
