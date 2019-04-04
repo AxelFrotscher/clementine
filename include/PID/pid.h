@@ -31,7 +31,7 @@ public:
 private:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
-    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/450,2));
+    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/600,2));
     std::string reaction = "";
 
     std::vector<TH1F> reactF5;

@@ -13,11 +13,10 @@ using namespace std;
 void iccut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
                         &goodevents, std::vector<uint> range) {
     //Step 1: Cloning histograms
-    vector<vector<TH2I>> _comparediag;
+    decltype(comparediag) _comparediag;
     for(auto &i: comparediag){
-        vector<TH2I> temp1d;
-        for(auto &j :i) temp1d.emplace_back(TH2I(j));
-        _comparediag.emplace_back(temp1d);
+        _comparediag.emplace_back();
+        for(auto &j :i) _comparediag.back().emplace_back(j);
     }
 
     //Step 2: Preparing Variables
@@ -81,13 +80,14 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
 
 
     for(int i=1; i<numchannel; i++){
+        comparediag.emplace_back();
         vector<string> arrname = {"ICratio" + to_string(i) + "to0fpl7",
                                   "ICratio" + to_string(i) + "to0fpl11"};
         string arrtitle = "Peak ADC Ratio " + to_string(i) + " to 0";
-        comparediag.push_back({TH2I(arrname.at(0).c_str(),arrtitle.c_str(),
-                                    1024,0,16384,375,-1500,1500),
-                               TH2I(arrname.at(1).c_str(),arrtitle.c_str(),
-                                    1024,0,16384,375,-1500,1500)});
+        comparediag.back().emplace_back(arrname.at(0).c_str(),arrtitle.c_str(),
+                                        1024,0,16384,375,-1500,1500);
+        comparediag.back().emplace_back(arrname.at(1).c_str(),arrtitle.c_str(),
+                                        1024,0,16384,375,-1500,1500);
         for(auto &elem: comparediag.back()){
             elem.SetOption("colz");
             elem.GetXaxis()->SetTitle("ADC0 [ch]");

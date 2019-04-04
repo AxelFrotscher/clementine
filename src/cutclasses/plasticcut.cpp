@@ -14,13 +14,13 @@ using std::vector, std::atomic, std::string, std::to_string, std::thread;
 void plasticcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
                              &goodevents, vector<uint> range) {
     // Step 1: cloning histograms
-    vector<TH1I> _qcorr;
-    vector<TH2I> _qcorr2D;
-    vector<TH2I> _tqcorr2D;
+    decltype(qcorr)    _qcorr;
+    decltype(qcorr2D)  _qcorr2D;
+    decltype(tqcorr2D) _tqcorr2D;
 
-    for(auto &i : qcorr)    _qcorr.emplace_back(TH1I(i));
-    for(auto &i : qcorr2D)  _qcorr2D.emplace_back(TH2I(i));
-    for(auto &i : tqcorr2D) _tqcorr2D.emplace_back(TH2I(i));
+    for(auto &i : qcorr)    _qcorr.emplace_back(i);
+    for(auto &i : qcorr2D)  _qcorr2D.emplace_back(i);
+    for(auto &i : tqcorr2D) _tqcorr2D.emplace_back(i);
 
     // Step 2: Preparing Variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
@@ -113,15 +113,12 @@ void plasticcut::analyse(const vector<string> input, TFile *output) {
                                     to_string(tree.at(0)->BigRIPSPlastic_fpl[i])
         });
 
-        qcorr2D.emplace_back(
-            TH2I(arrayname.at(i).at(1).c_str(), arraytitle.at(i).at(1).c_str(),
-                 500,0,1500, 500,0,1500));
-        qcorr.emplace_back(
-            TH1I(arrayname.at(i).at(0).c_str(), arraytitle.at(i).at(0).c_str(),
-                 750,0,1500));
-        tqcorr2D.emplace_back(
-            TH2I(arrayname.at(i).at(2).c_str(), arraytitle.at(i).at(2).c_str(),
-                 300,-150,150, 400,-2,2));
+        qcorr2D.emplace_back(arrayname.at(i).at(1).c_str(),
+                        arraytitle.at(i).at(1).c_str(), 500,0,1500, 500,0,1500);
+        qcorr.emplace_back(  arrayname.at(i).at(0).c_str(),
+                        arraytitle.at(i).at(0).c_str(), 750,0,1500);
+        tqcorr2D.emplace_back(arrayname.at(i).at(2).c_str(),
+                        arraytitle.at(i).at(2).c_str(), 300,-150,150, 400,-2,2);
     }
 
     for(auto &i : qcorr){

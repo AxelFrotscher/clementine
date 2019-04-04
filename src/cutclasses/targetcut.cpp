@@ -13,8 +13,8 @@ using std::vector, std::cout, std::endl, std::atomic, std::string, std::thread;
 void targetcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
                             &goodevents, vector<uint> range) {
     //Step 1: Cloning histograms
-    vector<TH2S> _tarhist;
-    for(auto &i:tarhist) _tarhist.emplace_back(TH2S(i));
+    decltype(tarhist) _tarhist;
+    for(auto &i:tarhist) _tarhist.emplace_back(i);
 
     //Step 2: preparing variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
@@ -111,8 +111,8 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
     vector<string> keys{"BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSPPAC.fpl"};
     for(auto &i: tree) i->setloopkeys(keys);
 
-    tarhist.emplace_back(TH2S("target", "Beam Profile F8", 1000,-50,50,1000,-50,50));
-    tarhist.emplace_back(TH2S("targetcut", "Cut Beam Profile F8", 1000,-50,50,1000,-50,50));
+    tarhist.emplace_back("target", "Beam Profile F8", 1000,-50,50,1000,-50,50);
+    tarhist.emplace_back("targetcut", "Cut Beam Profile F8", 1000,-50,50,1000,-50,50);
 
     for(auto &histo: tarhist){
         histo.SetOption("colz");

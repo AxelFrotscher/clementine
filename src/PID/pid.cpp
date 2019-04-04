@@ -269,6 +269,8 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     //Get Minos status
     setting set;
+    if(set.getminos())
+        threads = std::min(25, std::max((int)sqrt(goodevents.size())/450,2));
     //Making threads
     vector<thread> th;
     for(uint i=0; i<threads;i++){

@@ -14,14 +14,14 @@ void ppaccut::innerloop(treereader *tree,
                              std::vector<std::vector<std::atomic<bool>>> &goodevents,
                              std::vector<uint> range) {
     // Step 1: cloning histograms
-    vector<TH1D> _effPPAC;
-    vector<vector<TH2I>> _sumdiffppac;
+    decltype(effPPAC) _effPPAC;
+    decltype(sumdiffppac) _sumdiffppac;
+
     for(auto &i : effPPAC) _effPPAC.emplace_back(i);
 
     for(auto &i: sumdiffppac){
-        vector<TH2I> _sdppac;
-        for (auto &j: i) _sdppac.emplace_back(j);
-        _sumdiffppac.emplace_back(_sdppac);
+        _sumdiffppac.emplace_back();
+        for (auto &j: i) _sumdiffppac.back().emplace_back(j);
     }
 
     // Step 2: Preparing variables
@@ -119,10 +119,8 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
     for(auto &i:tree) i->setloopkeys(keys);
 
     //36 Values per Array (Event)
-    effPPAC.emplace_back(TH1D("effPPACX", "Efficiency of PPAC X", numplane, 0,
-                              numplane));
-    effPPAC.emplace_back(TH1D("effPPACY", "Efficiency of PPAC Y", numplane, 0,
-                              numplane));
+    effPPAC.emplace_back("effPPACX","Efficiency of PPAC X",numplane,0,numplane);
+    effPPAC.emplace_back("effPPACY","Efficiency of PPAC Y",numplane,0,numplane);
 
     vector<string> arrname = { "PPACXsum","PPACXdiff","PPACYsum", "PPACYdiff"};
     vector<string> arrtitle = {
@@ -130,14 +128,14 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
             "Sum of Signals PPACY", "Difference of Signals PPACY"};
 
     for(uint i = 0; i<2;i++) sumdiffppac.emplace_back(vector<TH2I>{});
-    sumdiffppac.at(0).emplace_back(TH2I(arrname.at(0).c_str(),arrtitle.at(0).c_str(),
-                                        numplane,0,numplane,300,000,300));
-    sumdiffppac.at(0).emplace_back(TH2I(arrname.at(1).c_str(),arrtitle.at(1).c_str(),
-                                        numplane,0,numplane,800,-200,200));
-    sumdiffppac.at(1).emplace_back(TH2I(arrname.at(2).c_str(),arrtitle.at(2).c_str(),
-                                        numplane,0,numplane,150,0,150));
-    sumdiffppac.at(1).emplace_back(TH2I(arrname.at(3).c_str(),arrtitle.at(3).c_str(),
-                                        numplane,0,numplane,800,-200,200));
+    sumdiffppac.at(0).emplace_back(arrname.at(0).c_str(),arrtitle.at(0).c_str(),
+                                        numplane,0,numplane,300,000,300);
+    sumdiffppac.at(0).emplace_back(arrname.at(1).c_str(),arrtitle.at(1).c_str(),
+                                        numplane,0,numplane,800,-200,200);
+    sumdiffppac.at(1).emplace_back(arrname.at(2).c_str(),arrtitle.at(2).c_str(),
+                                        numplane,0,numplane,150,0,150);
+    sumdiffppac.at(1).emplace_back(arrname.at(3).c_str(),arrtitle.at(3).c_str(),
+                                        numplane,0,numplane,800,-200,200);
 
     for(auto &hist : sumdiffppac){
         uint toggle =0;
