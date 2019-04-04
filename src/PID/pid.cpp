@@ -22,30 +22,28 @@ void PID::innerloop(treereader *tree, treereader *minostree,
                     vector<vector<atomic<bool>>> &goodevents,vector<uint> range,
                     const bool minosanalyse) {
     // Step 1: duplicate the data structure
-    vector<TH1D>         _reactF5;
-    vector<TH2D>         _minosresults;
-    vector<TH1D>         _minos1dresults;
-    vector<vector<TH2D>> _reactPPAC;
-    vector<vector<TH2D>> _PIDplot;
+    decltype(reactF5)          _reactF5;
+    decltype(minosresults)     _minosresults;
+    decltype(minos1dresults)   _minos1dresults;
+    decltype(reactPPAC)        _reactPPAC;
+    decltype(PIDplot)          _PIDplot;
     // MINOS with single events
-    vector<TH3D> _minossingleevent;
+    decltype(minossingleevent) _minossingleevent;
 
-    for(auto &i: reactF5) _reactF5.emplace_back(TH1D(i));
+    for(auto &i: reactF5) _reactF5.emplace_back(i);
 
     for(auto &i: reactPPAC){
-        vector<TH2D> temp;
-        for(auto &j:i) temp.emplace_back(TH2D(j));
-        _reactPPAC.emplace_back(temp);
+        _reactPPAC.emplace_back();
+        for(auto &j:i) _reactPPAC.back().emplace_back(j);
     }
 
     for(auto &i: PIDplot){
-        vector<TH2D> temp;
-        for(auto &j:i) temp.emplace_back(TH2D(j));
-        _PIDplot.emplace_back(temp);
+        _PIDplot.emplace_back();
+        for(auto &j:i) _PIDplot.back().emplace_back(j);
     }
 
-    for(auto &i: minosresults) _minosresults.emplace_back(TH2D(i));
-    for(auto &i: minos1dresults) _minos1dresults.emplace_back(TH1D(i));
+    for(auto &i: minosresults)   _minosresults.emplace_back(i);
+    for(auto &i: minos1dresults) _minos1dresults.emplace_back(i);
 
     double maxbrho = 10; // Tm, higher than all my values
     if(incval.size() == 8){
@@ -312,8 +310,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     for(int i=0; i<brhoprojection.at(0).size(); i++){
         output->cd(folders.at(3+i).c_str());
-        brhoprojection.at(0).at(i).Write();
-        brhoprojection.at(1).at(i).Write();
+        for(auto &j : brhoprojection) j.at(i).Write();
     }
 
     output->cd(folders.at(7).c_str());
@@ -714,7 +711,7 @@ void PID::chargestatecut(){
             //     << ". Y-Bin Width " << binhigh.at(1) << " - " << binlow.at(1) << endl;
 
             // Prepare cut diagram.
-            chargestate.emplace_back(TH2D(PIDplot.at(1).at(3)));
+            chargestate.emplace_back(PIDplot.at(1).at(3));
             chargestate.back().Reset();
             chargestate.back().SetName(Form("ChargestateN%i.%i",projectileN+i, projectileZ));
             chargestate.back().SetTitle(Form("CS contr. {}^{%i}%s{}^{%i+} Calc A/Q %.4f",
@@ -750,7 +747,6 @@ void PID::histogramsetup() {
     const vector<uint> y = set.getZrange(); // y boundaries
     const vector<double> x{500, 2.45, 2.85};  // xbins, lower x, upper x
 
-    vector<TH2D> temp1, temp2;
     vector<vector<string>> t1s = {{"pidinc", "PID Incoming F3-F7"},
         {"pidout", "PID Outgoing F8-F11"}, {"pidincut","PID Inc cut  F3-F7"},
         {"pidincutout", "PID Out w/ in cut"},
@@ -760,53 +756,52 @@ void PID::histogramsetup() {
         {"pidincutoutcorr", "PID Out w/ in cut"},
         {"pidincutoutcutcorr", "PID Out cut w/ in cut"}};
 
-    for(auto &i : t1s) temp1.emplace_back(i.at(0).c_str(),i.at(1).c_str(),
+    PIDplot.emplace_back();
+    for(auto &i : t1s) PIDplot.at(0).emplace_back(i.at(0).c_str(),i.at(1).c_str(),
                                           x[0],x[1],x[2],y[0],y[1],y[2]);
-    for(auto &i : t2s) temp2.emplace_back(i.at(0).c_str(),i.at(1).c_str(),
+    PIDplot.emplace_back();
+    for(auto &i : t2s) PIDplot.at(1).emplace_back(i.at(0).c_str(),i.at(1).c_str(),
                                           x[0],x[1],x[2],y[0],y[1],y[2]);
 
-    PIDplot.emplace_back(temp1);
-    PIDplot.emplace_back(temp2);
-
-    reactF5.emplace_back(TH1D("F5beam", "F5 beam profile", binning,-100,100));
-    reactF5.emplace_back(TH1D("F5react", "F5-position of reacted particles",
-                              binning,-100,100));
+    reactF5.emplace_back("F5beam", "F5 beam profile", binning,-100,100);
+    reactF5.emplace_back("F5react", "F5-position of reacted particles",
+                              binning,-100,100);
 
     const int brhoslice = 320;
     const vector<double> bl = {6.5,7.3};
-    vector<TH1D> brt1, brt2;
-    brt1.emplace_back(TH1D("F5brhop", "F5X projection B#rho",brhoslice,bl[0],bl[1]));
-    brt1.emplace_back(TH1D("F7brhop", "F7X projection B#rho",brhoslice,bl[0],bl[1]));
-    brt1.emplace_back(TH1D("F9brhop", "F9X projection B#rho",brhoslice,bl[0],bl[1]));
-    brt1.emplace_back(TH1D("F11brhop", "F11X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
-    brt2.emplace_back(TH1D("F5brhostd", "F5X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
-    brt2.emplace_back(TH1D("F7brhostd", "F7X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
-    brt2.emplace_back(TH1D("F9brhostd", "F9X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
-    brt2.emplace_back(TH1D("F11brhostd", "F11X projection B#rho #sigma",brhoslice,bl[0],bl[1]));
-    brhoprojection.emplace_back(brt1);
-    brhoprojection.emplace_back(brt2);
+
+    string t = "projection B#rho #sigma";
+    brhoprojection.emplace_back();
+    brhoprojection.emplace_back();
+    brhoprojection.at(0).emplace_back("F5brhop", "F5X projection B#rho",brhoslice,bl[0],bl[1]);
+    brhoprojection.at(0).emplace_back("F7brhop", "F7X projection B#rho",brhoslice,bl[0],bl[1]);
+    brhoprojection.at(0).emplace_back("F9brhop", "F9X projection B#rho",brhoslice,bl[0],bl[1]);
+    brhoprojection.at(0).emplace_back("F11brhop", "F11X projection B#rho",brhoslice,bl[0],bl[1]);
+    brhoprojection.at(1).emplace_back("F5brhostd", Form("F5X %s", t.c_str()),brhoslice,bl[0],bl[1]);
+    brhoprojection.at(1).emplace_back("F7brhostd", Form("F7X %s", t.c_str()),brhoslice,bl[0],bl[1]);
+    brhoprojection.at(1).emplace_back("F9brhostd", Form("F9X %s", t.c_str()),brhoslice,bl[0],bl[1]);
+    brhoprojection.at(1).emplace_back("F11brhostd", Form("F11X %s", t.c_str()),brhoslice,bl[0],bl[1]);
 
     for(int j=0; j<4; j++){
-        vector<TH2D> temp;
+        reactPPAC.emplace_back();
         string no = "F" + to_string(5+2*j); // form F5+F7+F9+F11
         int k =1; // Scaling factor F9
         if(j==2 || j==0) k=3; // make space wider for F9 and F5
-        temp.emplace_back(TH2D((no+"pos").c_str(), ("PID "+no+" beamshape").c_str(),
-                               250,-40*k,40*k,200,-30*k,30*k));
-        temp.emplace_back(TH2D((no+"ang").c_str(), ("PID "+no+" beam angular shape").c_str(),
-                               100,-50,50,100,-50,50));
-        temp.emplace_back(TH2D((no+"brho").c_str(), ("PID "+no+" B#rho Distribution").c_str(),
-                               250,-40*k,40*k,brhoslice,bl[0],bl[1]));
-        reactPPAC.emplace_back(temp);
+        reactPPAC.back().emplace_back((no+"pos").c_str(), ("PID "+no+" beamshape").c_str(),
+                          250,-40*k,40*k,200,-30*k,30*k);
+        reactPPAC.back().emplace_back((no+"ang").c_str(), ("PID "+no+" beam angular shape").c_str(),
+                          100,-50,50,100,-50,50);
+        reactPPAC.back().emplace_back((no+"brho").c_str(), ("PID "+no+" B#rho Distribution").c_str(),
+                          250,-40*k,40*k,brhoslice,bl[0],bl[1]);
     }
 
 
-    minosresults.emplace_back(TH2D("theta", "#theta correlation",
-                                   90,0,90,90,0,90));
-    minosresults.emplace_back(TH2D("tracknbr", "Track No. vs. Final Track No.",
-                                   10,-0.5,9.5,10,-0.5,9.5));
-    minosresults.emplace_back(TH2D("lambda", "Two smaller 2d angles for p,3p",
-                                   90,0,180, 90, 0, 180));
+    minosresults.emplace_back("theta", "#theta correlation",
+                                   90,0,90,90,0,90);
+    minosresults.emplace_back("tracknbr", "Track No. vs. Final Track No.",
+                                   10,-0.5,9.5,10,-0.5,9.5);
+    minosresults.emplace_back("lambda", "Two smaller 2d angles for p,3p",
+                                   90,0,180, 90, 0, 180);
 
     minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} #circ");
     minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / #circ");
@@ -815,8 +810,8 @@ void PID::histogramsetup() {
     minosresults.at(2).GetXaxis()->SetTitle("smaller angle / #circ");
     minosresults.at(2).GetYaxis()->SetTitle("larger angle / #circ");
 
-    minos1dresults.emplace_back(TH1D("zdistr", "Reaction distribution", 100,-70,130));
-    minos1dresults.emplace_back(TH1D("phidistr", "Reaction angle distribution", 90, 0,180));
+    minos1dresults.emplace_back("zdistr", "Reaction distribution", 100,-70,130);
+    minos1dresults.emplace_back("phidistr", "Reaction angle distribution", 90, 0,180);
 
     minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
     minos1dresults.at(0).GetYaxis()->SetTitle("N");
@@ -825,13 +820,13 @@ void PID::histogramsetup() {
 
     for(auto &i: minosresults) i.SetOption("colz");
 
-    fitplot.emplace_back(TH2D("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,
-                              binning, binning-1,1,binning));
+    fitplot.emplace_back("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,
+                              binning, binning-1,1,binning);
     fitplot.at(0).GetXaxis()->SetTitle("Starting Bin");
     fitplot.at(0).GetYaxis()->SetTitle("Number of Bins");
     fitplot.at(0).SetMaximum(2.*maxchisq);
-    fitplot.emplace_back(TH2D("F9XF5X", "PID F9F5-X correlation", binning,-100,
-                              100, 100,-120,120));
+    fitplot.emplace_back("F9XF5X", "PID F9F5-X correlation", binning,-100,
+                              100, 100,-120,120);
     fitplot.at(1).GetXaxis()->SetTitle("F5X");
     fitplot.at(1).GetYaxis()->SetTitle("F9X");
     for (auto &i: fitplot) i.SetOption("colz");

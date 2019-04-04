@@ -36,7 +36,7 @@ private:
                     "Dependence of F11X vs AoQ", "Dependece of F11A vs AoQ",
                     "Dependence of #beta (F11) vs AoQ"}};
 
-    std::vector<std::vector<std::vector<TH2D>>> culpritdiag;
+    std::vector<std::vector<std::vector<TH2I>>> culpritdiag;
     std::vector<std::vector<double>> cutval;
 
     // Get linear fits of the projected means

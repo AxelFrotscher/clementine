@@ -67,7 +67,7 @@ calibpar p1;
          plasticcut(input, goodevents, outputfile);
          iccut(input, goodevents, outputfile);
          higherorder(input, goodevents, outputfile);
-     };
+     }
 
     // Get Z vs. A/Q
     const vector<string> reactionmodes = set.getreactions();

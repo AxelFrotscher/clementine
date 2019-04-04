@@ -24,7 +24,7 @@ private:
 
     const int numchannel = 6; // There are 6 channel per IC
     //const int numic = 2; // Number of Ionisation Chambers
-    std::vector<std::vector<TH2D>> comparediag;
+    std::vector<std::vector<TH2I>> comparediag;
 
 };
 

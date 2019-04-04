@@ -15,12 +15,12 @@ void ppaccut::innerloop(treereader *tree,
                              std::vector<uint> range) {
     // Step 1: cloning histograms
     vector<TH1D> _effPPAC;
-    vector<vector<TH2D>> _sumdiffppac;
-    for(auto &i : effPPAC) _effPPAC.emplace_back(TH1D(i));
+    vector<vector<TH2I>> _sumdiffppac;
+    for(auto &i : effPPAC) _effPPAC.emplace_back(i);
 
     for(auto &i: sumdiffppac){
-        vector<TH2D> _sdppac;
-        for (auto &j: i) _sdppac.emplace_back(TH2D(j));
+        vector<TH2I> _sdppac;
+        for (auto &j: i) _sdppac.emplace_back(j);
         _sumdiffppac.emplace_back(_sdppac);
     }
 
@@ -129,14 +129,14 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
             "Sum of Signals PPACX", "Difference of Signals PPACX",
             "Sum of Signals PPACY", "Difference of Signals PPACY"};
 
-    for(uint i = 0; i<2;i++) sumdiffppac.emplace_back(vector<TH2D>{});
-    sumdiffppac.at(0).emplace_back(TH2D(arrname.at(0).c_str(),arrtitle.at(0).c_str(),
+    for(uint i = 0; i<2;i++) sumdiffppac.emplace_back(vector<TH2I>{});
+    sumdiffppac.at(0).emplace_back(TH2I(arrname.at(0).c_str(),arrtitle.at(0).c_str(),
                                         numplane,0,numplane,300,000,300));
-    sumdiffppac.at(0).emplace_back(TH2D(arrname.at(1).c_str(),arrtitle.at(1).c_str(),
+    sumdiffppac.at(0).emplace_back(TH2I(arrname.at(1).c_str(),arrtitle.at(1).c_str(),
                                         numplane,0,numplane,800,-200,200));
-    sumdiffppac.at(1).emplace_back(TH2D(arrname.at(2).c_str(),arrtitle.at(2).c_str(),
+    sumdiffppac.at(1).emplace_back(TH2I(arrname.at(2).c_str(),arrtitle.at(2).c_str(),
                                         numplane,0,numplane,150,0,150));
-    sumdiffppac.at(1).emplace_back(TH2D(arrname.at(3).c_str(),arrtitle.at(3).c_str(),
+    sumdiffppac.at(1).emplace_back(TH2I(arrname.at(3).c_str(),arrtitle.at(3).c_str(),
                                         numplane,0,numplane,800,-200,200));
 
     for(auto &hist : sumdiffppac){

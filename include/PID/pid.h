@@ -34,14 +34,14 @@ private:
     int threads = std::min(25, std::max((int)sqrt(goodevents.size())/450,2));
     std::string reaction = "";
 
-    std::vector<std::vector<TH2D>> PIDplot;
-    std::vector<TH1D> reactF5;
-    std::vector<std::vector<TH2D>> reactPPAC; // F7,F9,F11
-    std::vector<std::vector<TH1D>> brhoprojection; // F5,7,9,11(Brho)
-    std::vector<TH2D> chargestate;
-    std::vector<TH2D> minosresults;
-    std::vector<TH3D> minossingleevent; // Contains histograms for single events
-    std::vector<TH1D> minos1dresults;
+    std::vector<TH1F> reactF5;
+    std::vector<std::vector<TH2S>> reactPPAC; // F7,F9,F11
+    std::vector<std::vector<TH1F>> brhoprojection; // F5,7,9,11(Brho)
+    std::vector<TH2I> chargestate;
+    std::vector<decltype(chargestate)> PIDplot;  // "Uncorrected/corrected"
+    std::vector<TH2I> minosresults;
+    std::vector<TH3C> minossingleevent; // Contains histograms for single events
+    std::vector<TH1I> minos1dresults;
 
     std::vector<double> incval; // cut on incoming particles (F7)
     std::vector<double> targetval; // second cut to detected particles (F11)

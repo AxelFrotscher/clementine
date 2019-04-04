@@ -15,15 +15,15 @@ using namespace std;
 void higherorder::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
         &goodevents, std::vector<uint> range) {
     // Step 1: Cloning histograms
-    vector<vector<vector<TH2D>>> _culpritdiag;
+    decltype(culpritdiag) _culpritdiag;
     for(auto &i: culpritdiag){
-        vector<vector<TH2D>> temp2D;
+        _culpritdiag.emplace_back();
+
         for(auto &j:i){
-            vector<TH2D> temp1D;
-            for(auto &k:j) temp1D.emplace_back(TH2D(k));
-            temp2D.emplace_back(temp1D);
+            _culpritdiag.back().emplace_back();
+
+            for(auto &k:j) _culpritdiag.back().back().emplace_back(k);
         }
-        _culpritdiag.emplace_back(temp2D);
     }
 
     // Step 2: Preparing Variables
@@ -119,9 +119,11 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
 
     // Initialize all the diagrams
     for(uint i=0; i<arrname.size();i++){ // Loop F7, F11
-        vector<vector<TH2D>> temp2d;
+        culpritdiag.emplace_back();
+
         for(uint j=0; j<arrname.at(0).size();j++){ // Loop F3X,F5X,...
-            vector<TH2D> temp1d;
+            culpritdiag.back().emplace_back();
+
             for(uint k=0;k<=corrcount; k++){ // Loop Correction number
                 string arr = arrname.at(i).at(j) + to_string(k); // Generate array name
                 string arrn = arrtitle.at(i).at(j) + " Corr: " + to_string(k);
@@ -131,15 +133,14 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
                     ymax = 0.7;
                     ymin = 0.6 -0.2*i; // outgoing have lower velocities
                 }
-                temp1d.emplace_back(TH2D(arr.c_str(),arrn.c_str(),600,2.5,2.8,
-                                         400,ymin,ymax));
-                temp1d.back().SetOption("colz");
-                temp1d.back().GetXaxis()->SetTitle("A/Q");
-                temp1d.back().GetYaxis()->SetTitle(arrname.at(i).at(j).c_str());
+                culpritdiag.back().back().emplace_back(
+                           arr.c_str(),arrn.c_str(),600,2.5,2.8, 400,ymin,ymax);
+                culpritdiag.back().back().back().SetOption("colz");
+                culpritdiag.back().back().back().GetXaxis()->SetTitle("A/Q");
+                culpritdiag.back().back().back().GetYaxis()->SetTitle(
+                                                   arrname.at(i).at(j).c_str());
             }
-            temp2d.emplace_back(temp1d);
         }
-        culpritdiag.emplace_back(temp2d);
     }
 
     printf("Successfully generated Histograms for higher order...\n");
@@ -162,16 +163,16 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
                               cutval[0][1]+cutfrac*cutval[0][3], 2);
     corrlinfit->SetParNames("absolute", "linear");
     for (auto &elem : culpritdiag) {
-        vector<vector<TProfile*>> proftemp2d;
+        projections.emplace_back();
+
         for(auto &elem2: elem){
-            vector<TProfile*> proftemp1d;
+            projections.back().emplace_back();
+
             for(uint i_corr=0; i_corr<=corrcount;i_corr++){
-                proftemp1d.push_back(elem2.at(i_corr).ProfileY());
-                proftemp1d.back()->Fit(corrlinfit,"Q");
+                projections.back().back().push_back(elem2.at(i_corr).ProfileY());
+                projections.back().back().back()->Fit(corrlinfit, "Q");
             }
-            proftemp2d.push_back(proftemp1d);
         }
-        projections.push_back(proftemp2d);
     }
 
     // Generate root file structure and then write out all histograms

@@ -14,8 +14,8 @@ void ccsc::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>
                        std::vector<uint> range) {
     // precious tight inner loop
     // Cloning histograms
-    vector<TH2D> _cschist;
-    for(auto &i: cschist) _cschist.emplace_back(TH2D(i));
+    vector<TH2I> _cschist;
+    for(auto &i: cschist) _cschist.emplace_back(i);
 
     // Step 2: Preparing variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
@@ -64,9 +64,9 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
 
     // Generate output histogram
     cschist.emplace_back(
-            TH2D("csc", "Charged state change", 500,0.9,1.1,1000,3,7));
+            TH2I("csc", "Charged state change", 500,0.9,1.1,1000,3,7));
     cschist.emplace_back(
-            TH2D("csccut", "Charged state change cut", 500,0.95,1.05,1000,3,7));
+            TH2I("csccut", "Charged state change cut", 500,0.95,1.05,1000,3,7));
 
     for(auto &histo: cschist){
         histo.SetOption("colz");
@@ -114,4 +114,5 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     output->cd("");
 
     for(auto &I: tree ) delete I;
+    for(auto &I: mycut) delete I;
 }

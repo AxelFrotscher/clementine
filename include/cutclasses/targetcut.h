@@ -32,5 +32,5 @@ private:
     const std::vector<std::vector<double>> f8z{
         {-1310.7,-1302.1}, {-1273.3,-1281.9}, {-810.7,-802.1}, {-773.3,-781.9}};
 
-    std::vector<TH2D> tarhist;
+    std::vector<TH2S> tarhist;
 };

@@ -779,9 +779,9 @@ void minosana::debug(){
     // Look at some raw spectrums
     if(minossingleevent.size() < 5 && filled){
         minossingleevent.emplace_back(
-                TH3D(Form("t%iEvt%lu",threadno,minossingleevent.size()),
-                     Form("Thread %i, Event %lu",threadno,minossingleevent.size()),
-                     100,-100,100,100,-100,100,100,-100,100));
+                Form("t%iEvt%lu",threadno,minossingleevent.size()),
+                Form("Thread %i, Event %lu",threadno,minossingleevent.size()),
+                100,-100,100,100,-100,100,100,-100,100);
         for(int i=0; i<Xpadnew.size();i++) minossingleevent.back().Fill(
                                     Xpadnew.at(i),Ypadnew.at(i), Zpadnew.at(i));
         minossingleevent.back().GetXaxis()->SetTitle("X [mm]");

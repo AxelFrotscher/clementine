@@ -24,7 +24,7 @@ private:
     const int numplane = 36;
     const int pl11position = 3; //Plastic at F11 is fourth in array
     std::vector<TH1D> effPPAC;
-    std::vector<std::vector<TH2D>> sumdiffppac; // 1 X,Y 2 Sum,diff (2D NoPPAC, Quantity)
+    std::vector<std::vector<TH2I>> sumdiffppac; // 1 X,Y 2 Sum,diff (2D NoPPAC, Quantity)
 
     const std::vector<std::vector<int>> ppacplane{
         {4,5,6,7},{9,10,11,12},{14,15,16,17},{18,19,20,21},{22,23,24,25},{30,31,32,33}};
