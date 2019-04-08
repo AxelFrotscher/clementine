@@ -9,7 +9,7 @@ class triggercut {
 public:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
-    void innerloop(treereader* tree,
+    void innerloop(treereader &tree,
                    std::vector<std::vector<std::atomic<bool>>> &goodevents,
                    std::vector<uint> range);
     void analyse(std::vector<std::string> input);

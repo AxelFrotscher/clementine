@@ -10,10 +10,10 @@
 #include <thread>
 #include "zdssetting.h"
 
-using namespace std;
+using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
-void higherorder::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
-        &goodevents, std::vector<uint> range) {
+void higherorder::innerloop(treereader &tree, vector<vector<atomic<bool>>>
+                            &goodevents, vector<uint> range) {
     // Step 1: Cloning histograms
     decltype(culpritdiag) _culpritdiag;
     for(auto &i: culpritdiag){
@@ -35,37 +35,37 @@ void higherorder::innerloop(treereader *tree, std::vector<std::vector<std::atomi
 
     for(int i=range.at(0); i<range.at(1); i++){
         if(goodevents.at(i).at(0)) { // We absolutely need CCSC cuts for HOC
-            tree->getevent(i);
-            fillvals.at(0).at(0) = tree->F3X;
-            fillvals.at(0).at(1) = tree->F3A;
-            fillvals.at(0).at(2) = tree->F5X;
-            fillvals.at(0).at(3) = tree->F5A;
-            fillvals.at(1).at(0) = tree->F9X;
-            fillvals.at(1).at(1) = tree->F9A;
-            fillvals.at(1).at(2) = tree->F11X;
-            fillvals.at(1).at(3) = tree->F11A;
+            tree.getevent(i);
+            fillvals.at(0).at(0) = tree.F3X;
+            fillvals.at(0).at(1) = tree.F3A;
+            fillvals.at(0).at(2) = tree.F5X;
+            fillvals.at(0).at(3) = tree.F5A;
+            fillvals.at(1).at(0) = tree.F9X;
+            fillvals.at(1).at(1) = tree.F9A;
+            fillvals.at(1).at(2) = tree.F11X;
+            fillvals.at(1).at(3) = tree.F11A;
 
             // Fill corrected Values
-            fillvals.at(0).at(6) = tree->BigRIPSBeam_aoq[beam.at(0)] + p1.F7absF5X0 -
-                                   (p1.F7absF5X + tree->F5X * p1.F7linF5X);
-            fillvals.at(0).at(7) = fillvals.at(0).at(6) - tree->F5A * p1.F7linF5A;
-            fillvals.at(0).at(8) = fillvals.at(0).at(7) - tree->F3X * p1.F7linF3X;
+            fillvals.at(0).at(6) = tree.BigRIPSBeam_aoq[beam.at(0)] + p1.F7absF5X0 -
+                                   (p1.F7absF5X + tree.F5X * p1.F7linF5X);
+            fillvals.at(0).at(7) = fillvals.at(0).at(6) - tree.F5A * p1.F7linF5A;
+            fillvals.at(0).at(8) = fillvals.at(0).at(7) - tree.F3X * p1.F7linF3X;
 
-            fillvals.at(1).at(6) = tree->BigRIPSBeam_aoq[beam.at(1)] + p1.F11absF9X0 -
-                                   (p1.F11absF9X + tree->F9X * p1.F11linF9X);
-            fillvals.at(1).at(7) = fillvals.at(1).at(6) - tree->F9A * p1.F11linF9A;
-            fillvals.at(1).at(8) = fillvals.at(1).at(7) - tree->F11A * p1.F11linF11A;
+            fillvals.at(1).at(6) = tree.BigRIPSBeam_aoq[beam.at(1)] + p1.F11absF9X0 -
+                                   (p1.F11absF9X + tree.F9X * p1.F11linF9X);
+            fillvals.at(1).at(7) = fillvals.at(1).at(6) - tree.F9A * p1.F11linF9A;
+            fillvals.at(1).at(8) = fillvals.at(1).at(7) - tree.F11A * p1.F11linF11A;
 
             // Fill pre and post events (post only when gevts[i][1] ok is)
             for (uint ii = 0; ii < (beam.size()-1+goodevents.at(i).at(1)); ii++){
-                if ((pow(1./cutval.at(ii).at(2)*(tree->BigRIPSBeam_aoq[beam.at(ii)] -
+                if ((pow(1./cutval.at(ii).at(2)*(tree.BigRIPSBeam_aoq[beam.at(ii)] -
                                                  cutval.at(ii).at(0)), 2) +
-                     pow(1./cutval.at(ii).at(3)*(tree->BigRIPSBeam_zet[beam.at(ii)] -
+                     pow(1./cutval.at(ii).at(3)*(tree.BigRIPSBeam_zet[beam.at(ii)] -
                                                  cutval.at(ii).at(1)), 2)) < 1) {
                     // Applying the elliptic cut for 85Ge
 
-                    fillvals.at(ii).at(4) = tree->BigRIPSBeam_beta[beam.at(ii)];
-                    fillvals.at(ii).at(5) = tree->BigRIPSBeam_aoq[beam.at(ii)];
+                    fillvals.at(ii).at(4) = tree.BigRIPSBeam_beta[beam.at(ii)];
+                    fillvals.at(ii).at(5) = tree.BigRIPSBeam_aoq[beam.at(ii)];
 
                     for (uint k = 0; k < _culpritdiag.at(0).size(); k++) {
                         for (uint j = 0; j <= corrcount; j++) {
@@ -94,23 +94,17 @@ void higherorder::innerloop(treereader *tree, std::vector<std::vector<std::atomi
 }
 
 void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
-    vector<TChain*> chain;
-    for(int i=0; i<threads; i++){
-        chain.emplace_back(new TChain("tree"));
-        for(auto &h: input) chain.back()->Add(h.c_str());
-    }
 
-    vector<treereader*> tree;
-    for(auto *i:chain){
-        tree.emplace_back(new treereader(i));
-    }
+    vector<treereader> tree;
+    tree.reserve(threads); // MUST stay as reallocation will call d'tor
+    for(int i=0; i<threads; i++) tree.emplace_back(input);
 
     printf("Higher Order correction with %i threads.\n", threads);
 
     vector<string> keys{"F5X","F5A", "F3X", "F3A", "F9A", "F9X",
                         "F11A", "F11X", "BigRIPSBeam.aoq",
                         "BigRIPSBeam.beta", "BigRIPSBeam.zet",};
-    for(auto &i: tree) i->setloopkeys(keys);
+    for(auto &i: tree) i.setloopkeys(keys);
 
     // Decide which cut to use based on total event number
     setting set;
@@ -149,7 +143,7 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                               (uint)((i+1)*goodevents.size()/threads-1)};
-        th.emplace_back(thread(&higherorder::innerloop, this, tree.at(i),
+        th.emplace_back(thread(&higherorder::innerloop, this, std::ref(tree.at(i)),
                                ref(goodevents),ranges));
     }
 
@@ -200,5 +194,4 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
     //Clean up tree
     for(auto &i: projections) for(auto &j: i) for(auto &k:j) k->Delete();
     corrlinfit->Delete();
-    for(auto &I: tree )  delete I;
 }

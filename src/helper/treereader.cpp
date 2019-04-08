@@ -64,7 +64,7 @@ bool treereader::getevent(int eventno){
     return true;
 }
 
-void treereader::setloopkeys(std::vector <std::string> Vals){
+void treereader::setloopkeys(std::vector <std::string> &Vals){
     // Set Branches we want to read
     currenteventnum = 0; // reset event number on change of readout
     if(!fChain) __throw_exception_again;
@@ -81,12 +81,12 @@ Long64_t treereader::NumEntries(){
 }
 
 
-treereader::treereader(TTree *tree) : fChain(0)
-{
+[[deprecated]]
+treereader::treereader(TTree *tree) : fChain(nullptr){
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
-    if (tree == 0) {
-        TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("build/output/out.root");
+    if (tree == nullptr) {
+        auto f = (TFile*)gROOT->GetListOfFiles()->FindObject("build/output/out.root");
         if (!f || !f->IsOpen()) {
             f = new TFile("build/output/out.root");
         }
@@ -96,25 +96,33 @@ treereader::treereader(TTree *tree) : fChain(0)
     Init(tree);
 }
 
-treereader::~treereader()
-{
+treereader::treereader(const std::vector<std::string> &input) {
+    // Construct TChain inplace
+    if(input.empty()) return;
+
+    chain = new TChain("tree");
+    for(auto &h: input) chain->Add(h.c_str());
+
+    Init(chain);
+
+}
+
+treereader::~treereader(){
     //std::cout << "Destroying tree..." << std::endl;
     if (!fChain) return;
-    delete fChain->GetCurrentFile(); //- stack objects don't need this
+    //delete fChain->GetCurrentFile(); //- stack objects don't need this
     fChain->ResetBranchAddresses();
     fChain->Delete();
     for(auto a: {MinosClustX, MinosClustY, MinosClustQ}) delete a;
     for(auto a: {Minoscalibvalues, minostrackxy, minostime}) delete a;
 }
 
-Int_t treereader::GetEntry(Long64_t entry)
-{
+Int_t treereader::GetEntry(Long64_t entry){
 // Read contents of entry.
     if (!fChain) return 0;
     return fChain->GetEntry(entry);
 }
-Long64_t treereader::LoadTree(Long64_t entry)
-{
+Long64_t treereader::LoadTree(Long64_t entry){
 // Set the environment to read one entry
     if (!fChain) return -5;
     Long64_t centry = fChain->LoadTree(entry);

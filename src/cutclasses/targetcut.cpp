@@ -10,7 +10,7 @@
 
 using std::vector, std::cout, std::endl, std::atomic, std::string, std::thread;
 
-void targetcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
+void targetcut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
                             &goodevents, vector<uint> range) {
     //Step 1: Cloning histograms
     decltype(tarhist) _tarhist;
@@ -28,11 +28,11 @@ void targetcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
     double meanx = 0, meany = 0, meanxz=0, meanyz =0, fXTar=0, fYTar=0;
 
     // Do test to have right PPAC's
-    tree->getevent(range.at(0));
+    tree.getevent(range.at(0));
     for(int i=ppacoffset; i<(ppacoffset+f8ppac); i++){
-        if(tree->BigRIPSPPAC_fpl[i] != 8){
+        if(tree.BigRIPSPPAC_fpl[i] != 8){
             cout << "PPAC FPl from Index " << i << " not 8 but "
-                 << tree->BigRIPSPPAC_fpl[i] << endl;
+                 << tree.BigRIPSPPAC_fpl[i] << endl;
             std::__throw_invalid_argument("Wrong PPAC F8 indizes");
         }
     }
@@ -40,15 +40,15 @@ void targetcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
     for(int i =range.at(0); i < range.at(1); i++){
         if(goodevents.at(i).at(0)){
             // Determine cut only on good events
-            tree->getevent(i);
+            tree.getevent(i);
             // 1. Fill valid events
             for(int j =ppacoffset; j<(ppacoffset+f8ppac); j++) {
-                if (abs(tree->BigRIPSPPAC_fX[j] - magnum) > 1){
-                    slopex.at(0).push_back(tree->BigRIPSPPAC_fX[j]);
+                if (abs(tree.BigRIPSPPAC_fX[j] - magnum) > 1){
+                    slopex.at(0).push_back(tree.BigRIPSPPAC_fX[j]);
                     slopex.at(1).push_back(f8z.at(j-ppacoffset).at(0));
                 }
-                if (abs(tree->BigRIPSPPAC_fY[j] - magnum) > 1){
-                    slopey.at(0).push_back(tree->BigRIPSPPAC_fY[j]);
+                if (abs(tree.BigRIPSPPAC_fY[j] - magnum) > 1){
+                    slopey.at(0).push_back(tree.BigRIPSPPAC_fY[j]);
                     slopey.at(1).push_back(f8z.at(j-ppacoffset).at(1));
                 }
             }
@@ -94,22 +94,16 @@ void targetcut::innerloop(treereader *tree, vector<vector<atomic<bool>>>
 }
 
 void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
-    vector<TChain*> chain;
-    for(int i=0; i<threads; i++){
-        chain.emplace_back(new TChain("tree"));
-        for(auto &h: input) chain.back()->Add(h.c_str());
-    }
 
-    vector<treereader*> tree;
-    for(auto *i:chain){
-        tree.emplace_back(new treereader(i));
-    }
+    vector<treereader> tree;
+    tree.reserve(threads); // MUST stay as reallocation will call d'tor
+    for(int i=0; i<threads; i++) tree.emplace_back(input);
 
     printf("Targetcut with %ix power!\n", threads);
 
     // Get relevant keys
     vector<string> keys{"BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSPPAC.fpl"};
-    for(auto &i: tree) i->setloopkeys(keys);
+    for(auto &i: tree) i.setloopkeys(keys);
 
     tarhist.emplace_back("target", "Beam Profile F8", 1000,-50,50,1000,-50,50);
     tarhist.emplace_back("targetcut", "Cut Beam Profile F8", 1000,-50,50,1000,-50,50);
@@ -128,7 +122,7 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                               (uint)((i+1)*goodevents.size()/threads-1)};
-        th.emplace_back(thread(&targetcut::innerloop, this, tree.at(i),
+        th.emplace_back(thread(&targetcut::innerloop, this, std::ref(tree.at(i)),
                                ref(goodevents),ranges));
     }
 
@@ -146,7 +140,4 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
     output->cd("Target");
     for(auto hist: tarhist) hist.Write();
     output->cd("");
-
-    //Clean up tree
-    for(auto &I: tree )  delete I;
 }

@@ -18,7 +18,7 @@ using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
       std::stringstream, std::to_string, std::__throw_invalid_argument,
       std::min;
 
-void PID::innerloop(treereader *tree, treereader *minostree,
+void PID::innerloop(treereader &tree, treereader &minostree,
                     vector<vector<atomic<bool>>> &goodevents,vector<uint> range,
                     const bool minosanalyse) {
     // Step 1: duplicate the data structure
@@ -30,19 +30,24 @@ void PID::innerloop(treereader *tree, treereader *minostree,
     // MINOS with single events
     decltype(minossingleevent) _minossingleevent;
 
+    _reactF5.reserve(reactF5.size());
     for(auto &i: reactF5) _reactF5.emplace_back(i);
 
+    _reactPPAC.reserve(reactPPAC.size());
     for(auto &i: reactPPAC){
         _reactPPAC.emplace_back();
         for(auto &j:i) _reactPPAC.back().emplace_back(j);
     }
 
+    _PIDplot.reserve(PIDplot.size());
     for(auto &i: PIDplot){
         _PIDplot.emplace_back();
         for(auto &j:i) _PIDplot.back().emplace_back(j);
     }
 
+    _minosresults.reserve(minosresults.size());
     for(auto &i: minosresults)   _minosresults.emplace_back(i);
+    _minos1dresults.reserve(minos1dresults.size());
     for(auto &i: minos1dresults) _minos1dresults.emplace_back(i);
 
     double maxbrho = 10; // Tm, higher than all my values
@@ -64,106 +69,106 @@ void PID::innerloop(treereader *tree, treereader *minostree,
         progress.increaseevent();
         if(!goodevents.at(eventcounter).at(0)) continue;
 
-        tree->getevent(eventcounter);
-        double beamaoqcorr = tree->BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
-                (p1.F7absF5X+tree->F5X*p1.F7linF5X) -
-                tree->F5A*p1.F7linF5A -
-                tree->F3X*p1.F7linF3X;
+        tree.getevent(eventcounter);
+        double beamaoqcorr = tree.BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
+                (p1.F7absF5X+tree.F5X*p1.F7linF5X) -
+                tree.F5A*p1.F7linF5A -
+                tree.F3X*p1.F7linF3X;
 
-        double beamaoqcorr2 = tree->BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
-                (p1.F11absF9X+tree->F9X*p1.F11linF9X) -
-                tree->F9A*p1.F11linF9A -
-                tree->F11A*p1.F11linF11A;
+        double beamaoqcorr2 = tree.BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
+                (p1.F11absF9X+tree.F9X*p1.F11linF9X) -
+                tree.F9A*p1.F11linF9A -
+                tree.F11A*p1.F11linF11A;
 
         //Loop over all elements in the tree
-        valinc.push_back({tree->BigRIPSBeam_aoq[0],tree->BigRIPSBeam_aoq[1]});
-        valinc.push_back({tree->BigRIPSBeam_zet[0],tree->BigRIPSBeam_zet[1]});
+        valinc.push_back({tree.BigRIPSBeam_aoq[0],tree.BigRIPSBeam_aoq[1]});
+        valinc.push_back({tree.BigRIPSBeam_zet[0],tree.BigRIPSBeam_zet[1]});
         if(closeness(valinc.at(0)) && closeness(valinc.at(1))){
             // Cut Particles that have variating aoq or zet
-            _PIDplot.at(0).at(0).Fill(tree->BigRIPSBeam_aoq[0],
-                    tree->BigRIPSBeam_zet[0]);
-            _PIDplot.at(1).at(0).Fill(beamaoqcorr, tree->BigRIPSBeam_zet[0]);
+            _PIDplot.at(0).at(0).Fill(tree.BigRIPSBeam_aoq[0],
+                    tree.BigRIPSBeam_zet[0]);
+            _PIDplot.at(1).at(0).Fill(beamaoqcorr, tree.BigRIPSBeam_zet[0]);
         }
 
-        valinc.push_back({tree->BigRIPSBeam_aoq[2],tree->BigRIPSBeam_aoq[3],
-                          tree->BigRIPSBeam_aoq[4]});
-        valinc.push_back({tree->BigRIPSBeam_zet[2],tree->BigRIPSBeam_zet[3],
-                          tree->BigRIPSBeam_zet[4]});
+        valinc.push_back({tree.BigRIPSBeam_aoq[2],tree.BigRIPSBeam_aoq[3],
+                          tree.BigRIPSBeam_aoq[4]});
+        valinc.push_back({tree.BigRIPSBeam_zet[2],tree.BigRIPSBeam_zet[3],
+                          tree.BigRIPSBeam_zet[4]});
 
         // F7-F11 part
         if(closeness(valinc.at(2)) && closeness(valinc.at(3)) &&
             goodevents.at(eventcounter).at(1)){
-            _PIDplot.at(0).at(1).Fill(tree->BigRIPSBeam_aoq[4],
-                    tree->BigRIPSBeam_zet[4]);
-            _PIDplot.at(1).at(1).Fill(beamaoqcorr2,tree->BigRIPSBeam_zet[4]);
+            _PIDplot.at(0).at(1).Fill(tree.BigRIPSBeam_aoq[4],
+                    tree.BigRIPSBeam_zet[4]);
+            _PIDplot.at(1).at(1).Fill(beamaoqcorr2,tree.BigRIPSBeam_zet[4]);
         }
         valinc.clear();
 
         // We now fill the cut data (cut by ellipsoid and brho)
         if((pow(1./incval.at(2)*(beamaoqcorr-incval.at(0)),2) +
-            pow(1/incval.at(3)*(tree->BigRIPSBeam_zet[0]-incval.at(1)),2))
+            pow(1/incval.at(3)*(tree.BigRIPSBeam_zet[0]-incval.at(1)),2))
             >= 1 ) continue;
 
-        _PIDplot.at(0).at(2).Fill(tree->BigRIPSBeam_aoq[0],
-                tree->BigRIPSBeam_zet[0]);
-        _PIDplot.at(1).at(2).Fill(beamaoqcorr,tree->BigRIPSBeam_zet[0]);
+        _PIDplot.at(0).at(2).Fill(tree.BigRIPSBeam_aoq[0],
+                tree.BigRIPSBeam_zet[0]);
+        _PIDplot.at(1).at(2).Fill(beamaoqcorr,tree.BigRIPSBeam_zet[0]);
 
         if(goodevents.at(eventcounter).at(1)) { // F7-F11 part
-            _PIDplot.at(0).at(3).Fill(tree->BigRIPSBeam_aoq[4],
-                    tree->BigRIPSBeam_zet[4]);
-            _PIDplot.at(1).at(3).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
+            _PIDplot.at(0).at(3).Fill(tree.BigRIPSBeam_aoq[4],
+                    tree.BigRIPSBeam_zet[4]);
+            _PIDplot.at(1).at(3).Fill(beamaoqcorr2, tree.BigRIPSBeam_zet[4]);
         }
         // cut on energy(Brho) to avoid offcenter Transmission
-        if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid1++;
+        if(tree.BigRIPSRIPS_brho[1] < maxbrho) reactionpid1++;
 
         // Fill F7 value with PID
-        _reactF5.at(0).Fill(tree->F5X);
+        _reactF5.at(0).Fill(tree.F5X);
 
         // Second ellipsoid for cross section F7-F11 part
         if(!((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
-              pow(1./targetval.at(3)*(tree->BigRIPSBeam_zet[4]-
+              pow(1./targetval.at(3)*(tree.BigRIPSBeam_zet[4]-
                                       targetval.at(1)),2))<1
             && goodevents.at(eventcounter).at(1))) continue;
 
         // cut on energy(Brho) to avoid offcenter Transmission
-        if(tree->BigRIPSRIPS_brho[1] < maxbrho) reactionpid2++;
+        if(tree.BigRIPSRIPS_brho[1] < maxbrho) reactionpid2++;
         // Investigate F7 position of (p,2p) ions (off center effects)
-        _reactF5.at(1).Fill(tree->F5X);
+        _reactF5.at(1).Fill(tree.F5X);
 
         //Check double cut particles
-        _PIDplot.at(0).at(4).Fill(tree->BigRIPSBeam_aoq[4],
-                                  tree->BigRIPSBeam_zet[4]);
-        _PIDplot.at(1).at(4).Fill(beamaoqcorr2, tree->BigRIPSBeam_zet[4]);
+        _PIDplot.at(0).at(4).Fill(tree.BigRIPSBeam_aoq[4],
+                                  tree.BigRIPSBeam_zet[4]);
+        _PIDplot.at(1).at(4).Fill(beamaoqcorr2, tree.BigRIPSBeam_zet[4]);
 
         // Fill Information to the beam profile/shape/energy
         // 17 == F7PPAC-2B, 15 == F7PPAC-1B
         for(int i=0; i<_reactPPAC.size();i++){
             _reactPPAC.at(i).at(0).Fill(
-                    tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
-                    tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]);
+                    tree.BigRIPSPPAC_fX[ppacFpositions.at(i)],
+                    tree.BigRIPSPPAC_fY[ppacFpositions.at(i)]);
             _reactPPAC.at(i).at(1).Fill(
-                    1E3*atan2(tree->BigRIPSPPAC_fX[ppacFpositions.at(i)]-
-                              tree->BigRIPSPPAC_fX[ppacFpositions.at(i)-2],
+                    1E3*atan2(tree.BigRIPSPPAC_fX[ppacFpositions.at(i)]-
+                              tree.BigRIPSPPAC_fX[ppacFpositions.at(i)-2],
                               ppacangledistance.at(i)),
-                    1E3*atan2(tree->BigRIPSPPAC_fY[ppacFpositions.at(i)]-
-                              tree->BigRIPSPPAC_fY[ppacFpositions.at(i)-2],
+                    1E3*atan2(tree.BigRIPSPPAC_fY[ppacFpositions.at(i)]-
+                              tree.BigRIPSPPAC_fY[ppacFpositions.at(i)-2],
                               ppacangledistance.at(i)));
             _reactPPAC.at(i).at(2).Fill(
-                    tree->BigRIPSPPAC_fX[ppacFpositions.at(i)],
-                    tree->BigRIPSRIPS_brho[1]);
+                    tree.BigRIPSPPAC_fX[ppacFpositions.at(i)],
+                    tree.BigRIPSRIPS_brho[1]);
         }
         // do the correlation between F5 and F9
-        fitplot.at(1).Fill(tree->F5X, tree->F9X);
+        fitplot.at(1).Fill(tree.F5X, tree.F9X);
 
         // make the mighty minos analysis
         if(reaction.find("P0P") == string::npos && minosanalyse){
-            minostree->getevent(eventcounter);
-            minosana analysis(minostree->Trackamount, minostree->Tshaping,
-                    minostree->TimeBinElec, minostree->DelayTrig,
-                    minostree->VDrift, minostree->minostrackxy,
-                    minostree->Minoscalibvalues, minostree->minostime,
-                    minostree->MinosClustX, minostree->MinosClustY,
-                    minostree->MinosClustQ, (int)threadno, _minossingleevent);
+            minostree.getevent(eventcounter);
+            minosana analysis(minostree.Trackamount, minostree.Tshaping,
+                    minostree.TimeBinElec, minostree.DelayTrig,
+                    minostree.VDrift, minostree.minostrackxy,
+                    minostree.Minoscalibvalues, minostree.minostime,
+                    minostree.MinosClustX, minostree.MinosClustY,
+                    minostree.MinosClustQ, (int)threadno, _minossingleevent);
             TMinosPass minres = analysis.analyze();
 
             if(minres.thetaz.size() > 1)
@@ -227,57 +232,45 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         output->mkdir(i.c_str());
     }
 
+    //Get Minos status
+    setting set;
+    if(set.getminos())
+        threads = std::min(25, std::max((int)sqrt(goodevents.size())/450,2));
+
     printf("Making PID with %i threads now...\n", threads);
 
     /// Make regular TChain for fast input
-    vector<TChain*> chain;
-    for(int i=0; i<threads; i++){
-        chain.emplace_back(new TChain("tree"));
-        for(auto &h: input) chain.back()->Add(h.c_str());
-    }
-
-    vector<treereader*> tree;
-    for(auto *i:chain){
-        tree.emplace_back(new treereader(i));
-    }
+    vector<treereader> tree;
+    tree.reserve(threads); // MUST stay as reallocation will call d'tor
+    for(int i=0; i<threads; i++) tree.emplace_back(input);
 
     vector<string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
                         "F5X", "F5A", "F9X", "F9A", "F11X", "F11A",
                         "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho"};
-    for(auto &i:tree) i->setloopkeys(keys);
+    for(auto &i:tree) i.setloopkeys(keys);
 
     /// Make slow chain for MINOS readout
-    vector<TChain*> minoschain;
-    for(int i=0; i<threads; i++){
-        minoschain.emplace_back(new TChain("tree"));
-        for(auto &h: input) minoschain.back()->Add(h.c_str());
-    }
-
-    vector<treereader*> minostree;
-    for(auto *i:minoschain){
-        minostree.emplace_back(new treereader(i));
-    }
+    vector<treereader> minostree;
+    minostree.reserve(threads); // MUST stay as reallocation will call d'tor
+    for(int i=0; i<threads; i++) minostree.emplace_back(input);
 
     vector<string> minoskeys{"VDrift", "MinosClustX", "MinosClustY",
                              "MinosClustQ", "DelayTrig", "Trackamount",
                              "Minoscalibvalues", "TimeBinElec", "Tshaping",
                              "minostrackxy", "minostime"};
-    for(auto &i: minostree) i->setloopkeys(minoskeys);
+    for(auto &i: minostree) i.setloopkeys(minoskeys);
 
     //Constructing all the histograms
     PID::histogramsetup();
 
-    //Get Minos status
-    setting set;
-    if(set.getminos())
-        threads = std::min(25, std::max((int)sqrt(goodevents.size())/450,2));
     //Making threads
     vector<thread> th;
+    th.reserve(threads); // Make space for $threads Threads
     for(uint i=0; i<threads;i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
-        th.emplace_back(thread(&PID::innerloop, this,
-                               tree.at(i), minostree.at(i), ref(goodevents),
+        th.emplace_back(thread(&PID::innerloop, this, std::ref(tree.at(i)),
+                               std::ref(minostree.at(i)), ref(goodevents),
                                ranges, set.getminos()));
     }
 
@@ -326,8 +319,6 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     for(auto &elem: minossingleevent) elem.Write();
 
     //Clean up tree
-    for(auto &I: tree )  delete I;
-    for(auto &I: minostree )  delete I;
     for(auto &i: fitstyle) for(auto &j:i) j->Delete();
 }
 

@@ -8,11 +8,10 @@
 #include <numeric>
 #include "zdssetting.h"
 
-using namespace std;
+using std::vector, std::string, std::thread, std::atomic;
 
-void ppaccut::innerloop(treereader *tree,
-                             std::vector<std::vector<std::atomic<bool>>> &goodevents,
-                             std::vector<uint> range) {
+void ppaccut::innerloop(treereader &tree, vector<vector<atomic<bool>>> &goodevents,
+                        vector<uint> range) {
     // Step 1: cloning histograms
     decltype(effPPAC) _effPPAC;
     decltype(sumdiffppac) _sumdiffppac;
@@ -33,14 +32,14 @@ void ppaccut::innerloop(treereader *tree,
     // Step 3: glorious loop
     for(int i=range.at(0); i<range.at(1); i++){
         if(goodevents.at(i).at(0)){  // analyse good events only
-            tree->getevent(i);
+            tree.getevent(i);
 
             // Get Efficiency relative to the last Plastic
-            if (tree->BigRIPSPlastic_fTime[pl11position] >0){
+            if (tree.BigRIPSPlastic_fTime[pl11position] >0){
                 for(uint j=1; j<=numplane; j++){
-                    if(tree->BigRIPSPPAC_fFiredX[j-1])
+                    if(tree.BigRIPSPPAC_fFiredX[j-1])
                         _effPPAC.at(0).SetBinContent(j, _effPPAC.at(0).GetBinContent(j)+1);
-                    if(tree->BigRIPSPPAC_fFiredY[j-1])
+                    if(tree.BigRIPSPPAC_fFiredY[j-1])
                         _effPPAC.at(1).SetBinContent(j, _effPPAC.at(1).GetBinContent(j)+1);
                 }
                 efficiencytotal++;
@@ -48,10 +47,10 @@ void ppaccut::innerloop(treereader *tree,
 
             // Fill Sum and differences of time signals to check
             for(uint j=0; j<numplane;j++){
-                _sumdiffppac.at(0).at(0).Fill(j,tree->BigRIPSPPAC_fTSumX[j]);
-                _sumdiffppac.at(0).at(1).Fill(j,tree->BigRIPSPPAC_fTDiffX[j]);
-                _sumdiffppac.at(1).at(0).Fill(j,tree->BigRIPSPPAC_fTSumY[j]);
-                _sumdiffppac.at(1).at(1).Fill(j,tree->BigRIPSPPAC_fTDiffY[j]);
+                _sumdiffppac.at(0).at(0).Fill(j,tree.BigRIPSPPAC_fTSumX[j]);
+                _sumdiffppac.at(0).at(1).Fill(j,tree.BigRIPSPPAC_fTDiffX[j]);
+                _sumdiffppac.at(1).at(0).Fill(j,tree.BigRIPSPPAC_fTSumY[j]);
+                _sumdiffppac.at(1).at(1).Fill(j,tree.BigRIPSPPAC_fTDiffY[j]);
             }
 
             // Make Cut conditions: each focal Plane needs to have one valid entry
@@ -63,10 +62,10 @@ void ppaccut::innerloop(treereader *tree,
                 for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
                     int cpl = ppacplane.at(k).at(j);
                     temptruth.at(j) =
-                            (tree->BigRIPSPPAC_fTSumX[cpl] > ppacrange.at(k).at(j).at(0) &&
-                             tree->BigRIPSPPAC_fTSumX[cpl] < ppacrange.at(k).at(j).at(1) &&
-                             tree->BigRIPSPPAC_fTSumY[cpl] > ppacrange.at(k).at(j).at(2) &&
-                             tree->BigRIPSPPAC_fTSumY[cpl] < ppacrange.at(k).at(j).at(3));
+                            (tree.BigRIPSPPAC_fTSumX[cpl] > ppacrange.at(k).at(j).at(0) &&
+                             tree.BigRIPSPPAC_fTSumX[cpl] < ppacrange.at(k).at(j).at(1) &&
+                             tree.BigRIPSPPAC_fTSumY[cpl] > ppacrange.at(k).at(j).at(2) &&
+                             tree.BigRIPSPPAC_fTSumY[cpl] < ppacrange.at(k).at(j).at(3));
                     if(temptruth.at(j)) break; // We got our nice event at this F-point
                 }
                 // Recursively check each focal plane for at least 1 good Signal
@@ -98,15 +97,10 @@ void ppaccut::innerloop(treereader *tree,
 }
 
 void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
-    vector<TChain*> chain;
-    for(int i=0; i<threads; i++){
-        chain.emplace_back(new TChain("tree"));
-        for(auto &h: input) chain.back()->Add(h.c_str());
-    }
-    vector<treereader*> tree;
-    for(auto *i:chain){
-        tree.emplace_back(new treereader(i));
-    }
+
+    vector<treereader> tree;
+    tree.reserve(threads); // MUST stay as reallocation will call d'tor
+    for(int i=0; i<threads; i++) tree.emplace_back(input);
 
     printf("Reconstruction of PPAC's. %i threads.\n", threads);
 
@@ -116,7 +110,7 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
                         "BigRIPSPPAC.fTDiffX", "BigRIPSPPAC.fTSumY",
                         "BigRIPSPPAC.fTDiffY", "BigRIPSPPAC.name"};
 
-    for(auto &i:tree) i->setloopkeys(keys);
+    for(auto &i:tree) i.setloopkeys(keys);
 
     //36 Values per Array (Event)
     effPPAC.emplace_back("effPPACX","Efficiency of PPAC X",numplane,0,numplane);
@@ -163,7 +157,8 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
-        th.emplace_back(thread(&ppaccut::innerloop, this, tree.at(i), ref(goodevents),ranges));
+        th.emplace_back(thread(&ppaccut::innerloop, this, std::ref(tree.at(i)),
+                               ref(goodevents),ranges));
     }
 
     for (auto &i: th) i.detach();
@@ -201,7 +196,4 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
     printf("\nPPAC Cut out %i F1-7 Events (%f %%) %i F1-11 Events (%f %%) \n",
            cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
            cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
-
-    //Clean up tree
-    for(auto &I: tree )  delete I;
 }

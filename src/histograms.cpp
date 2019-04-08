@@ -26,11 +26,9 @@ calibpar p1;
 
     cout << "Beginning reconstruction of " << chain.GetEntries()
          << " Elements." << endl;
-    // Store events that cannot be used
-    //vector<vector<atomic<bool>>> goodevents((uint)chain.GetEntries(), vector<atomic<bool>>(2));
-    //for(auto &i:goodevents) for(auto &j:i) j.exchange(true);
 
     vector<vector<atomic<bool>>> goodevents;
+    goodevents.reserve(chain.GetEntries());
     for(uint i=0; i<(uint)chain.GetEntries(); i++){
         goodevents.emplace_back(vector<atomic<bool>>(2));
     }

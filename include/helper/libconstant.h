@@ -296,18 +296,18 @@ namespace nancy{
 
     // Seventh Setting (78Ni)
 
-    const std::vector<double> incval82Ge{2.5612,31.85, .006, .6};
-    const std::vector<double> incval83Ge{2.593, 31.91, .006, .6};
-    const std::vector<double> incval80Ga{2.580, 30.91, .006, .6};
-    const std::vector<double> incval81Ga{2.6126,30.93, .006, .6};
-    const std::vector<double> incval82Ga{2.6446,30.93, .006, .6};
-    const std::vector<double> incval78Zn{2.5986,29.92, .006, .6};
-    const std::vector<double> incval79Zn{2.6329,29.95, .006, .6};
-    const std::vector<double> incval80Zn{2.6663,29.96, .006, .6};
-    const std::vector<double> incval81Zn{2.7007,29.96, .006, .6};
-    const std::vector<double> incval77Cu{2.6538,28.94, .006, .6};
-    const std::vector<double> incval78Cu{2.6890,28.97, .006, .6};
-    const std::vector<double> incval79Cu{2.7245,29.00, .006, .6};
+    const std::vector<double> incval82Ge{2.5612,31.85, .006, .6, .562, 6.995, .561, 6.870};
+    const std::vector<double> incval83Ge{2.593, 31.91, .006, .6, .559, 7.016, .560, 6.891};
+    const std::vector<double> incval80Ga{2.580, 30.91, .006, .6, .567, 6.971, .565, 6.840};
+    const std::vector<double> incval81Ga{2.6126,30.93, .006, .6, .565, 6.992, .564, 6.861};
+    const std::vector<double> incval82Ga{2.6446,30.93, .006, .6, .563, 7.013, .563, 6.882};
+    const std::vector<double> incval78Zn{2.5986,29.92, .006, .6, .573, 6.945, .566, 6.807};
+    const std::vector<double> incval79Zn{2.6329,29.95, .006, .6, .570, 6.966, .566, 6.828};
+    const std::vector<double> incval80Zn{2.6663,29.96, .006, .6, .569, 6.987, .567, 6.850};
+    const std::vector<double> incval81Zn{2.7007,29.96, .006, .6, .566, 7.008, .565, 6.874};
+    const std::vector<double> incval77Cu{2.6538,28.94, .006, .6, .576, 6.936, .568, 6.798};
+    const std::vector<double> incval78Cu{2.6890,28.97, .006, .6, .573, 6.960, .569, 6.822};
+    const std::vector<double> incval79Cu{2.7245,29.00, .006, .6, .571, 6.982, .569, 6.844};
 
     const std::vector<double> targetval81Ga{2.6121, 31.46, .014, .6};
     const std::vector<double> targetval82Ga{2.6454, 31.52, .014, .6};

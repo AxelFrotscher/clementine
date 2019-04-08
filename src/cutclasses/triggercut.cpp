@@ -9,10 +9,11 @@
 #include "txtwriter.h"
 #include <thread>
 #include <numeric>
+#include <deque>
 
 using namespace std;
 
-void triggercut::innerloop(treereader *tree,
+void triggercut::innerloop(treereader &tree,
                            std::vector<std::vector <std::atomic<bool>>> &goodevents,
                            const std::vector<uint> range) {
     uint i = range.at(0);
@@ -23,8 +24,8 @@ void triggercut::innerloop(treereader *tree,
 
     while(i<range.at(1)){
         if(goodevents.at(i).at(0)){
-            tree->getevent(i);
-            if(tree->EventInfo_fBit[0] == badtrg || tree->EventInfo_fBit[0] == 11){
+            tree.getevent(i);
+            if(tree.EventInfo_fBit[0] == badtrg || tree.EventInfo_fBit[0] == 11){
                 for(auto &j:goodevents.at(i))  j.exchange(false);
             }
         }
@@ -45,22 +46,15 @@ void triggercut::analyse(const vector<string> input){
         return;
     }
 
-    vector<TChain*> chain;
-    for(int i=0; i<threads; i++){
-        chain.emplace_back(new TChain("tree"));
-        for(auto &h: input) chain.back()->Add(h.c_str());
-    }
-
-    vector<treereader*> tree;
-    for(auto *i:chain){
-        tree.emplace_back(new treereader(i));
-    }
+    vector<treereader> tree;
+    tree.reserve(threads); // MUST stay as reallocation will call d'tor
+    for(int i=0; i<threads; i++) tree.emplace_back(input);
 
     printf("Now performing the Trigger cut with %i threads.\n", threads);
 
     // This method aims at analysing the trigger bits
     vector<string> keys{"EventInfo.fBit"};
-    for(auto &i:tree) i->setloopkeys(keys);
+    for(auto &i:tree) i.setloopkeys(keys);
 
     progressbar finishcondition;
     vector<thread> th;
@@ -68,7 +62,7 @@ void triggercut::analyse(const vector<string> input){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                               (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&triggercut::innerloop, this,
-                               tree.at(i),ref(goodevents), ranges));
+                               ref(tree.at(i)),ref(goodevents), ranges));
     }
 
     for(auto &t : th) t.detach();
@@ -84,7 +78,4 @@ void triggercut::analyse(const vector<string> input){
 
     txt.addline(Form("Trigger Cut for DALI %i events (%.2f %%).", cutout,
                      100*(1-cutout/(double)goodevents.size())));
-
-    // Free up memory
-    for(auto &I: tree) delete I;
 }

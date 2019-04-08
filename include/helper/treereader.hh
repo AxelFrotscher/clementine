@@ -23,18 +23,19 @@ using std::vector;
 
 class treereader{
 public :
+   TChain         *chain;
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
-   static constexpr Int_t kMaxEventInfo = 1;
-   static constexpr Int_t kMaxBigRIPSPPAC = 37;
-   static constexpr Int_t kMaxBigRIPSPlastic = 4;
-   static constexpr Int_t kMaxBigRIPSIC = 2;
-   static constexpr Int_t kMaxBigRIPSFocalPlane = 14;
-   static constexpr Int_t kMaxBigRIPSRIPS = 4;
-   static constexpr Int_t kMaxBigRIPSTOF = 2;
-   static constexpr Int_t kMaxBigRIPSBeam = 5;
+   static const Int_t kMaxEventInfo = 1;
+   static const Int_t kMaxBigRIPSPPAC = 37;
+   static const Int_t kMaxBigRIPSPlastic = 4;
+   static const Int_t kMaxBigRIPSIC = 2;
+   static const Int_t kMaxBigRIPSFocalPlane = 14;
+   static const Int_t kMaxBigRIPSRIPS = 4;
+   static const Int_t kMaxBigRIPSTOF = 2;
+   static const Int_t kMaxBigRIPSBeam = 5;
 
    // Declaration of leaf types
    Int_t           EventInfo_;
@@ -401,7 +402,8 @@ public :
     TBranch        *b_fGoodPPACFocus;   //!
     TBranch        *b_fGoodPPACFocusOr;   //!
 
-   treereader(TTree *tree=0);
+   explicit treereader(TTree *tree=nullptr);
+   explicit treereader(const std::vector<std::string> &input);
    virtual ~treereader();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
@@ -413,7 +415,7 @@ public :
 
     bool singleloop();
     Long64_t NumEntries();
-    void setloopkeys(std::vector<std::string> Vals);
+    void setloopkeys(std::vector<std::string> &Vals);
     bool getevent(int eventno);
 };
 

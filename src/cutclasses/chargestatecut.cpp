@@ -8,9 +8,9 @@
 #include <thread>
 #include <numeric>
 
-using namespace std;
+using std::vector, std::string, std::thread, std::atomic;
 
-void ccsc::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>> &goodevents,
+void ccsc::innerloop(treereader &tree, vector<vector<atomic<bool>>> &goodevents,
                        std::vector<uint> range) {
     // precious tight inner loop
     // Cloning histograms
@@ -25,14 +25,14 @@ void ccsc::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>
 
     for(int i=range.at(0); i<range.at(1); i++){
          if(goodevents.at(i).at(1)){
-            tree->getevent(i);
+            tree.getevent(i);
 
-            brhoratio = tree->BigRIPSBeam_brho[3]/tree->BigRIPSBeam_brho[2];
-            _cschist.at(0).Fill(brhoratio, tree->BigRIPSBeam_brho[2]);
+            brhoratio = tree.BigRIPSBeam_brho[3]/tree.BigRIPSBeam_brho[2];
+            _cschist.at(0).Fill(brhoratio, tree.BigRIPSBeam_brho[2]);
 
             if(mycut.at(threadno) &&
-               mycut.at(threadno)->IsInside(brhoratio,tree->BigRIPSBeam_brho[2])){
-                _cschist.at(1).Fill(brhoratio,tree->BigRIPSBeam_brho[2]);
+               mycut.at(threadno)->IsInside(brhoratio,tree.BigRIPSBeam_brho[2])){
+                _cschist.at(1).Fill(brhoratio,tree.BigRIPSBeam_brho[2]);
             }
             else goodevents.at(i).at(1).exchange(false);
         }
@@ -49,16 +49,10 @@ void ccsc::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>
 }
 
 void ccsc::analyse(const std::vector<std::string> input, TFile* output){
-    vector<TChain*> chain;
-    for(int i=0; i<threads; i++){
-        chain.emplace_back(new TChain("tree"));
-        for(auto &h: input) chain.back()->Add(h.c_str());
-    }
 
-    vector<treereader*> tree;
-    for(auto *i:chain){
-        tree.emplace_back(new treereader(i));
-    }
+    vector<treereader> tree;
+    tree.reserve(threads); // MUST stay as reallocation will call d'tor
+    for(int i=0; i<threads; i++) tree.emplace_back(input);
 
     printf("Beginning with the CCSC. %i threads.\n", threads);
 
@@ -74,7 +68,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
 
     // Get relevant keys
     vector<string> keys{"BigRIPSBeam.brho"};
-    for(auto &i: tree) i->setloopkeys(keys);
+    for(auto &i: tree) i.setloopkeys(keys);
 
     // Get Cut from right setting | mode
     setting set;
@@ -91,7 +85,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
-        th.emplace_back(thread(&ccsc::innerloop, this, tree.at(i),
+        th.emplace_back(thread(&ccsc::innerloop, this, std::ref(tree.at(i)),
                                ref(goodevents),ranges));
     }
 
@@ -111,6 +105,5 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     for(auto hist: cschist) hist.Write();
     output->cd("");
 
-    for(auto &I: tree ) delete I;
     for(auto &I: mycut) delete I;
 }

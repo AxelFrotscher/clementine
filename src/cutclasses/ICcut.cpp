@@ -8,10 +8,10 @@
 #include <numeric>
 #include "zdssetting.h"
 
-using namespace std;
+using std::vector, std::atomic, std::string, std::thread, std::to_string;
 
-void iccut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool>>>
-                        &goodevents, std::vector<uint> range) {
+void iccut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
+                        &goodevents, vector<uint> range) {
     //Step 1: Cloning histograms
     decltype(comparediag) _comparediag;
     for(auto &i: comparediag){
@@ -29,22 +29,22 @@ void iccut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool
     for(int i=range.at(0); i < range.at(1); i++){
         if(goodevents.at(i).at(0)){
             // Determine cut only on good events
-            tree->getevent(i);
+            tree.getevent(i);
 
-            if(tree->BigRIPSIC_nhitchannel[0] <4 ) for(auto &j:goodevents.at(i)) j.exchange(false);
-            if((tree->BigRIPSIC_nhitchannel[1] <4) ) goodevents.at(i).at(1).exchange(false);
+            if(tree.BigRIPSIC_nhitchannel[0] <4 ) for(auto &j:goodevents.at(i)) j.exchange(false);
+            if((tree.BigRIPSIC_nhitchannel[1] <4) ) goodevents.at(i).at(1).exchange(false);
 
-            if((tree->BigRIPSIC_fADC[0][0] <0) ||
-               (tree->BigRIPSIC_fADC[1][0] <0)) continue;
+            if((tree.BigRIPSIC_fADC[0][0] <0) ||
+               (tree.BigRIPSIC_fADC[1][0] <0)) continue;
             for(uint j=0; j<(numchannel-1); j++){
-                if(tree->BigRIPSIC_fADC[0][j] >0)
+                if(tree.BigRIPSIC_fADC[0][j] >0)
                     _comparediag.at(j).at(0).Fill(
-                            tree->BigRIPSIC_fADC[0][0],
-                            tree->BigRIPSIC_fADC[0][j+1]- tree->BigRIPSIC_fADC[0][0]);
-                if(tree->BigRIPSIC_fADC[1][j] >0)
+                            tree.BigRIPSIC_fADC[0][0],
+                            tree.BigRIPSIC_fADC[0][j+1]- tree.BigRIPSIC_fADC[0][0]);
+                if(tree.BigRIPSIC_fADC[1][j] >0)
                     _comparediag.at(j).at(1).Fill(
-                            tree->BigRIPSIC_fADC[1][0],
-                            tree->BigRIPSIC_fADC[1][j+1]-tree->BigRIPSIC_fADC[1][0]);
+                            tree.BigRIPSIC_fADC[1][0],
+                            tree.BigRIPSIC_fADC[1][j+1]-tree.BigRIPSIC_fADC[1][0]);
             }
         }
         progress.increaseevent();
@@ -63,20 +63,15 @@ void iccut::innerloop(treereader *tree, std::vector<std::vector<std::atomic<bool
 }
 
 void iccut::analyse(const std::vector<std::string> input, TFile *output) {
-    vector<TChain*> chain;
-    for(int i=0; i<threads; i++){
-        chain.emplace_back(new TChain("tree"));
-        for(auto &h: input) chain.back()->Add(h.c_str());
-    }
 
-    vector<treereader*> tree;
-    for(auto *i:chain){
-        tree.emplace_back(new treereader(i));
-    }
+    vector<treereader> tree;
+    tree.reserve(threads); // MUST stay as reallocation will call d'tor
+    for(int i=0; i<threads; i++) tree.emplace_back(input);
+
     printf("Now beginning analysis of the IC's (Fpl 7 & 11)\n");
 
     vector <string> readoutkeys{"BigRIPSIC.nhitchannel", "BigRIPSIC.fADC[32]"};
-    for(auto &i: tree) i->setloopkeys(readoutkeys);
+    for(auto &i: tree) i.setloopkeys(readoutkeys);
 
 
     for(int i=1; i<numchannel; i++){
@@ -107,7 +102,7 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
-        th.emplace_back(thread(&iccut::innerloop, this, tree.at(i),
+        th.emplace_back(thread(&iccut::innerloop, this, std::ref(tree.at(i)),
                                ref(goodevents),ranges));
     }
 
@@ -132,7 +127,4 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
     output->cd("IC/IC11");
     for(auto &elem: comparediag) elem.at(1).Write();
     output->cd("");
-
-    //Clean up tree
-    for(auto &I: tree )  delete I;
 }
