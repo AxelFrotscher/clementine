@@ -133,22 +133,22 @@ public:
              threadno(threadno_), minossingleevent(minossingleevent_){
 
     }
-    TMinosResult getTMinosResult(){return dataresult;}
+    const TMinosResult getTMinosResult(){return dataresult;}
     TMinosPass analyze();
 
 private:
-    int Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
+    static int Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
                          vector<double> &x_out,vector<double> &y_out,
                          vector<double> &q_out, vector<bool> &ringbool);
-    void Hough_filter(vector<double> &x,vector<double> &y,vector<double> &z,
+    static void Hough_filter(vector<double> &x,vector<double> &y,vector<double> &z,
                       vector<double> &q,vector<double> &x_out,vector<double> &y_out,
                       vector<double> &z_out,vector<double> &q_out);
     void FindStart(vector<double> &pStart, vector<double> &chi, vector<int> &fitstatus,
                              TGraph &grxz, TGraph &gryz);
-    void vertex(vector<double> &p, vector<double> &pp, double &xv,
+    static void vertex(vector<double> &p, vector<double> &pp, double &xv,
                           double &yv, double &zv);
     void debug();
-    vector<double> rotatesp(double &rot, vector<double> &initialvector);
+    static vector<double> rotatesp(double &rot, vector<double> &initialvector);
 
     vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
 
@@ -173,10 +173,7 @@ private:
 // Ugly part outside of the class, because member-functions are trickier than
 // regular functions
 
-double FitFunction(double *x, double *p);
-void SumDistance3(int &, double *, double &sum, double *par, int);
-void SumDistance2(int &, double *, double &sum, double *par, int);
-void SumDistance1(int &, double *, double &sum, double *par, int);
 double distancelinepoint(double x, double y, double z, double *p);
-double conv_fit(double *x, double *p);
-extern TMinosResult tmr;
+
+thread_local inline TMinosResult tmr;
+thread_local inline int mode = 0;

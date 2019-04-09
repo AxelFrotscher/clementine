@@ -11,10 +11,11 @@
 #include <numeric>
 #include <deque>
 
-using namespace std;
+using std::vector, std::atomic, std::string, std::cout, std::endl, std::thread,
+      std::ref;
 
 void triggercut::innerloop(treereader &tree,
-                           std::vector<std::vector <std::atomic<bool>>> &goodevents,
+                           vector<vector<atomic<bool>>> &goodevents,
                            const std::vector<uint> range) {
     uint i = range.at(0);
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
@@ -37,10 +38,10 @@ void triggercut::innerloop(treereader &tree,
 }
 
 void triggercut::analyse(const vector<string> input){
-    setting set;
+
     txtwriter txt;
     
-    if(!set.isemptyortrans() && set.getminos()){
+    if(setting set; !set.isemptyortrans() && set.getminos()){
         cout << "Physics Run. Omitting trigger cut to gain statistics" << endl;
         txt.addline("No trigger cut on DALI Trigger applied.");
         return;

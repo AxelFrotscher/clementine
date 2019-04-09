@@ -19,7 +19,7 @@ using std::vector, std::cerr, std::cout, std::endl, std::min, std::max,
 
 TMinosPass minosana::analyze() {
     /// MINOS 2. Modify with hough-transformation
-    int padsleft = Xpad.size();
+    //int padsleft = Xpad.size();
     vector<bool> clusterringbool;
     vector<int> clusternbr, clusterpads;
     int trackNbr = 0, trackNbr_FINAL = 0;
@@ -56,9 +56,9 @@ TMinosPass minosana::analyze() {
     if (!filled) cerr << "Trackno.:" << trackNbr << " but no evts." << endl;
 
     /// MINOS 3: Fitting the taken pads for Qmax and Ttrig information /
-    padsleft -= Xpadnew.size();
+    //padsleft -= Xpadnew.size();
     for (int i = 0; i < minoscalibvalues.size(); i++) {
-        //minos = minoscalib.GetCalibMINOS(i);
+
         double x_mm = minostrackxy.at(i).at(0);
         double y_mm = minostrackxy.at(i).at(1);
         bool fitbool = false;
@@ -257,7 +257,6 @@ TMinosPass minosana::analyze() {
     minos5.lock();
     TMinuit min(4);
     min.SetPrintLevel(-1);
-
     min.SetFCN(funcmin(1));
     // Set starting values and step sizes for parameters
     auto minimize = [&min, &iflag, &arglist, &amin, &edm, &errdef, &nvpar, &nparx]
@@ -280,7 +279,7 @@ TMinosPass minosana::analyze() {
     };
     minimize(pStart_1);
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < parFit_1.size(); i++)
         min.GetParameter(i, parFit_1.at(i), err_1.at(i));
 
     if (trackNbr_FINAL == 1) parFit_2 = {0, 0, 0, 0};
@@ -302,15 +301,15 @@ TMinosPass minosana::analyze() {
     }
     else parFit_3 = {0,0,0,0};
 
-    tmr = {}; // reset out-of-class data structure
     minos5.unlock();
+    tmr = {}; // reset out-of-class data structure
 
-    int sumerr_1 = accumulate(begin(err_1), end(err_1), 0);
-    int sumerr_2 = accumulate(begin(err_2), end(err_2), 0);
-    int sumerr_3 = accumulate(begin(err_3), end(err_3), 0);
+    //double sumerr_1 = accumulate(begin(err_1), end(err_1), 0.);
+    //double sumerr_2 = accumulate(begin(err_2), end(err_2), 0.);
+    //double sumerr_3 = accumulate(begin(err_3), end(err_3), 0.);
 
-    chi2res1 = (chi1.at(0) + chi1.at(1)) / grxz.at(0).GetN();
-    if(grxz.size() > 1) chi2res2 = (chi2.at(0) + chi2.at(1)) / grxz.at(1).GetN();
+    //chi2res1 = (chi1.at(0) + chi1.at(1)) / grxz.at(0).GetN();
+    //if(grxz.size() > 1) chi2res2 = (chi2.at(0) + chi2.at(1)) / grxz.at(1).GetN();
 
     //Rotate from MINOS to beamline for all tracks
     double rot = 30*TMath::Pi()/180;
@@ -388,13 +387,13 @@ int minosana::Obertelli_filter(vector<double> &x, vector<double> &y,
 
     vector<double> xTemp, yTemp, qTemp;
 
-    double theta1, theta2 =0, xt1, yt1, xt2, yt2,
-            line0=0., line1=0.,
-            delta=0., AA=0., BB=0., CC=0.,
-            maxtheta1=0., maxtheta2=0., xmax1=0., ymax1=0., xmax2=0., ymax2=0.,
-            par0=0., par1=0.,
-            r_mm=0.;
-    int ringsum=0;
+    double theta1, theta2 = 0, xt1, yt1, xt2, yt2,
+            line0 = 0., line1 = 0.,
+            delta = 0., AA = 0., BB = 0., CC = 0.,
+            maxtheta1 = 0., maxtheta2=0., xmax1=0., ymax1=0., xmax2=0., ymax2=0.,
+            par0 = 0., par1 = 0.,
+            r_mm = 0.;
+    int ringsum = 0;
     bool maxfound = false;
 
     for(unsigned int i=0;i<x.size();i++){
@@ -834,27 +833,6 @@ vector<double> minosana::rotatesp(double &rot, vector<double> &initialvector){
     };
 }
 
-double conv_fit(double *x, double *p){
-    // Check for boundaries of x
-    if(x[0]<p[1] || x[0] > 512) return 250;
-    else return p[0] * exp(-3.*(x[0]-p[1])/p[2]) * sin((x[0]-p[1])/p[2]) *
-                pow((x[0]-p[1])/p[2], 3) + 250;
-}
-
-void SumDistance1(int &, double *, double &sum, double *par, int){
-    sum =0;
-    double qtot =0;
-    for(int i=0; i<tmr.x_mm.size(); i++){
-        if(tmr.n_Cluster.at(i) == 1){
-            double d = distancelinepoint(tmr.x_mm.at(i), tmr.y_mm.at(i),
-                                         tmr.z_mm.at(i), par);
-            sum  += d*tmr.Chargemax.at(i);
-            qtot +=   tmr.Chargemax.at(i);
-        }
-    }
-    sum /=qtot;
-}
-
 double distancelinepoint(double x, double y, double z, double *p){
     /// Calculation of the distance between line point
     ROOT::Math::XYZVector xp(x,y,z);
@@ -862,34 +840,6 @@ double distancelinepoint(double x, double y, double z, double *p){
     ROOT::Math::XYZVector x1(p[0]+1.*p[1],p[2]+1.*p[3],1.);
     ROOT::Math::XYZVector u =(x1-x0).Unit();
     return ((xp-x0).Cross(u)).Mag2();
-}
-
-void SumDistance2(int &, double *, double &sum, double *par, int){
-    double qtot = 0;
-    sum = 0;
-    for(int i=0; i<tmr.x_mm.size(); i++){
-        if(tmr.n_Cluster.at(i) == 2){
-            double d = distancelinepoint(tmr.x_mm.at(i), tmr.y_mm.at(i),
-                                         tmr.z_mm.at(i), par);
-            sum += d*tmr.Chargemax.at(i);
-            qtot += tmr.Chargemax.at(i);
-        }
-    }
-    sum /= qtot;
-}
-
-void SumDistance3(int &, double *, double &sum, double *par, int){
-    double qtot = 0;
-    sum = 0;
-    for(int i=0; i<tmr.x_mm.size(); i++){
-        if(tmr.n_Cluster.at(i) == 3){
-            double d = distancelinepoint(tmr.x_mm.at(i), tmr.y_mm.at(i),
-                                         tmr.z_mm.at(i), par);
-            sum += d*tmr.Chargemax.at(i);
-            qtot += tmr.Chargemax.at(i);
-        }
-    }
-    sum /= qtot;
 }
 
 void minosana::vertex(vector<double> &p, vector<double> &pp, double &xv,
@@ -927,4 +877,3 @@ void minosana::vertex(vector<double> &p, vector<double> &pp, double &xv,
     yv = (y+yp)/2;
     zv = (z+zp)/2;
 }
-
