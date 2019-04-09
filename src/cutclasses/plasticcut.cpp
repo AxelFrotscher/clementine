@@ -11,8 +11,7 @@
 
 using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
-void plasticcut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
-                             &goodevents, vector<uint> range) {
+void plasticcut::innerloop(treereader &tree, vector<uint> range) {
     // Step 1: cloning histograms
     decltype(qcorr)    _qcorr;
     decltype(qcorr2D)  _qcorr2D;
@@ -56,7 +55,7 @@ void plasticcut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
                        (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
                        tree.BigRIPSPlastic_fQRRaw[j]) < acceptance_range[j][1]);
                 if(!temp && j==2){
-                    for(auto &j:goodevents.at(i)) j.exchange(false);
+                    for(auto &k:goodevents.at(i)) k.exchange(false);
                     break;
                 }
             }
@@ -75,7 +74,7 @@ void plasticcut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
     progress.reset();
 }
 
-void plasticcut::analyse(const vector<string> input, TFile *output) {
+void plasticcut::analyse(const vector<string> &input, TFile *output) {
 
     vector<treereader> tree;
     tree.reserve(threads); // MUST stay as reallocation will call d'tor
@@ -145,7 +144,7 @@ void plasticcut::analyse(const vector<string> input, TFile *output) {
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&plasticcut::innerloop, this, std::ref(tree.at(i)),
-                               ref(goodevents),ranges));
+                               ranges));
     }
 
     for (auto &i: th) i.detach();

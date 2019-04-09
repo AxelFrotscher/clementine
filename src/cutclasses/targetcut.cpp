@@ -10,8 +10,7 @@
 
 using std::vector, std::cout, std::endl, std::atomic, std::string, std::thread;
 
-void targetcut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
-                            &goodevents, vector<uint> range) {
+void targetcut::innerloop(treereader &tree, vector<uint> range) {
     //Step 1: Cloning histograms
     decltype(tarhist) _tarhist;
     for(auto &i:tarhist) _tarhist.emplace_back(i);
@@ -43,11 +42,11 @@ void targetcut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
             tree.getevent(i);
             // 1. Fill valid events
             for(int j =ppacoffset; j<(ppacoffset+f8ppac); j++) {
-                if (abs(tree.BigRIPSPPAC_fX[j] - magnum) > 1){
+                if (std::abs(tree.BigRIPSPPAC_fX[j] - magnum) > 1){
                     slopex.at(0).push_back(tree.BigRIPSPPAC_fX[j]);
                     slopex.at(1).push_back(f8z.at(j-ppacoffset).at(0));
                 }
-                if (abs(tree.BigRIPSPPAC_fY[j] - magnum) > 1){
+                if (std::abs(tree.BigRIPSPPAC_fY[j] - magnum) > 1){
                     slopey.at(0).push_back(tree.BigRIPSPPAC_fY[j]);
                     slopey.at(1).push_back(f8z.at(j-ppacoffset).at(1));
                 }
@@ -93,7 +92,7 @@ void targetcut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
     progress.reset();
 }
 
-void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
+void targetcut::analyse(const vector<string> &input, TFile *output) {
 
     vector<treereader> tree;
     tree.reserve(threads); // MUST stay as reallocation will call d'tor
@@ -123,7 +122,7 @@ void targetcut::analyse(const std::vector<std::string> input, TFile *output) {
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                               (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&targetcut::innerloop, this, std::ref(tree.at(i)),
-                               ref(goodevents),ranges));
+                               ranges));
     }
 
     for (auto &i: th) i.detach();

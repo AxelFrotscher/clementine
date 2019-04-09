@@ -10,6 +10,8 @@
 #include <numeric>
 #include "TCanvas.h"
 #include "TMinuitMinimizer.h"
+#include "Math/Functor.h"
+#include "Minuit2/Minuit2Minimizer.h"
 
 using std::vector, std::cerr, std::cout, std::endl, std::min, std::max,
       std::accumulate, std::placeholders::_1,std::placeholders::_2,
@@ -27,10 +29,15 @@ TMinosPass minosana::analyze() {
             int filter_result = Obertelli_filter(Xpad, Ypad, Qpad, Xpadnew,
                                                  Ypadnew, Qpadnew,
                                                  clusterringbool);
-            for (int i = 0; i < filter_result; i++) {
+            /*for (int i = 0; i < filter_result; i++) {
                 clusternbr.push_back(iteration);
                 clusterpads.push_back(filter_result);
-            }
+            }*/
+            vector<int> temp1(filter_result, iteration);
+            vector<int> temp2(filter_result, filter_result);
+            clusternbr.insert(clusternbr.end(), temp1.begin(), temp1.end());
+            clusterpads.insert(clusterpads.end(), temp2.begin(), temp2.end());
+
             if (filter_result > 10 && clusterringbool.back()) trackNbr++;
         }
     }
@@ -75,7 +82,7 @@ TMinosPass minosana::analyze() {
                                             minoscalibvalues.at(i).at(k) + 250);
         }
         // Fitting the hfit histogram of last ch. if not empty
-        if (!hfit.GetSumOfWeights() > 0) continue;
+        if ((!hfit.GetSumOfWeights()) > 0) continue;
 
         hfit.GetXaxis()->SetRange(0, 510);
         double hfit_max = hfit.GetMaximum();
@@ -94,7 +101,11 @@ TMinosPass minosana::analyze() {
         T_max = std::min(T_max, 510.);
 
         // Set fit parameters
-        TF1 fit_function(Form("fit_function%i",threadno), conv_fit, 0, 511, 3);
+        TF1 fit_function(Form("fit_function%i",threadno),
+                [](double *x, double *p){ /// Check for boundaries of x
+            if(x[0] < p[1] || x[0] > 512) return 250.;
+            else return p[0] * exp(-3.*(x[0]-p[1])/p[2])*sin((x[0]-p[1])/p[2]) *
+                        pow((x[0]-p[1])/p[2], 3) + 250;}, 0, 511, 3);
 
         fit_function.SetParameters( hfit_max - 250,
                    hfit_max_T - Tshaping / TimeBinElec, Tshaping / TimeBinElec);
@@ -221,56 +232,71 @@ TMinosPass minosana::analyze() {
     // Get fit for xz-yz plane, for the reconstruction
     FindStart(pStart_1, chi1, fitStatus, grxz.at(0), gryz.at(0));
 
+    auto funcmin = [this](const int mod){
+        /// Wrapper for minimization function, sets track number to mod
+        mode = mod;
+        tmr = minosana::getTMinosResult();
+        return [](int &, double *, double &sum, double *par, int){
+            /// Minimization: calculates sum of distances between data points
+            /// and regression
+
+            sum = 0;
+            double qtot =0;
+            for(int i=0; i<tmr.x_mm.size(); i++){
+                if(tmr.n_Cluster.at(i) == mode){
+                    double d = distancelinepoint(tmr.x_mm.at(i), tmr.y_mm.at(i),
+                                                 tmr.z_mm.at(i), par);
+                    sum  += d*tmr.Chargemax.at(i);
+                    qtot +=   tmr.Chargemax.at(i);
+                }
+            }
+            sum /=qtot;
+        };
+    };
+
     minos5.lock();
     TMinuit min(4);
     min.SetPrintLevel(-1);
 
-    tmr = minosana::getTMinosResult();
-
-    min.SetFCN(SumDistance1);
+    min.SetFCN(funcmin(1));
     // Set starting values and step sizes for parameters
-    min.mnparm(0, "x0", pStart_1.at(0), 0.1, -500, 500, iflag);
-    min.mnparm(1, "Ax", pStart_1.at(1), 0.1, -10, 10, iflag);
-    min.mnparm(2, "y0", pStart_1.at(2), 0.1, -500, 500, iflag);
-    min.mnparm(3, "Ay", pStart_1.at(3), 0.1, -10, 10, iflag);
-    arglist.at(0) = 100; // Number of function calls
-    arglist.at(1) = 1E-6;// tolerance
-    min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
-    // get current status of minimization
-    min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
+    auto minimize = [&min, &iflag, &arglist, &amin, &edm, &errdef, &nvpar, &nparx]
+            (vector<double> a){
+        /// Set all parameters for 3D-minimization
+        assert(a.size() == 4);
+
+        min.mnparm(0, "x0", a.at(0), 0.1, -500, 500, iflag);
+        min.mnparm(1, "Ax", a.at(1), 0.1, -10, 10, iflag);
+        min.mnparm(2, "y0", a.at(2), 0.1, -500, 500, iflag);
+        min.mnparm(3, "Ay", a.at(3), 0.1, -10, 10, iflag);
+
+        arglist.at(0) = 100; // Number of function calls
+        arglist.at(1) = 1E-6;// tolerance
+
+        min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
+
+        // get current status of minimization
+        min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
+    };
+    minimize(pStart_1);
+
     for (int i = 0; i < 4; i++)
         min.GetParameter(i, parFit_1.at(i), err_1.at(i));
 
     if (trackNbr_FINAL == 1) parFit_2 = {0, 0, 0, 0};
     else {
         FindStart(pStart_2, chi2, fitStatus, grxz.at(1), gryz.at(1));
-        min.SetFCN(SumDistance2);
+        min.SetFCN(funcmin(2));
+        minimize(pStart_2);
 
-        min.mnparm(0, "x0", pStart_2.at(0), 0.1, -500, 500, iflag);
-        min.mnparm(1, "Ax", pStart_2.at(1), 0.1, -10, 10, iflag);
-        min.mnparm(2, "y0", pStart_2.at(2), 0.1, -500, 500, iflag);
-        min.mnparm(3, "Ay", pStart_2.at(3), 0.1, -10, 10, iflag);
-        arglist.at(0) = 100; // Number of function calls
-        arglist.at(1) = 1E-6;// tolerance
-        min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
-        // get currecnt status of minimization
-        min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
         for (int i = 0; i < parFit_2.size(); i++)
             min.GetParameter(i, parFit_2.at(i), err_2.at(i));
     }
     if(trackNbr_FINAL > 2){
         FindStart(pStart_3, chi3, fitStatus, grxz.at(2), gryz.at(2));
-        min.SetFCN(SumDistance3);
+        min.SetFCN(funcmin(3));
+        minimize(pStart_3);
 
-        min.mnparm(0, "x0", pStart_3.at(0), 0.1, -500, 500, iflag);
-        min.mnparm(1, "Ax", pStart_3.at(1), 0.1, -10, 10, iflag);
-        min.mnparm(2, "y0", pStart_3.at(2), 0.1, -500, 500, iflag);
-        min.mnparm(3, "Ay", pStart_3.at(3), 0.1, -10, 10, iflag);
-        arglist.at(0) = 100; // Number of function calls
-        arglist.at(1) = 1E-6;// tolerance
-        min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
-        // get currecnt status of minimization
-        min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
         for (int i = 0; i < parFit_3.size(); i++)
             min.GetParameter(i, parFit_3.at(i), err_3.at(i));
     }
@@ -298,12 +324,13 @@ TMinosPass minosana::analyze() {
     r_vertex = sqrt(pow(x_vertex, 2) + pow(y_vertex, 2));
 
     // cos theta = v1*v2/(|v1|*|v2|), v1 = (0,0,1)^T, v2 = (m1,m3,1)^T
-    theta.at(0) = acos(1/pow(1+ pow(parFit_1r.at(1), 2)+
-                                pow(parFit_1r.at(3), 2),.5)) *180./ TMath::Pi();
-    theta.at(1) = acos(1/pow(1+ pow(parFit_2r.at(1), 2)+
-                                pow(parFit_2r.at(3), 2),.5)) *180./ TMath::Pi();
-    theta.at(2) = acos(1/pow(1+ pow(parFit_3r.at(1), 2)+
-                                pow(parFit_3r.at(3), 2),.5)) *180./ TMath::Pi();
+    auto cthet = [](vector<double> a){
+        assert(a.size() == 4);
+        return acos(1/pow(1+ pow(a[1],2) + pow(a[3],2),.5)) * 180./TMath::Pi();};
+
+    theta.at(0) = cthet(parFit_1r);
+    theta.at(1) = cthet(parFit_2r);
+    theta.at(2) = cthet(parFit_3r);
 
     vector<double> lambda2d{ // angles in xy-plane for all tracks
         atan2(parFit_1r.at(3), parFit_1r.at(1))*180/TMath::Pi(),
@@ -761,7 +788,12 @@ void minosana::Hough_filter(vector<double> &x, vector<double> &y,
 
 void minosana::FindStart(vector<double> &pStart, vector<double> &chi,
                          vector<int> &fitstatus, TGraph &grxz, TGraph &gryz){
-    TF1 myfit1(Form("fit%i",threadno), FitFunction, -100,500,2);
+    /// This function performs an x-z plane (grxz) and y-z plane (gryz) 2d fit,
+    /// to get the initial parameters (stored in &pStart)
+
+    TF1 myfit1(Form("fit%i",threadno),
+               [](double *x, double *p){ return p[0]+p[1]*x[0];},
+               -100,500,2);
     myfit1.SetParameters(0,10);
     fitstatus = {0,0};
     grxz.Fit(&myfit1, "RQMN");
@@ -776,7 +808,7 @@ void minosana::FindStart(vector<double> &pStart, vector<double> &chi,
 
 
 void minosana::debug(){
-    // Look at some raw spectrums
+    /// Look at some raw spectrums, which contain minos tracks in xyz
     if(minossingleevent.size() < 5 && filled){
         minossingleevent.emplace_back(
                 Form("t%iEvt%lu",threadno,minossingleevent.size()),
@@ -791,10 +823,8 @@ void minosana::debug(){
 }
 
 vector<double> minosana::rotatesp(double &rot, vector<double> &initialvector){
-    // This function can rotate the results slopes derived from the 2D planes
-    if(initialvector.size() != 4 )
-        cout << "WARNING: Rotation vector dimension is " << initialvector.size()
-             << " but should be 4!! " << endl << endl;
+    /// This function can rotate the results slopes derived from the 2D planes
+    assert(initialvector.size() == 4);
 
     return vector<double> {
             cos(rot)*initialvector.at(0)-sin(rot)*initialvector.at(2),
@@ -802,10 +832,6 @@ vector<double> minosana::rotatesp(double &rot, vector<double> &initialvector){
             sin(rot)*initialvector.at(0)+cos(rot)*initialvector.at(2),
             sin(rot)*initialvector.at(1)+cos(rot)*initialvector.at(3)
     };
-}
-
-double FitFunction(double *x, double *p){
-    return p[0]+p[1]*x[0];
 }
 
 double conv_fit(double *x, double *p){
@@ -830,7 +856,7 @@ void SumDistance1(int &, double *, double &sum, double *par, int){
 }
 
 double distancelinepoint(double x, double y, double z, double *p){
-    // Calculation of the distance between line point
+    /// Calculation of the distance between line point
     ROOT::Math::XYZVector xp(x,y,z);
     ROOT::Math::XYZVector x0(p[0],p[2],0.);
     ROOT::Math::XYZVector x1(p[0]+1.*p[1],p[2]+1.*p[3],1.);
@@ -868,11 +894,9 @@ void SumDistance3(int &, double *, double &sum, double *par, int){
 
 void minosana::vertex(vector<double> &p, vector<double> &pp, double &xv,
                       double &yv, double &zv){
-    if(p.size() != 4 || pp.size() != 4){
-        cout << "Vector 1 should be 4, is: " << p.size()
-             << " 2 should be 4, is: " << pp.size() << endl;
-        std::__throw_invalid_argument("Vector size mismatch minosana::vertex");
-    }
+    /// Calculates the vertex of two lines (p,pp) [closest distance]
+    /// and stores x, y, and z in (xv, yv, zv)
+    assert(p.size() == pp.size() == 4);
 
     double alpha, beta, A, B, C;
     alpha = (pp.at(1)*(p.at(0)-pp.at(0))+pp.at(3)*(p.at(2)-pp.at(2)))/
@@ -904,4 +928,3 @@ void minosana::vertex(vector<double> &p, vector<double> &pp, double &xv,
     zv = (z+zp)/2;
 }
 
-TMinosResult tmr;

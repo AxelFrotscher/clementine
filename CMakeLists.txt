@@ -40,9 +40,10 @@ add_executable(${PROJECT_NAME} main.cpp
 target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread -lMinuit -lMinuit2
    -L/home/afrotscher/soft/anaroot/4.5.36/lib -lanaroot -lanacore -lanabrips -lanadali -lanaminos
         -lXMLParser
+   -L/home/afrotscher/soft/minos/liboffline -lminos
    -L/home/afrotscher/soft/minos/minosv1.1.1/install/pentium-linux-release/lib
-        -lminos-fem -lmordicus-utl -lUtilities
-   -L/home/afrotscher/soft/minos/liboffline -lminos ${ROOT_LIBRARIES})
+                                          -lmordicus-utl -lUtilities -lminos-fem
+   ${ROOT_LIBRARIES})
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(${PROJECT_NAME} PUBLIC DEBUG=1)

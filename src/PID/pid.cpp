@@ -642,9 +642,10 @@ void PID::chargestatecut(){
 
     // Magic to get the charge state contribution
     vector<string> chemelem ={"R",
-            "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S",
-            "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga",
-            "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc"};
+            "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg",
+            "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr",
+            "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br",
+            "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc"};
     string numbers = "0123456789";
     int startindex = (int)reaction.find_first_not_of(numbers);
     projectileN = std::stoi(reaction.substr(0,startindex));
@@ -663,7 +664,8 @@ void PID::chargestatecut(){
         if(temp == chemelem.at(i)){ projectileZ = i; break;}
     }
 
-    //cout << "Reaction: " << reaction << " Start number: " << projectileN << " Z " << projectileZ << endl;
+    //cout << "Reaction: " << reaction << " Start number: "
+    //     << projectileN << " Z " << projectileZ << endl;
 
     // Apply Reaction to values
     if (p3pbool){
@@ -680,8 +682,10 @@ void PID::chargestatecut(){
 
     for(int i=-4; i<0; i++){
         double chargestateaoq = (projectileN+i)/(double)(projectileZ-1);
-        if(abs(chargestateaoq-aoq) < 2*targetval.at(2)){ // Ellipsoids are touching
-            cout << "For Q-1, Z = " << projectileN+i << " distance is " << chargestateaoq-aoq<< endl;
+        // Ellipsoids are touching
+        if(abs(chargestateaoq-aoq) < 2*targetval.at(2)){
+            cout << "For Q-1, Z = " << projectileN+i << " distance is "
+                 << chargestateaoq-aoq<< endl;
             // Calculate center of blob whose charge state is interfering
             double aoqintruder = (projectileN+i)/(double)projectileZ - aoqoffset;
 
@@ -700,8 +704,8 @@ void PID::chargestatecut(){
                                             targetval.at(1)+targetval.at(3)),
                 binhigh.at(0), binhigh.at(1), binhigh.at(2));
 
-            //cout << "X-bin Width " << binhigh.at(0) << " - " << binlow.at(0)
-            //     << ". Y-Bin Width " << binhigh.at(1) << " - " << binlow.at(1) << endl;
+            //cout << "X-bin " << binhigh.at(0) << " - " << binlow.at(0)
+            //     << " Y-Bin " << binhigh.at(1) << " - " << binlow.at(1) << endl;
 
             // Prepare cut diagram.
             chargestate.emplace_back(PIDplot.at(1).at(3));
@@ -723,7 +727,7 @@ void PID::chargestatecut(){
                         pow(1./targetval.at(3)*(targetval.at(1)-ycenter),2))<1){
                         //cout << "Charge State X: " << j << " Y: " << k << " with: "
                         //     << PIDplot.at(1).at(3).GetBinContent(j,k) << " cts." << endl;
-                        chargestate.back().SetBinContent(j,k,PIDplot.at(1).at(3).GetBinContent(j,k)+1E-9);
+                        chargestate.back().SetBinContent(j,k,PIDplot.at(1).at(3).GetBinContent(j,k));
                     }
                 }
             }
