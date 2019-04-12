@@ -27,25 +27,25 @@ public:
     };
     void draw();
     void increaseevent(){if(worker) currevt[threadpos]++;};
-    void reset();
-    const bool ongoing(){return ongoinganalysis;};
+    static void reset();
+    static const bool ongoing(){return ongoinganalysis;};
 
 private:
-    void initstatics();
+    static void initstatics();
 
-    static std::vector <int> currevt; // current progress on the matter
+    inline static std::vector <int> currevt; // current progress on the matter
 
-    static std::vector <int> lastevent; // progress on last draw() call
-    static long int lasttime; // in milliseconds
+    inline static std::vector <int> lastevent; // progress on last draw() call
+    inline static long int lasttime; // in milliseconds
 
-    static int barwidth;
+    inline static int barwidth = 100;
     static const int displaythreads = 8;
-    static std::atomic<int> currentthreads;  // current working (displayed) threads
-    static std::mutex currevtmutex;
+    inline static std::atomic<int> currentthreads;  // current working (displayed) threads
+    inline static std::mutex currevtmutex;
     bool worker = true ; // Defines a thread to be displayed
-    static std::vector<uint> totevent;  // number of object to be calculated
+    inline static std::vector<uint> totevent;  // number of object to be calculated
     uint threadpos = 0;  // thread position
 
-    static std::atomic<int> finishercount;  // number of finished threads
-    static std::atomic<bool> ongoinganalysis; // switch for status of analysis
+    inline static std::atomic<int> finishercount;  // number of finished threads
+    inline static std::atomic<bool> ongoinganalysis; // switch for status of analysis
 };

@@ -11,21 +11,13 @@
 #include <cmath>
 #include <TString.h>
 
-using namespace std;
-
-// static is like 'extern' separate declaration needed
-vector<int> progressbar::currevt;
-vector<uint> progressbar::totevent;
-atomic<int> progressbar::finishercount;
-mutex progressbar::currevtmutex;
-atomic<int> progressbar::currentthreads;
-atomic<bool> progressbar::ongoinganalysis;
-vector<int> progressbar::lastevent;
-long int progressbar::lasttime;
-int progressbar::barwidth = 100;
+using std::stringstream, std::string, std::max, std::to_string, std::cout,
+      std::vector, std::chrono::duration_cast, std::chrono::steady_clock,
+      std::chrono::milliseconds, std::this_thread::sleep_for,
+      std::chrono_literals::operator""s;
 
 void progressbar::draw(){
-    // Worker Instances must not draw anything
+    /// Worker Instances must not draw anything
     if(worker && (currentthreads>1)) return;
 
     vector<int> pos; // position for each bar
@@ -47,8 +39,8 @@ void progressbar::draw(){
         string pstr = stream.str(); // Put out string for insertion of speed
 
         // Prepare time difference and speed
-        long int thistime = chrono::duration_cast<chrono::milliseconds>(
-                        chrono::steady_clock::now().time_since_epoch()).count();
+        long int thistime = duration_cast<milliseconds>(
+                                steady_clock::now().time_since_epoch()).count();
         long int speed = 0;
         if(thistime-lasttime > 0) speed = 1000*(currevt.at(i)-lastevent.at(i))/
                                           (thistime-lasttime);
@@ -70,24 +62,24 @@ void progressbar::draw(){
     cout.flush();
 
     // Update the "old" values
-    lasttime = chrono::duration_cast<chrono::milliseconds>(
-            chrono::steady_clock::now().time_since_epoch()).count();
+    lasttime = duration_cast<milliseconds>(
+                                steady_clock::now().time_since_epoch()).count();
 
     if(currentthreads>1 || !worker){
         barwidth = 31;
-        this_thread::sleep_for(1s);
+        sleep_for(1s);
     }
 }
 
 void progressbar::reset() {
-    // Check for last thread and reset if needed
+    /// Check for last thread and reset if needed
     if(++finishercount == currentthreads){
         progressbar::currevt  = vector<int>(displaythreads, 0);
         progressbar::totevent = vector<uint>(displaythreads, 0);
 
         // Last initialization of last step time and events
-        lasttime = chrono::duration_cast<chrono::milliseconds>(
-                chrono::steady_clock::now().time_since_epoch()).count();
+        lasttime = duration_cast<milliseconds>(
+                                steady_clock::now().time_since_epoch()).count();
         lastevent = vector<int>(displaythreads, 0);
 
         // After last reset the analysis is finished completely
@@ -104,8 +96,8 @@ void progressbar::initstatics() {
         ongoinganalysis.exchange(true);
 
         // First initialization of last step time and events
-        lasttime = chrono::duration_cast<chrono::milliseconds>(
-                    chrono::steady_clock::now().time_since_epoch()).count();
+        lasttime = duration_cast<milliseconds>(
+                                steady_clock::now().time_since_epoch()).count();
         lastevent = vector<int>(displaythreads, 0);
     }
 

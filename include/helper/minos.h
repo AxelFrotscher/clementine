@@ -136,10 +136,11 @@ public:
     const TMinosResult getTMinosResult(){return dataresult;}
     TMinosPass analyze();
 
-private:
     static int Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
-                         vector<double> &x_out,vector<double> &y_out,
-                         vector<double> &q_out, vector<bool> &ringbool);
+                                vector<double> &x_out,vector<double> &y_out,
+                                vector<double> &q_out, vector<bool> &ringbool);
+
+private:
     static void Hough_filter(vector<double> &x,vector<double> &y,vector<double> &z,
                       vector<double> &q,vector<double> &x_out,vector<double> &y_out,
                       vector<double> &z_out,vector<double> &q_out);

@@ -23,6 +23,7 @@
 #include "TMinuit.h"
 #include <Math/Vector3D.h>
 #include "zdssetting.h"
+#include "minos.h"
 
 R__LOAD_LIBRARY(libanacore.so)
 R__LOAD_LIBRARY(libminos.so)
@@ -160,7 +161,7 @@ void generatetree(const string infile, const string output) {
     tree->Branch("MinosClustY", &Ypad);
     tree->Branch("MinosClustQ", &Qpad);
 
-    double VDrift = 0.03786,          // in cm/(1E-6*s)
+    double VDrift = 0.03786,       // in cm/(1E-6*s)
            DelayTrigger = 2055,    // in ns both Values from
            Stoptime = 9980;        //       ConfigMINOSDirft_fixed.txt
     tree->Branch("VDrift", &VDrift, "MINOS.VDrift/D");
@@ -172,18 +173,27 @@ void generatetree(const string infile, const string output) {
     vector<vector<double>> minoscalibvalues;
     tree->Branch("Minoscalibvalues", &minoscalibvalues);
 
-    vector<vector<double>> minostrackxy; // Coordinates of minos pads hit {{x1,y1},{x2,y2},...}
+    // Coordinates of minos pads hit {{x1,y1},{x2,y2},...}
+    vector<vector<double>> minostrackxy;
     tree->Branch("minostrackxy", &minostrackxy);
 
     vector<vector<double>> minostime;
     tree->Branch("minostime", &minostime);
 
+    ///Make MINOS drift time analysis
+    string runname = infile.substr(34,9);
+    TH1I timedrift(runname.c_str(), "TPC time drift", 1536,0,15360);
+    timedrift.GetXaxis()->SetTitle("t [ns]");
+    timedrift.GetYaxis()->SetTitle("trigger number");
+
     //Parameters for MINOS analysis
-    double minosthresh = 25, TimeBinElec = 30, Tshaping = 333;
-    ifstream minosconfigfile("../config/db/ConfigMINOSDrift_fixed.txt");
-    //minosconfigfile.open("config/db/ConfigMINOSDrift_fixed.txt");
-    if(!minosconfigfile.is_open())__throw_invalid_argument("Could not open "
-                                     "../config/db/ConfigMINOSDrift_fixed.txt");
+    double minosthresh, TimeBinElec, Tshaping;
+    vector<string> minosdrift{"../config/db2014/ConfigMINOSDrift.txt",
+                              "../config/db/ConfigMINOSDrift_fixed.txt"};
+
+    ifstream minosconfigfile(minosdrift.at(setting));
+    assert(minosconfigfile.is_open());
+
     string trash = " ";
     getline(minosconfigfile, trash);
     minosconfigfile >> minosthresh >> TimeBinElec >> Tshaping;
@@ -359,6 +369,90 @@ void generatetree(const string infile, const string output) {
         if(!(neve%downscale)) progress.draw();
 
         // Add Graphical Feedback
+
+        vector<bool> clusterringbool;
+        vector<int> clusternbr, clusterpads;
+        vector<double> Xpadnew, Ypadnew, Qpadnew, Zpadnew;
+        int trackNbr = 0;
+
+        /// Do Hough-transform for data
+        if (filled) {
+            for (int iteration = 0; (Xpad.size() > 9 && iteration < 20); iteration++) {
+                int filter_result = minosana::Obertelli_filter(Xpad, Ypad,
+                        Qpad, Xpadnew, Ypadnew, Qpadnew, clusterringbool);
+                if (filter_result > 10 && clusterringbool.back()) trackNbr++;
+            }
+        }
+
+        if(trackNbr <1 || trackNbr > 4) continue;
+
+
+        /// Fill minos tpcdrift histogram
+        for(int i=0; i<minoscalibvalues.size(); i++){ /// Loop over all pads
+
+            double x_mm = minostrackxy.at(i).at(0);
+            double y_mm = minostrackxy.at(i).at(1);
+            bool fitbool = false;
+
+            for (int j = 0; j < Xpadnew.size(); j++) {
+                if (abs(Xpadnew[j] - x_mm) < 0.01 && abs(Ypadnew[j] - y_mm) < 0.01) {
+                    fitbool = true;
+                    break;
+                }
+            }
+            // Check if new channel is of interest
+            if (!fitbool) continue;
+
+            /// Generate Q(t) diagram
+            //cout << "Pad NO: " << i <<  " Fitbool: " << fitbool << endl;
+            TH1F hfit("hfit","hfit", 512, 0, 512);
+            for(int j=0; j<minoscalibvalues.at(i).size(); j++){
+                if(minoscalibvalues.at(i).at(j) >0)
+                    hfit.SetBinContent(hfit.FindBin(minostime.at(i).at(j)),
+                            minoscalibvalues.at(i).at(j)+250);
+            }
+
+            if(hfit.GetSumOfWeights() == 0){  continue;} // no empty diagrams
+
+            hfit.GetXaxis()->SetRange(0, 510);
+            double hfit_max = hfit.GetMaximum();
+            double hfit_max_T = hfit.GetMaximumBin();
+
+            // Find T_min and T_max limits for non-0 signals
+            double T_min = hfit.FindLastBinAbove(250);
+            double T_max = hfit.FindFirstBinAbove(0) - 1;
+
+            // Take only 1.5*shaping time before max if other signals before
+            if (hfit_max_T - 3.5 * (Tshaping / TimeBinElec) > T_min)
+                T_min = hfit_max_T - 2 * Tshaping / TimeBinElec;
+            if ((hfit_max_T + 10) < T_max || T_max == -1) T_max = hfit_max_T + 10;
+
+            T_min = std::max(T_min, 0.);
+            T_max = std::min(T_max, 510.);
+
+            // Set fit parameters
+            TF1 fit_function("fit_function",
+                [](double *x, double *p){ /// Check for boundaries of x
+                    if(x[0] < p[1] || x[0] > 512) return 250.;
+                    else return p[0] * exp(-3.*(x[0]-p[1])/p[2])*sin((x[0]-p[1])/p[2]) *
+                                pow((x[0]-p[1])/p[2], 3) + 250;}, 0, 511, 3);
+
+            fit_function.SetParameters( hfit_max - 250,
+                                        hfit_max_T - Tshaping / TimeBinElec,
+                                        Tshaping / TimeBinElec);
+            fit_function.SetParNames("Amplitude", "trigger time", "shaping time");
+            fit_function.SetParLimits(0, 0, 1E5);
+            fit_function.SetParLimits(1, -20, 512);
+            fit_function.SetParLimits(2, 0, 512);
+
+            // --> parameter n (no store no draw) crucial for multithread <--
+            int fit2DStatus = hfit.Fit(&fit_function, "RQN", "", T_min, T_max);
+
+            if(!fit2DStatus && fit_function.GetParameter(1) > .15
+                            && fit_function.GetParameter(1) < 512)
+                timedrift.Fill(fit_function.GetParameter(1)*TimeBinElec);
+        }
+
     }
     progress.reset();
     cout << "Writing the tree..."<<endl;
@@ -367,6 +461,10 @@ void generatetree(const string infile, const string output) {
     fout.Close();
     printf("Writing TTree complete!\n");
 
+    TFile tpcdrift(Form("output/MINOS/%s.root", runname.c_str()), "Update");
+    if (!tpcdrift.GetListOfKeys()->Contains(runname.c_str()))
+        timedrift.Write();
+    tpcdrift.Close();
     //std::abort(); // "Fixing" dirty cleanup from MINOS
 }
 

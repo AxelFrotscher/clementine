@@ -17,38 +17,39 @@ public:
         settingnumber = i;
         loadnumbers(i);
     }
-    explicit setting(){;};
+    explicit setting() = default;
     void loadnumbers(int i);
-    void setcountno(int i){
+    static void setcountno(int i){
         eventcounts = i;
         checkphysicsrun();
     };
-    void checkphysicsrun();
+    static void checkphysicsrun();
 
-    const std::vector<std::vector<double>> getHOcutval();
-    const calibpar getHOparameters();
-    TCutG* getbrhocut();
-    const std::vector<std::vector<int>> getPlasticRange();
-    const std::vector<uint> getZrange();
-    const std::vector<std::string> getreactions();
-    const bool isemptyortrans(){return isemptyrun || istransmissionrun;}
+    static const std::vector<std::vector<double>> getHOcutval();
+    static const calibpar getHOparameters();
+    static TCutG* getbrhocut();
+    static const std::vector<std::vector<int>> getPlasticRange();
+    static const std::vector<uint> getZrange();
+    static const std::vector<std::string> getreactions();
+    static const bool isemptyortrans(){return isemptyrun || istransmissionrun;}
     const std::vector<double> getPIDincutvalue();
     const std::vector<double> getPIDoutcutvalue();
-    const std::string getmodename();
-    std::string getsetname(){return setname.at(settingnumber);};
+    static const std::string getmodename();
+    static std::string getsetname(){return setname.at(settingnumber);};
     std::vector<uint> goodruns;
     std::vector<uint> transmissionrun;
     std::vector<uint> emptyrun;
     uint analysedfile = 0;
-    const int getsetnumber(){return settingnumber;};
-    void setminos(bool minosbool){minos = minosbool;};
-    const bool getminos(){return minos;};
+    static const int getsetnumber(){return settingnumber;};
+    static void setminos(bool minosbool){minos = minosbool;};
+    static const bool getminos(){return minos;};
 
 private:
-    static int settingnumber;
-    static int eventcounts;
-    static bool istransmissionrun;
-    static bool isemptyrun;
-    static bool minos;
-    static const std::vector<std::string> setname;
+    static inline int settingnumber = 2'000'000'000;
+    static inline int eventcounts = 0;
+    static inline bool istransmissionrun = false;
+    static inline bool isemptyrun = false;
+    static inline bool minos = false;
+    static inline const std::vector<std::string> setname{"110Nb", "88Ge",
+                                       "94Se", "100Kr", "66Cr", "70Fe", "78Ni"};
 };

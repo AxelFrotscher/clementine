@@ -16,11 +16,9 @@
 using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_string,
       std::__throw_invalid_argument;
 
-calibpar p1;
-
  void makehistograms(const vector<string> input) {
-    // Generating an outputfile that matches names with the input file
-    // Determine run type:
+    /// Generating an outputfile that matches names with the input file
+    /// Determine run type:
     TChain chain("tree");
     for(auto &i:input) chain.Add(i.c_str());
 
@@ -40,7 +38,7 @@ calibpar p1;
     const string modename = set.getmodename();
     const bool minosbool = set.getminos();
 
-     // lambda to generate expression
+    /// lambda to generate expression
     auto gentxt = [input, settingname, modename, minosbool](auto suffix){
         if(minosbool){
             return "output/"+ settingname + "_" + modename + "_MINOS_" +
@@ -50,13 +48,13 @@ calibpar p1;
                input.at(0).substr(34,9) + suffix;
     };
 
-    // Initialize ROOT and txt outputfile
+    /// Initialize ROOT and txt outputfile
     auto outputfile = new TFile(gentxt(".root").c_str(), "RECREATE");
-    //if(!outputfile->IsOpen()) __throw_invalid_argument("Output file not valid");
+    assert(outputfile->IsOpen());
 
     txtwriter writetotxt(gentxt(".txt")); // Writer class
 
-     { // Make everything go out of scope to prevent memory overflow
+     { /// Make everything go out of scope to prevent memory overflow
          cout << "Making cuts..." << endl;
          triggercut(input, goodevents);
          ccsc(input, goodevents, outputfile);
@@ -67,10 +65,10 @@ calibpar p1;
          higherorder(input, goodevents, outputfile);
      }
 
-    // Get Z vs. A/Q
+    /// Get Z vs. A/Q
     const vector<string> reactionmodes = set.getreactions();
 
-    // All reaction modes:
+    /// All reaction modes:
     TGraphErrors crosssection;
     crosssection.SetName(Form("cs%s", set.getsetname().c_str()));
     crosssection.SetTitle("Cross Sections Frotscher 2019");
@@ -87,7 +85,6 @@ calibpar p1;
     printf("Made PID histograms in %s\n", gentxt(".root").c_str());
 
     if(!minosbool) writetotxt.writetofile();
-
     outputfile->Close();
 }
 

@@ -31,7 +31,7 @@ struct calibpar{
 };
 
 // Definition of global variables here. Keep as short as possible!
-extern calibpar p1;
+inline calibpar p1;
 
 double linfit(double *x, double *par);
 const bool closeness(const std::vector<double> &d, double sigma=0.1);

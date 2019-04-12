@@ -13,13 +13,14 @@
 #include "libconstant.h"
 #include "TArtStoreManager.hh"
 #include "TMinuitMinimizer.h"
+#include "minosdrift.h"
 
 R__LOAD_LIBRARY(libanacore.so)
 
 using std::vector, std::string, std::ifstream, std::cout, std::endl, std::cerr,
       std::cin, std::invalid_argument, std::__throw_invalid_argument;
 
-vector<string> getlist(const char *instring){
+const vector<string> getlist(const char *instring){
     // read in the file list for all .rdif's
     ifstream infile(instring);
     if(!infile) cerr << "File list not found " << endl;
@@ -37,7 +38,7 @@ int main(int argc, char**argv){
     // Make ROOT Thread-aware
     ROOT::EnableThreadSafety();
     // Do not store TObject's in ROOT static class
-    ROOT::GetROOT()->SetObjectStat(false);
+    TROOT::SetObjectStat(false);
     // Do not store TH1 (And derived) in ROOT static class
     TH1::AddDirectory(kFALSE);
     // Do not store TF1 in ROOT static class
@@ -51,12 +52,13 @@ int main(int argc, char**argv){
 
     // The Scope of this project is to analyse the 2015 SEASTAR
     printf("Welcome to the analysis program for 2014/2015 SEASTAR DATA\n"
-           "Would you like to analyse a .ridf file first? \n"
-           " (1) yes or (0) no: ");
+           "Would you like to analyse a .ridf file [1] or\n"
+           "Preform the main analysis [0] or \n"
+           "Get the MINOS drift velocities [2]?\n");
     int analyse_raw = 0;
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
-    // Step 1: analyse the raw data
+    /// Step 1: analyse the raw data
     //const uint analysedfile = 57; // 57 Index of analysed file (first, offset)
     const vector<string> input = getlist("../config/minosridf.txt");
 
@@ -83,7 +85,7 @@ int main(int argc, char**argv){
         emptyout.push_back(boost::replace_all_copy(input.at(run),"ridf", "root"));
 
     switch(analyse_raw){
-        case 1:{ // Analyse SEASTAR-DATA
+        case 1:{ /// Analyse SEASTAR-DATA
             cout << "Which file to analyse?"
                     " [0] empty, [1] trans, [2] file " << endl;
             uint i = 0;
@@ -93,12 +95,12 @@ int main(int argc, char**argv){
                 case 0:{
                     cout << "Analyzing emptyrun [0-" << s.emptyrun.size()-1 << "] "
                          << endl;
-                    for(int i=0; i<s.emptyrun.size(); i++){
-                        //Delete inernal static storage of master class
+                    for(int j=0; j<s.emptyrun.size(); j++){
+                        //Delete internal static storage of master class
                         auto man = TArtStoreManager::Instance();
                         delete man;
-                        generatetree(input.at(s.emptyrun.at(i)),
-                                     emptyout.at(i));
+                        generatetree(input.at(s.emptyrun.at(j)),
+                                     emptyout.at(j));
                     }
                     break;
                 }
@@ -159,6 +161,11 @@ int main(int argc, char**argv){
                 }
                 default: __throw_invalid_argument("Option not available\n");
             }
+            break;
+        }
+        case 2:{
+            cout << "Determining drift velocities for MINOS" << endl;
+            minosdrift hi(output);
             break;
         }
         default:

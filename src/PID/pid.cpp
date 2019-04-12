@@ -798,7 +798,7 @@ void PID::histogramsetup() {
     minosresults.emplace_back("tracknbr", "Track No. vs. Final Track No.",
                                    10,-0.5,9.5,10,-0.5,9.5);
     minosresults.emplace_back("lambda", "Two smaller 2d angles for p,3p",
-                                   90,0,180, 90, 0, 180);
+                                   60,0,120, 90, 0, 180);
 
     minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} #circ");
     minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / #circ");

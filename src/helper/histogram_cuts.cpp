@@ -6,7 +6,7 @@
 #include "TMath.h"
 #include <numeric>
 
-using namespace std;
+using std::vector, std::__throw_invalid_argument;
 
 const bool closeness(const vector<double> &d, double sigma){
     // Standard deviation for vector d
