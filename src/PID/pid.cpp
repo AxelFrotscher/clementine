@@ -27,6 +27,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
     decltype(minos1dresults)   _minos1dresults;
     decltype(reactPPAC)        _reactPPAC;
     decltype(PIDplot)          _PIDplot;
+    decltype(minos3dresults)   _minos3dresults;
     // MINOS with single events
     decltype(minossingleevent) _minossingleevent;
 
@@ -49,6 +50,9 @@ void PID::innerloop(treereader &tree, treereader &minostree,
     for(auto &i: minosresults)   _minosresults.emplace_back(i);
     _minos1dresults.reserve(minos1dresults.size());
     for(auto &i: minos1dresults) _minos1dresults.emplace_back(i);
+
+    _minos3dresults.reserve(minos3dresults.size());
+    for(auto &i: minos3dresults) _minos3dresults.emplace_back(i);
 
     double maxbrho = 10; // Tm, higher than all my values
     if(incval.size() == 8){
@@ -171,16 +175,29 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                     minostree.MinosClustQ, (int)threadno, _minossingleevent);
             TMinosPass minres = analysis.analyze();
 
-            if(minres.thetaz.size() > 1)
+            if(minres.thetaz.size() ==  2)
                 _minosresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1]);
 
             _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
 
-            if(minres.lambda2d.size() > 1)
+            if(minres.lambda2d.size() > 1 && minres.thetaz.size() == 3){
                 _minosresults.at(2).Fill(minres.lambda2d.at(0),
                                          minres.lambda2d.at(1));
+                _minos3dresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1],
+                                           minres.thetaz[2]);
+            }
+
+            if(minres.chargeweight.size() == 2){
+                _minosresults.at(3).Fill(minres.chargeweight[0], minres.chargeweight[1]);
+            }
             _minos1dresults.at(0).Fill(minres.z_vertex);
             _minos1dresults.at(1).Fill(minres.phi_vertex);
+
+            // Get Vertex data
+            if(reaction.find("P2P") != string::npos && minres.vertexdist.size() == 1) // P2P-mode
+                _minos1dresults.at(2).Fill(minres.vertexdist[0]);
+            if(reaction.find("P3P") != string::npos && minres.vertexdist.size() == 3) // P3P-mode
+                for(auto &i: minres.vertexdist) _minos1dresults.at(2).Fill(i);
         }
     }
 
@@ -194,6 +211,9 @@ void PID::innerloop(treereader &tree, treereader &minostree,
 
     for(uint i=0; i<minos1dresults.size(); i++)
         minos1dresults.at(i).Add(&_minos1dresults.at(i));
+
+    for(uint i=0; i<minos3dresults.size(); i++)
+        minos3dresults.at(i).Add(&_minos3dresults.at(i));
 
     for(uint i=0;i<reactPPAC.size();i++){
         for(uint j=0; j<reactPPAC.at(0).size(); j++){
@@ -211,7 +231,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
 
     unitemutex.unlock();
 
-    progress.reset();
+    progressbar::reset();
 }
 
 void PID::analyse(const std::vector <std::string> &input, TFile *output) {
@@ -232,9 +252,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         output->mkdir(i.c_str());
     }
 
-    //Get Minos status
-    setting set;
-    if(set.getminos())
+    if(setting::getminos())
         threads = std::min(25, std::max((int)sqrt(goodevents.size())/450,2));
 
     printf("Making PID with %i threads now...\n", threads);
@@ -271,13 +289,13 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
                                (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&PID::innerloop, this, std::ref(tree.at(i)),
                                std::ref(minostree.at(i)), ref(goodevents),
-                               ranges, set.getminos()));
+                               ranges, setting::getminos()));
     }
 
     for(auto &t : th) t.detach();
 
     progressbar finishcondition;
-    while(finishcondition.ongoing()) finishcondition.draw();
+    while(progressbar::ongoing()) finishcondition.draw();
 
     // Calculate the transmission and the crosssection
     PID::offctrans();
@@ -314,6 +332,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     output->cd(folders.at(8).c_str());
     for(auto &elem: minosresults) elem.Write();
     for(auto &elem: minos1dresults) elem.Write();
+    for(auto &elem: minos3dresults) elem.Write();
 
     output->cd(folders.at(9).c_str());
     for(auto &elem: minossingleevent) elem.Write();
@@ -478,7 +497,6 @@ void PID::crosssection() {
     if(isnan(crosssection)) crosssection = 0;
 
     // make cross section string:
-    setting set;
     stringstream stringout;
 
     stringout.precision(2);
@@ -488,7 +506,7 @@ void PID::crosssection() {
               << reactionpid1.load()/1. << ", T = " << tottransmission << " B\u03F1 = "
               << reactionpid2.load()/reactF5.at(1).GetEntries() << " CSC: "
               << chargestatevictims;
-    if(set.isemptyortrans())
+    if(setting::isemptyortrans())
         stringout << " Ratio: " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
                   <<" \u00b1 "  << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()*
                      pow(1./reactionpid2+ 1./reactionpid1.load(),0.5) << " %";
@@ -634,8 +652,7 @@ void PID::reactionparameters() {
 }
 
 void PID::chargestatecut(){
-    setting set;
-    if(set.isemptyortrans()){
+    if(setting::isemptyortrans()){
         printf("Not doing charge state cut. No physics run.\n");
         return;
     }
@@ -792,13 +809,20 @@ void PID::histogramsetup() {
                           250,-40*k,40*k,brhoslice,bl[0],bl[1]);
     }
 
+    minos3dresults.emplace_back("theta", "#theta 3D correlation",
+                                90,0,90,90,0,90,90,0,90);
+    minos3dresults.at(0).GetXaxis()->SetTitle("#theta_{min} / #circ");
+    minos3dresults.at(0).GetYaxis()->SetTitle("#theta_{med} / #circ");
+    minos3dresults.at(0).GetZaxis()->SetTitle("#theta_{max} / #circ");
 
     minosresults.emplace_back("theta", "#theta correlation",
-                                   90,0,90,90,0,90);
+                              90,0,90,90,0,90);
     minosresults.emplace_back("tracknbr", "Track No. vs. Final Track No.",
-                                   10,-0.5,9.5,10,-0.5,9.5);
+                              10,-0.5,9.5,10,-0.5,9.5);
     minosresults.emplace_back("lambda", "Two smaller 2d angles for p,3p",
-                                   60,0,120, 90, 0, 180);
+                              60,0,120, 90, 0, 180);
+    minosresults.emplace_back("minoscharge", "Charge deposition of protons",
+                              150, 0, 1500, 150, 0, 1500);
 
     minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} #circ");
     minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / #circ");
@@ -806,9 +830,12 @@ void PID::histogramsetup() {
     minosresults.at(1).GetYaxis()->SetTitle("Final Track Number");
     minosresults.at(2).GetXaxis()->SetTitle("smaller angle / #circ");
     minosresults.at(2).GetYaxis()->SetTitle("larger angle / #circ");
+    minosresults.at(3).GetXaxis()->SetTitle("Q_{1}/l_{TPC} AU");
+    minosresults.at(3).GetYaxis()->SetTitle("Q_{2}/l_{TPC} AU");
 
     minos1dresults.emplace_back("zdistr", "Reaction distribution", 100,-70,130);
     minos1dresults.emplace_back("phidistr", "Reaction angle distribution", 90, 0,180);
+    minos1dresults.emplace_back("vertexdistr", "Distance between proton tracks", 100,0, 50);
 
     minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
     minos1dresults.at(0).GetYaxis()->SetTitle("N");

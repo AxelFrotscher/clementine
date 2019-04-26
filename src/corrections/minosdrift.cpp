@@ -56,9 +56,9 @@ void minosdrift::make_drift(const std::vector<std::string> &input) {
         "../config/db/ConfigMINOSDrift_fixed.txt",
         "../config/db/ConfigMINOSDrift_fixed.txt",
         "../config/db/ConfigMINOSDrift_fixed.txt",
-        "../condig/db2014/ConfigMINOSDrift.txt",
-        "../condig/db2014/ConfigMINOSDrift.txt",
-        "../condig/db2014/ConfigMINOSDrift.txt",
+        "../config/db2014/ConfigMINOSDrift.txt",
+        "../config/db2014/ConfigMINOSDrift.txt",
+        "../config/db2014/ConfigMINOSDrift.txt",
     };
 
 
@@ -109,7 +109,7 @@ vector<double> minosdrift::gettimeborders(const std::string &i) {
     // WE derive the stupid histogram
     TH1I derived(*tpctimehist);
     derived.Reset();
-    for(int i=40; i<derived.GetNbinsX()-1; i++){
+    for(int i=55; i<derived.GetNbinsX()-1; i++){
         derived.SetBinContent(i,(-tpctimehist->GetBinContent(i+2)+
                                8*tpctimehist->GetBinContent(i+1)-
                                8*tpctimehist->GetBinContent(i-1)+
@@ -119,11 +119,21 @@ vector<double> minosdrift::gettimeborders(const std::string &i) {
 
     /// Get maximum noise bin
     double maxnoise =0;
-    for(int i=50; i<150; i++) maxnoise = std::max(maxnoise, derived.GetBinContent(i));
-    const double t_min = derived.GetBinCenter(derived.FindFirstBinAbove(1.8*maxnoise)+7);
+    for(int i=60; i<120; i++) maxnoise = std::max(maxnoise, derived.GetBinContent(i));
+    double t_min = derived.GetBinCenter(derived.FindFirstBinAbove(1.8*maxnoise)+7);
 
-    //derived.Rebin(2);
-    const double t_end = derived.GetBinCenter(derived.GetMinimumBin());
+    if(setting::getsetname() == "78Ni"){
+        for(int j=400; j<770; j++) derived.SetBinContent(j,0);
+        for(int j=52; j<59; j++) derived.SetBinContent(j,0);
+        if(t_min < 1250 || t_min > 1450) t_min = 1370;
+    }
+
+    double t_end = derived.GetBinCenter(derived.GetMinimumBin());
+
+    if(setting::getsetname() == "78Ni"){
+        if(t_end < 7700 || t_end > 8500) t_end = 8200;
+    }
+
     TFile derivedfile(Form("output/MINOS/%s.root", setting::getsetname().c_str()),
                       "Update");
     derivedfile.Delete(Form("%s;1",i.substr(13,9).c_str()));

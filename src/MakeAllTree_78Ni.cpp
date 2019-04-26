@@ -22,6 +22,7 @@
 #include "TMath.h"
 #include "TMinuit.h"
 #include <Math/Vector3D.h>
+#include <filesystem>
 #include "zdssetting.h"
 #include "minos.h"
 
@@ -199,6 +200,11 @@ void generatetree(const string infile, const string output) {
     minosconfigfile >> minosthresh >> TimeBinElec >> Tshaping;
     getline(minosconfigfile, trash);
 
+
+    bool alreadyanalysed = std::filesystem::exists(
+         "/home/afrotscher/Clementine/build/output/MINOS/" + runname + ".root");
+    if(alreadyanalysed) cout << endl << "Skipping MINOS drift generation..." << endl;
+
     while(getline(minosconfigfile, trash)){
         stringstream ss(trash);
         ss >> trash >> DelayTrigger >> Stoptime >> VDrift;
@@ -369,6 +375,9 @@ void generatetree(const string infile, const string output) {
         if(!(neve%downscale)) progress.draw();
 
         // Add Graphical Feedback
+
+        /// Add MINOS drift time calibration, skip if file has been generated
+        if(alreadyanalysed) continue;
 
         vector<bool> clusterringbool;
         vector<int> clusternbr, clusterpads;

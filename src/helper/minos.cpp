@@ -47,7 +47,7 @@ TMinosPass minosana::analyze() {
 
     if(trackNbr <1 || trackNbr > 4)
         return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                          z_vertex, {});
+                          z_vertex, {}, {}, {});
 
     /// Bonus for Tracknumber between 1 and 4
     if (!filled) cerr << "Trackno.:" << trackNbr << " but no evts." << endl;
@@ -215,7 +215,7 @@ TMinosPass minosana::analyze() {
 
     if(trackNbr_FINAL == 0){
         return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                          z_vertex, {});
+                          z_vertex, {}, {}, {});
     }
 
     /// 5. Fitting filtered tracks in 3D (weight by charge, TMinuit) //
@@ -315,7 +315,7 @@ TMinosPass minosana::analyze() {
     vector<double> parFit_2r = rotatesp(rot, parFit_2);
     vector<double> parFit_3r = rotatesp(rot, parFit_3);
 
-    //Get x,y,z reaction vertex from fitted parameters
+    /// 6. Get x,y,z reaction vertex from fitted parameters and further variables
     vertex(parFit_1r, parFit_2r, x_vertex, y_vertex, z_vertex);
 
     r_vertex = sqrt(pow(x_vertex, 2) + pow(y_vertex, 2));
@@ -328,6 +328,12 @@ TMinosPass minosana::analyze() {
     theta.at(0) = cthet(parFit_1r);
     theta.at(1) = cthet(parFit_2r);
     theta.at(2) = cthet(parFit_3r);
+
+    // Only calculate angles for real tracks
+    while(trackNbr_FINAL < theta.size()){
+        theta.pop_back();
+    }
+    sort(theta.begin(), theta.end()); // Sort angles
 
     vector<double> lambda2d{ // angles in xy-plane for all tracks
         atan2(parFit_1r.at(3), parFit_1r.at(1))*180/TMath::Pi(),
@@ -355,8 +361,46 @@ TMinosPass minosana::analyze() {
                        180. / TMath::Pi();
 
     if(trackNbr_FINAL != 3) lambda2dc = {}; // Filter out other events
+
+    double radin = 40, radout = 95;
+    auto param = [](vector<double> pf, double radin){
+        /// This function calculates the t for which the track crosses the TPC border
+        assert(pf.size() == 4);
+        return -(pf[1]*pf[0]+pf[3]*pf[2])/(pow(pf[1],2)+pow(pf[3],2)) +
+               sqrt(pow((pf[1]*pf[0]+pf[3]*pf[2])/(pow(pf[1],2)+pow(pf[3],2)),2)-
+          (pow(pf[0],2)+pow(pf[2],2)-pow(radin,2))/(pow(pf[1],2)+pow(pf[3],2)));
+    };
+
+    for(int i=1; i<=trackNbr_FINAL; i++){
+        chargeweight.push_back(0);
+        for(int j=0; j<tmr.n_Cluster.size(); j++){
+            if(i == tmr.n_Cluster.at(j)) chargeweight.back() +=
+                                         tmr.Chargemax.at(j);
+        }
+        /// Get length of track
+        double dt = 0;
+
+        if     (i==1){dt = abs(param(parFit_1r,radin)-param(parFit_1r,radout));
+                      dt *= sqrt(1 + pow(parFit_1r[1],2)+ pow(parFit_1r[3],2));}
+        else if(i==2){dt = abs(param(parFit_2r,radin)-param(parFit_2r,radout));
+                      dt *= sqrt(1 + pow(parFit_2r[1],2)+ pow(parFit_2r[3],2));}
+        else if(i==3){dt = abs(param(parFit_3r,radin)-param(parFit_3r,radout));
+                      dt *= sqrt(1 + pow(parFit_3r[1],2)+ pow(parFit_3r[3],2));}
+
+        if(dt > 0) chargeweight.back() /= dt;
+    }
+    //sort(chargeweight.begin(), chargeweight.end());
+
+    vector<double> verticedist;
+    if(trackNbr_FINAL == 2) verticedist.push_back(distancelineline(parFit_1r, parFit_2r));
+    else if(trackNbr_FINAL == 3){
+        verticedist.push_back(distancelineline(parFit_1r, parFit_2r));
+        verticedist.push_back(distancelineline(parFit_1r, parFit_3r));
+        verticedist.push_back(distancelineline(parFit_2r, parFit_3r));
+    }
+
     return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                      z_vertex, lambda2dc);
+                      z_vertex, lambda2dc, chargeweight, verticedist);
 }
 
 int minosana::Obertelli_filter(vector<double> &x, vector<double> &y,
@@ -840,7 +884,7 @@ void minosana::vertex(vector<double> &p, vector<double> &pp, double &xv,
                       double &yv, double &zv){
     /// Calculates the vertex of two lines (p,pp) [closest distance]
     /// and stores x, y, and z in (xv, yv, zv)
-    assert(p.size() == pp.size() == 4);
+    assert(p.size() == 4 && pp.size() == 4);
 
     double alpha, beta, A, B, C;
     alpha = (pp.at(1)*(p.at(0)-pp.at(0))+pp.at(3)*(p.at(2)-pp.at(2)))/
@@ -870,4 +914,25 @@ void minosana::vertex(vector<double> &p, vector<double> &pp, double &xv,
     xv = (x+xp)/2;
     yv = (y+yp)/2;
     zv = (z+zp)/2;
+}
+
+double minosana::distancelineline(vector<double> &l1, vector<double> &l2){
+    /// Calculates the distance between two lines
+
+    // vector:
+    // (x_0, m_x, y_0, m_y)^T
+
+    assert(l1.size() == 4 && l2.size() == 4);
+
+    // 1st: vector perpendicular to both
+    vector<double> n{
+      l1[3]-l2[3],
+      l2[1]-l1[1],
+      l1[1]*l2[3]-l1[3]*l2[1]};
+    double n_mag = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+
+    // 2nd: construct offset of both vectors
+    vector<double> r{l1[0]-l2[0], l1[2]-l2[2], 0};
+
+    return std::abs((n[0]*r[0]+n[1]*r[1]+n[2]*r[2])/n_mag);
 }

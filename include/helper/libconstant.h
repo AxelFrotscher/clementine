@@ -280,7 +280,7 @@ namespace nancy{
     const std::vector<double> incval73Ni{2.6057, 27.98, .006, .6, .585, 6.876, .585, 6.736};
     const std::vector<double> incval74Ni{2.6411, 28.00, .006, .6, .582, 6.900, .582, 6.760};
 
-    const std::vector<double> targetval74Cu{2.5693, 29.05, .014, .6};
+    const std::vector<double> targetval74Cu{2.5643, 29.05, .014, .6};
     const std::vector<double> targetval75Cu{2.6017, 29.09, .014, .6};
     const std::vector<double> targetval73Ni{2.6193, 27.98, .014, .6};
     const std::vector<double> targetval74Ni{2.6546, 28.02, .014, .6};

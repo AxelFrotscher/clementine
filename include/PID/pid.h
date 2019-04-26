@@ -40,6 +40,7 @@ private:
     std::vector<TH2I> chargestate;
     std::vector<decltype(chargestate)> PIDplot;  // "Uncorrected/corrected"
     std::vector<TH2I> minosresults;
+    std::vector<TH3S> minos3dresults;
     std::vector<TH3C> minossingleevent; // Contains histograms for single events
     std::vector<TH1I> minos1dresults;
 

@@ -108,13 +108,17 @@ struct TMinosPass{
     double trackNbr_final;
     double z_vertex;
     vector<double> lambda2d;
+    vector<double> chargeweight;
+    vector<double> vertexdist;
 
     TMinosPass(double r_vertex_, vector<double> thetaz_,
                double phi_vertex_, double trackNbr_, double trackNbr_Final,
-               double z_vertex_, vector<double> lambda2d_):
+               double z_vertex_, vector<double> lambda2d_,
+               vector<double> chargeweight_, vector<double> vertexdist_):
                r_vertex(r_vertex_), thetaz(thetaz_), phi_vertex(phi_vertex_),
                trackNbr(trackNbr_), trackNbr_final(trackNbr_Final),
-               z_vertex(z_vertex_), lambda2d(lambda2d_){}
+               z_vertex(z_vertex_), lambda2d(lambda2d_), chargeweight(chargeweight_),
+               vertexdist(vertexdist_){}
 };
 
 class minosana{
@@ -148,6 +152,7 @@ private:
                              TGraph &grxz, TGraph &gryz);
     static void vertex(vector<double> &p, vector<double> &pp, double &xv,
                           double &yv, double &zv);
+    static double distancelineline(vector<double> &l1, vector<double> &l2);
     void debug();
     static vector<double> rotatesp(double &rot, vector<double> &initialvector);
 
@@ -166,6 +171,7 @@ private:
     vector<vector<double>> minostime;
     vector<TH3C> &minossingleevent;
     vector<double> theta{0,0,0};
+    vector<double> chargeweight;
     TMinosClust fitdata;
     TMinosResult dataresult;
     inline static std::mutex minos5;

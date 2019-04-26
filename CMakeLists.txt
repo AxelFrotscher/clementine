@@ -43,6 +43,7 @@ target_link_libraries(${PROJECT_NAME} ${ROOT_LIBRARIES} -lThread -lMinuit -lMinu
    -L/home/afrotscher/soft/minos/liboffline -lminos
    -L/home/afrotscher/soft/minos/minosv1.1.1/install/pentium-linux-release/lib
                                           -lmordicus-utl -lUtilities -lminos-fem
+        -lstdc++fs
    ${ROOT_LIBRARIES})
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
