@@ -110,15 +110,17 @@ struct TMinosPass{
     vector<double> lambda2d;
     vector<double> chargeweight;
     vector<double> vertexdist;
+    vector<double> lambda2dE;
 
     TMinosPass(double r_vertex_, vector<double> thetaz_,
                double phi_vertex_, double trackNbr_, double trackNbr_Final,
                double z_vertex_, vector<double> lambda2d_,
-               vector<double> chargeweight_, vector<double> vertexdist_):
+               vector<double> chargeweight_, vector<double> vertexdist_,
+               vector<double> lambda2dE_):
                r_vertex(r_vertex_), thetaz(thetaz_), phi_vertex(phi_vertex_),
                trackNbr(trackNbr_), trackNbr_final(trackNbr_Final),
                z_vertex(z_vertex_), lambda2d(lambda2d_), chargeweight(chargeweight_),
-               vertexdist(vertexdist_){}
+               vertexdist(vertexdist_), lambda2dE(lambda2dE_){}
 };
 
 class minosana{

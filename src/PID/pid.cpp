@@ -198,6 +198,9 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                 _minos1dresults.at(2).Fill(minres.vertexdist[0]);
             if(reaction.find("P3P") != string::npos && minres.vertexdist.size() == 3) // P3P-mode
                 for(auto &i: minres.vertexdist) _minos1dresults.at(2).Fill(i);
+
+            // Get Lambda Errors
+            for(auto &i: minres.lambda2dE) _minos1dresults.at(3).Fill(i);
         }
     }
 
@@ -758,7 +761,7 @@ void PID::chargestatecut(){
 void PID::histogramsetup() {
     // Nasty histogram setup routine
     setting set;
-    const vector<uint> y = set.getZrange(); // y boundaries
+    const vector<uint> y = setting::getZrange(); // y boundaries
     const vector<double> x{500, 2.45, 2.85};  // xbins, lower x, upper x
 
     vector<vector<string>> t1s = {{"pidinc", "PID Incoming F3-F7"},
@@ -835,12 +838,17 @@ void PID::histogramsetup() {
 
     minos1dresults.emplace_back("zdistr", "Reaction distribution", 100,-70,130);
     minos1dresults.emplace_back("phidistr", "Reaction angle distribution", 90, 0,180);
-    minos1dresults.emplace_back("vertexdistr", "Distance between proton tracks", 100,0, 50);
+    minos1dresults.emplace_back("vertexdistr", "Distance between proton tracks", 300,0, 50);
+    minos1dresults.emplace_back("lambdaE", "Angular Error of tracks", 300,0, 15);
 
     minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
     minos1dresults.at(0).GetYaxis()->SetTitle("N");
     minos1dresults.at(1).GetXaxis()->SetTitle("#phi / #circ");
     minos1dresults.at(1).GetYaxis()->SetTitle("N");
+    minos1dresults.at(2).GetXaxis()->SetTitle("#Delta x_{vertex} / mm");
+    minos1dresults.at(2).GetYaxis()->SetTitle("N");
+    minos1dresults.at(3).GetXaxis()->SetTitle("#Delta #lambda_{track} / #circ");
+    minos1dresults.at(3).GetYaxis()->SetTitle("N");
 
     for(auto &i: minosresults) i.SetOption("colz");
 

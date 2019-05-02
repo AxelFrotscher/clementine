@@ -100,8 +100,8 @@ void generatetree(const string infile, const string output) {
          -161.64 - 0.08}}; // good Offset Value for F8-F11, empty-target run -160.45
 
     class setting set;
-    if(set.getsetname() == "70Fe") tofoff.at(0) = vector<double>{300.91,-158.73};
-    if(set.getsetname() == "78Ni") tofoff.at(0) = vector<double>{300.23,-159.19};
+    if(setting::getsetname() == "70Fe") tofoff.at(0) = vector<double>{300.91,-158.73};
+    if(setting::getsetname() == "78Ni") tofoff.at(0) = vector<double>{300.23,-159.19};
 
 
     vector<TArtTOF *> tof{
@@ -463,7 +463,7 @@ void generatetree(const string infile, const string output) {
         }
 
     }
-    progress.reset();
+    progressbar::reset();
     cout << "Writing the tree..."<<endl;
 
     fout.Write();

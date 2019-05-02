@@ -47,7 +47,7 @@ TMinosPass minosana::analyze() {
 
     if(trackNbr <1 || trackNbr > 4)
         return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                          z_vertex, {}, {}, {});
+                          z_vertex, {}, {}, {}, {});
 
     /// Bonus for Tracknumber between 1 and 4
     if (!filled) cerr << "Trackno.:" << trackNbr << " but no evts." << endl;
@@ -215,13 +215,13 @@ TMinosPass minosana::analyze() {
 
     if(trackNbr_FINAL == 0){
         return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                          z_vertex, {}, {}, {});
+                          z_vertex, {}, {}, {}, {});
     }
 
     /// 5. Fitting filtered tracks in 3D (weight by charge, TMinuit) //
     vector<double> pStart_1{0,1,0,1}, pStart_2{0,1,0,1},pStart_3{0,1,0,1},
                    parFit_1(4), err_1(4), parFit_2(4), parFit_3(4), err_2(4),
-                   err_3(4), chi1(2), chi2(2), chi3(2), arglist(10);
+                   err_3(4), chi1(2), chi2(2), chi3(2), arglist(10),covxy(3);
     vector<int> fitStatus(2);
 
     int iflag, nvpar, nparx;
@@ -279,12 +279,18 @@ TMinosPass minosana::analyze() {
 
     for (int i = 0; i < parFit_1.size(); i++)
         min.GetParameter(i, parFit_1.at(i), err_1.at(i));
+    double temp[4][4];
+    min.mnemat(&temp[0][0], 4);
+    covxy.at(0) = temp[1][3]; // entry i=0, j=2
 
     if (trackNbr_FINAL == 1) parFit_2 = {0, 0, 0, 0};
     else {
         FindStart(pStart_2, chi2, fitStatus, grxz.at(1), gryz.at(1));
         min.SetFCN(funcmin(2));
         minimize(pStart_2);
+        min.mnemat(&temp[0][0], 4);
+        covxy.at(1) = temp[1][3]; // entry i=0, j=2
+
 
         for (int i = 0; i < parFit_2.size(); i++)
             min.GetParameter(i, parFit_2.at(i), err_2.at(i));
@@ -293,6 +299,8 @@ TMinosPass minosana::analyze() {
         FindStart(pStart_3, chi3, fitStatus, grxz.at(2), gryz.at(2));
         min.SetFCN(funcmin(3));
         minimize(pStart_3);
+        min.mnemat(&temp[0][0], 4);
+        covxy.at(2) = temp[1][3]; // entry i=0, j=2
 
         for (int i = 0; i < parFit_3.size(); i++)
             min.GetParameter(i, parFit_3.at(i), err_3.at(i));
@@ -301,10 +309,6 @@ TMinosPass minosana::analyze() {
 
     //minos5.unlock();
     //tmr = {}; // reset out-of-class data structure
-
-    //double sumerr_1 = accumulate(begin(err_1), end(err_1), 0.);
-    //double sumerr_2 = accumulate(begin(err_2), end(err_2), 0.);
-    //double sumerr_3 = accumulate(begin(err_3), end(err_3), 0.);
 
     //chi2res1 = (chi1.at(0) + chi1.at(1)) / grxz.at(0).GetN();
     //if(grxz.size() > 1) chi2res2 = (chi2.at(0) + chi2.at(1)) / grxz.at(1).GetN();
@@ -399,8 +403,24 @@ TMinosPass minosana::analyze() {
         verticedist.push_back(distancelineline(parFit_2r, parFit_3r));
     }
 
+    // Estimate the angular uncertainty in lambda
+    auto lambdaerror = [](vector<double> pf, vector<double> err, double covxy){
+        // Calculates the Gaussian error of the lambda angle for each track
+        assert(pf.size() == 4);
+        return 180./TMath::Pi()/(pow(pf[1],2)+ pow(pf[3],2))*sqrt(
+                pow(pf[1]*err[3],2) + pow(-pf[3]*err[1],2) - 2*pf[1]*pf[3]*covxy);
+    };
+
+    vector<double> lambdaE{
+        lambdaerror(parFit_1r, err_1, covxy.at(0)),
+        lambdaerror(parFit_2r, err_2, covxy.at(1)),
+        lambdaerror(parFit_3r, err_3, covxy.at(2))
+    };
+    // Delete all errors not related to a real track
+    while(trackNbr_FINAL < lambdaE.size()) lambdaE.pop_back();
+
     return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                      z_vertex, lambda2dc, chargeweight, verticedist);
+                      z_vertex, lambda2dc, chargeweight, verticedist, lambdaE);
 }
 
 int minosana::Obertelli_filter(vector<double> &x, vector<double> &y,
