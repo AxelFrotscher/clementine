@@ -24,15 +24,29 @@ void iccut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
 
     progressbar progress(range.at(1)-range.at(0),threadno);
     setting set;
-    const bool trans = set.isemptyortrans();
+    const bool trans = setting::isemptyortrans();
+    vector<double> limits = setting::geticlimits();
+    assert(limits.size() == 4);
 
     for(int i=range.at(0); i < range.at(1); i++){
         if(goodevents.at(i).at(0)){
             // Determine cut only on good events
             tree.getevent(i);
 
-            if(tree.BigRIPSIC_nhitchannel[0] <4 ) for(auto &j:goodevents.at(i)) j.exchange(false);
-            if((tree.BigRIPSIC_nhitchannel[1] <4) ) goodevents.at(i).at(1).exchange(false);
+            vector<bool> inrange = {false, false};
+            for(int i=0; i<numchannel; i++){
+                if(tree.BigRIPSIC_fADC[0][i] > limits.at(0) &&
+                   tree.BigRIPSIC_fADC[0][i] < limits.at(1)){
+                    inrange.at(0) = true;
+                }
+                if(tree.BigRIPSIC_fADC[1][i] > limits.at(2) &&
+                   tree.BigRIPSIC_fADC[1][i] < limits.at(3)){
+                    inrange.at(1) = true;
+                }
+            }
+
+            if(!inrange.at(0)) for(auto &j:goodevents.at(i)) j.exchange(false);
+            if(!inrange.at(1)) goodevents.at(i).at(1).exchange(false);
 
             if((tree.BigRIPSIC_fADC[0][0] <0) ||
                (tree.BigRIPSIC_fADC[1][0] <0)) continue;
@@ -59,7 +73,7 @@ void iccut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
     }
     unitemutex.unlock();
 
-    progress.reset();
+    progressbar::reset();
 }
 
 void iccut::analyse(const std::vector<std::string> input, TFile *output) {
@@ -108,7 +122,7 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
 
     for (auto &i: th) i.detach();
 
-    while(finishcondition.ongoing()) finishcondition.draw();
+    while(progressbar::ongoing()) finishcondition.draw();
 
     vector<int> cutafter = {0,0};
     for(auto &i:goodevents){

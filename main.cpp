@@ -51,10 +51,10 @@ int main(int argc, char**argv){
     TMinuitMinimizer::UseStaticMinuit(kFALSE);
 
     // The Scope of this project is to analyse the 2015 SEASTAR
-    printf("Welcome to the analysis program for 2014/2015 SEASTAR DATA\n"
-           "Would you like to analyse a .ridf file [1] or\n"
-           "Preform the main analysis [0] or \n"
-           "Get the MINOS drift velocities [2]?\n");
+    printf("Welcome to the analysis program for 2014/2015 SEASTAR DATA!\n"
+           "[0] Preform the main analysis or \n"
+           "[1] Would you like to analyse a .ridf file or\n"
+           "[2] Get the MINOS drift velocities ?\n");
     int analyse_raw = 0;
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
@@ -147,7 +147,7 @@ int main(int argc, char**argv){
                     bool minoschoice = false;
                     cout << "MINOS Analysis? [0] no, [1] yes " << endl;
                     if(!(cin >> minoschoice)) throw invalid_argument("WTH!");
-                    s.setminos(minoschoice);
+                    setting::setminos(minoschoice);
                     makehistograms(output);
                     break;
                 }

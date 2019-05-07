@@ -28,6 +28,7 @@ public:
     static const std::vector<std::vector<double>> getHOcutval();
     static const calibpar getHOparameters();
     static TCutG* getbrhocut();
+    static std::vector<TCutG*> getplasticcut();
     static const std::vector<std::vector<int>> getPlasticRange();
     static const std::vector<uint> getZrange();
     static const std::vector<std::string> getreactions();
@@ -43,6 +44,7 @@ public:
     static const int getsetnumber(){return settingnumber;};
     static void setminos(bool minosbool){minos = minosbool;};
     static const bool getminos(){return minos;};
+    static const std::vector<double> geticlimits();
 
 private:
     static inline int settingnumber = 2'000'000'000;

@@ -29,49 +29,67 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
     for(int i=range.at(0);i < range.at(1);i++){
         if(goodevents.at(i).at(0)){
             tree.getevent(i);
-            if(sqrt(tree.BigRIPSPlastic_fQLRaw[F7pos]*
-                    tree.BigRIPSPlastic_fQRRaw[F7pos])> threshhold) // F7-cut
+
+            //F7 banana-cut, "uncut histogram's
+            if(mycut.at(threadno).at(1)->IsInside(
+                    tree.BigRIPSPlastic_fTLRaw[1]-tree.BigRIPSPlastic_fTRRaw[1],
+                    TMath::Log(tree.BigRIPSPlastic_fQLRaw[1]/
+                                       (double)tree.BigRIPSPlastic_fQRRaw[1]))){
                 for(uint j=0; j<numplastic; j++){              // plastic loop
                     if((tree.BigRIPSPlastic_fQLRaw[j] >0 )&&
                        (tree.BigRIPSPlastic_fQRRaw[j] >0)){   // 0 charge veto
-                        qcorr2D.at(j).Fill(tree.BigRIPSPlastic_fQLRaw[j],
+                        _qcorr2D.at(2*j).Fill(tree.BigRIPSPlastic_fQLRaw[j],
                                            tree.BigRIPSPlastic_fQRRaw[j]);
-                        qcorr.at(j).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
+                        _qcorr.at(2*j).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
                                               tree.BigRIPSPlastic_fQRRaw[j]));
                         if((tree.BigRIPSPlastic_fTLRaw[j] >0) &&
                            (tree.BigRIPSPlastic_fTRRaw[j] >0) ){ // 0 time veto
-                            tqcorr2D.at(j).Fill(tree.BigRIPSPlastic_fTLRaw[j]-
-                                                tree.BigRIPSPlastic_fTRRaw[j],
-                                      TMath::Log(tree.BigRIPSPlastic_fQLRaw[j]/
-                                       (double)tree.BigRIPSPlastic_fQRRaw[j]));
+                            _tqcorr2D.at(2*j).Fill(tree.BigRIPSPlastic_fTLRaw[j]-
+                                                  tree.BigRIPSPlastic_fTRRaw[j],
+                                       TMath::Log(tree.BigRIPSPlastic_fQLRaw[j]/
+                                        (double)tree.BigRIPSPlastic_fQRRaw[j]));
                         }
                     }
                 }
-            bool temp = true;
-            // Applying cut to data
-            for(int j=0;j<numplastic;j++){
-                temp = temp * (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
-                       tree.BigRIPSPlastic_fQRRaw[j]) > acceptance_range[j][0])*
-                       (sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
-                       tree.BigRIPSPlastic_fQRRaw[j]) < acceptance_range[j][1]);
-                if(!temp && j==2){
-                    for(auto &k:goodevents.at(i)) k.exchange(false);
-                    break;
+            }
+
+            //Cut out events properly:
+            if(!(mycut.at(threadno).at(0)->IsInside(
+                    tree.BigRIPSPlastic_fTLRaw[0]-tree.BigRIPSPlastic_fTRRaw[0],
+                    TMath::Log(tree.BigRIPSPlastic_fQLRaw[0]/
+                               (double)tree.BigRIPSPlastic_fQRRaw[0])) &&
+                 mycut.at(threadno).at(1)->IsInside(
+                    tree.BigRIPSPlastic_fTLRaw[1]-tree.BigRIPSPlastic_fTRRaw[1],
+                    TMath::Log(tree.BigRIPSPlastic_fQLRaw[1]/
+                               (double)tree.BigRIPSPlastic_fQRRaw[1])))){
+
+                // If not in F3 and F7, cut out event completely
+                for(auto &k:goodevents.at(i)) k.exchange(false);
+            }
+            else{ // Test F7 and F11, no because we want cross sections
+                for(uint j=0; j<numplastic; j++){              // plastic loop
+                    _qcorr2D.at(2*j+1).Fill(tree.BigRIPSPlastic_fQLRaw[j],
+                                            tree.BigRIPSPlastic_fQRRaw[j]);
+                    _qcorr.at(2*j+1).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
+                                               tree.BigRIPSPlastic_fQRRaw[j]));
+                    _tqcorr2D.at(2*j+1).Fill(tree.BigRIPSPlastic_fTLRaw[j]-
+                                             tree.BigRIPSPlastic_fTRRaw[j],
+                                             TMath::Log(tree.BigRIPSPlastic_fQLRaw[j]/
+                                             (double)tree.BigRIPSPlastic_fQRRaw[j]));
                 }
             }
-            if(!temp) goodevents.at(i).at(1).exchange(false);
         }
         progress.increaseevent();
     }
 
     // Step 3 reuniting the diagrams
     unitemutex.lock();
-    for(uint i=0;i<_qcorr.size();i++) qcorr.at(i).Add(&_qcorr.at(i));
-    for(uint i=0;i<_qcorr2D.size();i++) qcorr2D.at(i).Add(&_qcorr2D.at(i));
-    for(uint i=0;i<_tqcorr2D.size();i++) tqcorr2D.at(i).Add(&_tqcorr2D.at(i));
+    for(uint i=0; i<_qcorr.size(); i++) qcorr.at(i).Add(&_qcorr.at(i));
+    for(uint i=0; i<_qcorr2D.size(); i++) qcorr2D.at(i).Add(&_qcorr2D.at(i));
+    for(uint i=0; i<_tqcorr2D.size(); i++) tqcorr2D.at(i).Add(&_tqcorr2D.at(i));
     unitemutex.unlock();
 
-    progress.reset();
+    progressbar::reset();
 }
 
 void plasticcut::analyse(const vector<string> &input, TFile *output) {
@@ -107,11 +125,17 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
         });
 
         qcorr2D.emplace_back(arrayname.at(i).at(1).c_str(),
-                        arraytitle.at(i).at(1).c_str(), 500,0,1500, 500,0,1500);
-        qcorr.emplace_back(  arrayname.at(i).at(0).c_str(),
-                        arraytitle.at(i).at(0).c_str(), 750,0,1500);
+                        arraytitle.at(i).at(1).c_str(), 700,0,4500, 700,0,4500);
+        qcorr2D.emplace_back((arrayname.at(i).at(1) + "cut").c_str(),
+                             arraytitle.at(i).at(1).c_str(), 700,0,4500, 700,0,4500);
+        qcorr.emplace_back(arrayname.at(i).at(0).c_str(),
+                           arraytitle.at(i).at(0).c_str(), 2500,0,5000);
+        qcorr.emplace_back( (arrayname.at(i).at(0)+ "cut").c_str(),
+                             arraytitle.at(i).at(0).c_str(), 2500,0,5000);
         tqcorr2D.emplace_back(arrayname.at(i).at(2).c_str(),
-                        arraytitle.at(i).at(2).c_str(), 300,-150,150, 400,-2,2);
+                        arraytitle.at(i).at(2).c_str(), 450,-250,200, 500,-2.5,2.5);
+        tqcorr2D.emplace_back((arrayname.at(i).at(2)+"cut").c_str(),
+                              arraytitle.at(i).at(2).c_str(), 450,-250,200, 500,-2.5,2.5);
     }
 
     for(auto &i : qcorr){
@@ -138,6 +162,11 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
         cutpre.at(1) += i.at(1);
     }
 
+    //Get plasticcuts
+    for(int i=0; i<threads; i++){
+        mycut.push_back(setting::getplasticcut());
+    }
+
     progressbar finishcondition;
     vector<thread> th;
     for(uint i=0; i<threads; i++){
@@ -149,7 +178,7 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
 
     for (auto &i: th) i.detach();
 
-    while(finishcondition.ongoing()) finishcondition.draw();
+    while(progressbar::ongoing()) finishcondition.draw();
 
     vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr"};
     for (auto &str:folders) output->mkdir(str.c_str());
@@ -171,4 +200,6 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
     printf("\nPlastic Cut out %i F1-7 Events (%.3f %%) %i F1-11 Events (%.3f %%) \n",
            cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
            cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
+
+    for(auto &I: mycut) for(auto &j:I) delete j;
 }

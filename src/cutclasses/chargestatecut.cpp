@@ -45,7 +45,7 @@ void ccsc::innerloop(treereader &tree, vector<vector<atomic<bool>>> &goodevents,
     for(uint i=0; i<_cschist.size();i++)
         cschist.at(i).Add(&_cschist.at(i));
     unitemutex.unlock();
-    progress.reset();
+    progressbar::reset();
 }
 
 void ccsc::analyse(const std::vector<std::string> input, TFile* output){
@@ -75,7 +75,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     //if(set.isemptyortrans()){ // Cut after F7 not sensible for empty/trans runs
     //    cout << "Empty or trans run. Not doing CCSC cut." << endl; return;
     //}
-    for(auto &i: tree) mycut.push_back(set.getbrhocut());
+    for(auto &i: tree) mycut.push_back(setting::getbrhocut());
 
     int cutpre = 0;
     for(auto &i:goodevents) cutpre += i.at(1);
@@ -92,7 +92,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
     for (auto &t: th) t.detach();
 
     // Setup synchronization class
-    while(finishcondition.ongoing()) finishcondition.draw();
+    while(progressbar::ongoing()) finishcondition.draw();
 
     int cutafter = 0;
     for(auto &i:goodevents) cutafter += i.at(1);

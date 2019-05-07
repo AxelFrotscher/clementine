@@ -125,7 +125,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
         // cut on energy(Brho) to avoid offcenter Transmission
         if(tree.BigRIPSRIPS_brho[1] < maxbrho) reactionpid1++;
 
-        // Fill F7 value with PID
+        // Fill F5 value with PID
         _reactF5.at(0).Fill(tree.F5X);
 
         // Second ellipsoid for cross section F7-F11 part
@@ -188,10 +188,14 @@ void PID::innerloop(treereader &tree, treereader &minostree,
             }
 
             if(minres.chargeweight.size() == 2){
-                _minosresults.at(3).Fill(minres.chargeweight[0], minres.chargeweight[1]);
+                _minosresults.at(3).Fill(minres.chargeweight[0],
+                                         minres.chargeweight[1]);
             }
-            _minos1dresults.at(0).Fill(minres.z_vertex);
-            _minos1dresults.at(1).Fill(minres.phi_vertex);
+
+            if(minres.thetaz.size() > 1 ){ // at least two tracks need to survive
+                _minos1dresults.at(0).Fill(minres.z_vertex);
+                _minos1dresults.at(1).Fill(minres.phi_vertex);
+            }
 
             // Get Vertex data
             if(reaction.find("P2P") != string::npos && minres.vertexdist.size() == 1) // P2P-mode
@@ -529,10 +533,10 @@ void PID::crosssection() {
 void PID::reactionparameters() {
     // Setup cut values
     setting set;
-    if(set.isemptyortrans()){
+    if(setting::isemptyortrans()){
         incval = set.getPIDincutvalue();
         targetval = set.getPIDoutcutvalue();
-        reaction = set.getmodename();
+        reaction = setting::getmodename();
 
         return;
     }

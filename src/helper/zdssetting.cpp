@@ -163,6 +163,31 @@ TCutG* setting::getbrhocut() {
     return nullptr;
 }
 
+vector<TCutG*> setting::getplasticcut(){
+    // Getting the cuts for F3-7-8-11 ln(Q1/Q2)[t1-t2]
+    auto nam = [](auto str){
+        return setname.at(settingnumber) + str + "plastic";};
+
+    vector<TCutG*> temp;
+
+    //Get Cut
+    TFile cutfile("../config/plasticcut.root");
+    if(!(cutfile.IsOpen())) std::__throw_invalid_argument(
+                "Could not open cut file at config/cut.root\n");
+    if (isemptyortrans()) return temp;
+    else{
+        for(auto &i: {3,7,8,11}){
+            if(cutfile.Get(nam(i)) != nullptr ){
+                temp.push_back((TCutG*)cutfile.Get(nam(i)));
+            }
+            else cout << "Warning: Plastic Cut " << i << " Setting "
+                      << setname.at(settingnumber) << " not found." << endl;
+        }
+    }
+
+    return temp;
+}
+
 const vector<vector<int>> setting::getPlasticRange() {
     // Getting the right Parameter
     if(settingnumber < runinfo::plasticrange.size()) {
@@ -231,4 +256,9 @@ const std::string setting::getmodename() {
     if(istransmissionrun) return "transmission";
     if(isemptyrun) return "empty";
     return "data";
+}
+
+const std::vector<double> setting::geticlimits(){
+    if(setting::isemptyortrans()) return {0,16384,0,16384};
+    else return nancy::iclimit.at(settingnumber);
 }

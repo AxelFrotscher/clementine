@@ -14,8 +14,7 @@ public:
     void analyse(const std::vector<std::string> &input, TFile* output);
     plasticcut(const std::vector<std::string> &input, std::vector<std::vector<std::atomic<bool>>>
                &goodevents_, TFile* output):goodevents(goodevents_){
-        setting set;
-        acceptance_range = set.getPlasticRange();
+        acceptance_range = setting::getPlasticRange();
         analyse(input, output);
     };
 
@@ -24,6 +23,8 @@ private:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
     int threads = std::min(25, std::max((int)sqrt(goodevents.size())/750,2));
     std::mutex unitemutex;
+
+    std::vector<std::vector<TCutG*>> mycut;
 
     // generate output diagrams
     std::vector<TH2I> qcorr2D;  // Charge Correlation between 1 & 2
