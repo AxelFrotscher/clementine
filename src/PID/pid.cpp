@@ -18,8 +18,7 @@ using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
       std::stringstream, std::to_string, std::__throw_invalid_argument,
       std::min;
 
-void PID::innerloop(treereader &tree, treereader &minostree,
-                    vector<vector<atomic<bool>>> &goodevents,vector<uint> range,
+void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                     const bool minosanalyse) {
     // Step 1: duplicate the data structure
     decltype(reactF5)          _reactF5;
@@ -295,8 +294,8 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&PID::innerloop, this, std::ref(tree.at(i)),
-                               std::ref(minostree.at(i)), ref(goodevents),
-                               ranges, setting::getminos()));
+                               std::ref(minostree.at(i)), ranges,
+                               setting::getminos()));
     }
 
     for(auto &t : th) t.detach();
@@ -310,7 +309,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     PID::crosssection();
     PID::brhoprojections();
 
-    for(uint i=0; i<2; i++) {
+    for(int i=0; i<2; i++) {
         output->cd(folders.at(i).c_str());
         for (auto &elem: PIDplot.at(i)) elem.Write();
         output->cd("");
@@ -354,8 +353,8 @@ void PID::offctrans() {
     for (auto &i:reactF5) i.Sumw2();
     reactF5.back().Divide(&reactF5.at(0));
     reactF5.back().SetName("F5ratio");
-    setting set;
-    if(set.isemptyortrans()){
+
+    if(setting::isemptyortrans()){
         printf("Not doing off-center transmission. No physics run.\n");
         return;
     }
@@ -490,7 +489,7 @@ void PID::crosssection() {
     const double tottransmissionerror = 0.05; // conservative relative error
 
     // Reduce CS contribution by Brho cut
-    if(reactF5.at(1).GetEntries())
+    if(reactF5.at(1).GetEntries() > 0)
         chargestatevictims *= reactionpid2.load()/reactF5.at(1).GetEntries();
 
     double crosssection = std::max(0.,

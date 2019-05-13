@@ -34,14 +34,14 @@ void triggercut::innerloop(treereader &tree,
         progress.increaseevent();
     }
 
-    progress.reset();
+    progressbar::reset();
 }
 
 void triggercut::analyse(const vector<string> input){
 
     txtwriter txt;
     
-    if(setting set; !set.isemptyortrans() && set.getminos()){
+    if(!setting::isemptyortrans() && setting::getminos()){
         cout << "Physics Run. Omitting trigger cut to gain statistics" << endl;
         txt.addline("No trigger cut on DALI Trigger applied.");
         return;
@@ -69,7 +69,7 @@ void triggercut::analyse(const vector<string> input){
     for(auto &t : th) t.detach();
 
     // Setup synchronization class
-    while(finishcondition.ongoing()) finishcondition.draw();
+    while(progressbar::ongoing()) finishcondition.draw();
 
     int cutout = 0;
     for(auto &i:goodevents) cutout += i.at(1);

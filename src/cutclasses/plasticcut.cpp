@@ -68,6 +68,8 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
             }
             else{ // Test F7 and F11, no because we want cross sections
                 for(uint j=0; j<numplastic; j++){              // plastic loop
+                    if(!(tree.BigRIPSPlastic_fTLRaw[j] >0 && // 0 time veto
+                         tree.BigRIPSPlastic_fTRRaw[j] >0) ) continue;
                     _qcorr2D.at(2*j+1).Fill(tree.BigRIPSPlastic_fQLRaw[j],
                                             tree.BigRIPSPlastic_fQRRaw[j]);
                     _qcorr.at(2*j+1).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[j]*

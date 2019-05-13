@@ -89,7 +89,7 @@ void targetcut::innerloop(treereader &tree, vector<uint> range) {
         tarhist.at(i).Add(&_tarhist.at(i));
     }
     unitemutex.unlock();
-    progress.reset();
+    progressbar::reset();
 }
 
 void targetcut::analyse(const vector<string> &input, TFile *output) {
@@ -127,7 +127,7 @@ void targetcut::analyse(const vector<string> &input, TFile *output) {
 
     for (auto &i: th) i.detach();
 
-    while(finishcondition.ongoing()) finishcondition.draw();
+    while(progressbar::ongoing()) finishcondition.draw();
 
     int cutafter = 0;
     for(auto &i:goodevents) cutafter += i.at(0);
