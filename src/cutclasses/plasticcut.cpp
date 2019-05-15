@@ -16,15 +16,20 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
     decltype(qcorr)    _qcorr;
     decltype(qcorr2D)  _qcorr2D;
     decltype(tqcorr2D) _tqcorr2D;
+    decltype(qxF11)    _qxF11;
 
     for(auto &i : qcorr)    _qcorr.emplace_back(i);
     for(auto &i : qcorr2D)  _qcorr2D.emplace_back(i);
     for(auto &i : tqcorr2D) _tqcorr2D.emplace_back(i);
+    for(auto &i : qxF11)    _qxF11.emplace_back(i);
 
     // Step 2: Preparing Variables
     uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     progressbar progress(range.at(1)-range.at(0), threadno);
+
+    bool extraF11analyse = false;
+    if(mycut.at(threadno).size() == 7) extraF11analyse = true;
 
     for(int i=range.at(0);i < range.at(1);i++){
         if(goodevents.at(i).at(0)){
@@ -78,6 +83,14 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
                                              tree.BigRIPSPlastic_fTRRaw[j],
                                              TMath::Log(tree.BigRIPSPlastic_fQLRaw[j]/
                                              (double)tree.BigRIPSPlastic_fQRRaw[j]));
+
+                }
+                // Extra special Obertelli plastic F11 (index=3) analysis
+                if(!extraF11analyse) continue;
+                for(int j=4; j<7; j++){
+                    if(mycut.at(threadno).at(j)->IsInside(tree.BigRIPSPlastic_fQLRaw[3],
+                                                      tree.BigRIPSPlastic_fQRRaw[3]))
+                    _qxF11.at(j-4).Fill(tree.F11X);
                 }
             }
         }
@@ -87,6 +100,7 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
     // Step 3 reuniting the diagrams
     unitemutex.lock();
     for(uint i=0; i<_qcorr.size(); i++) qcorr.at(i).Add(&_qcorr.at(i));
+    for(uint i=0; i<_qxF11.size(); i++) qxF11.at(i).Add(&_qxF11.at(i));
     for(uint i=0; i<_qcorr2D.size(); i++) qcorr2D.at(i).Add(&_qcorr2D.at(i));
     for(uint i=0; i<_tqcorr2D.size(); i++) tqcorr2D.at(i).Add(&_tqcorr2D.at(i));
     unitemutex.unlock();
@@ -105,7 +119,7 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
     // Setting appropriate keys
     vector<string> keys{"BigRIPSPlastic.fQLRaw", "BigRIPSPlastic.fQRRaw",
                         "BigRIPSPlastic.fTLRaw", "BigRIPSPlastic.fTRRaw",
-                        "BigRIPSPlastic.fpl"};
+                        "BigRIPSPlastic.fpl", "F11X"};
     for(auto &i: tree) i.setloopkeys(keys);
 
     // Generating the histograms:
@@ -139,6 +153,10 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
         tqcorr2D.emplace_back((arrayname.at(i).at(2)+"cut").c_str(),
                               arraytitle.at(i).at(2).c_str(), 450,-250,200, 500,-2.5,2.5);
     }
+    qxF11.emplace_back("F11ped", "F11 pedestal plastic position", 80,-40,40);
+    qxF11.emplace_back("F11reg", "F11 regular plastic position", 80,-40,40);
+    qxF11.emplace_back("F11wei", "F11 weird plastic position", 80,-40,40);
+
 
     for(auto &i : qcorr){
         i.GetXaxis()->SetTitle("#sqrt{Q_{l}Q_{r}} [ch]");
@@ -182,15 +200,18 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
 
     while(progressbar::ongoing()) finishcondition.draw();
 
-    vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr"};
+    vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr",
+                           "Plastics/F11weird"};
     for (auto &str:folders) output->mkdir(str.c_str());
 
     output->cd("Plastics/2D");
-    for(auto histo: qcorr2D) histo.Write();
+    for(auto &histo: qcorr2D) histo.Write();
     output->cd("Plastics/Q1Q2");
-    for(auto histo: qcorr) histo.Write();
+    for(auto &histo: qcorr) histo.Write();
     output->cd("Plastics/TQCorr");
-    for(auto histo: tqcorr2D) histo.Write();
+    for(auto &histo: tqcorr2D) histo.Write();
+    output->cd("Plastics/F11weird");
+    for (auto &histo: qxF11) histo.Write();
     output->cd("");
 
     vector<int> cutafter ={0,0};

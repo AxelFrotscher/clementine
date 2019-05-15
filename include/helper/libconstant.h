@@ -6,36 +6,39 @@
 #include "histogram_cuts.hh"
 
 namespace runinfo{
-    const std::vector<int> transsize = {395'267,
-                                        356'843,
-                                        0,
-                                        1'026'943, // Runs containing this number are transmission
-                                        31'716,
-                                        0,
-                                        0};
-    const std::vector<int> emptysize = {513'225,
-                                        0,  // no empty run for this setting
-                                        1'265'431,  // no empty run here either
-                                        865'630,
-                                        0,
-                                        0,
-                                        0};          // Empty-target measurement
-    const std::vector<int> fulldata  = {36'004'149,
-                                        8'051'865,
-                                        38'803'327,
-                                        58'865'437,
-                                        40'608'365,
-                                        38'133'189,  //55'363'036,
-                                        160'490'664};//192'409'095}; full physics run
+    using std::array, std::vector;
+    using a7 = array<int,7>;
 
-    const std::vector<std::vector<std::vector<int>>> plasticrange{
-            {{480,620},{700,920},{220,330},{270,1510}},
-            {{337,520},{450,750},{220,330},{330,1200}},
-            {{350,550},{450,800},{215,380},{350,1100}},
-            {{375,575},{450,850},{215,400},{350,1200}},
-            {{850,1250},{450,800},{320,550},{250,1500}},
-            {{900,1500},{450,900},{330,630},{250,2250}},
-            {{600,1600},{450,800},{400,700},{250,2400}}
+    constexpr a7 transsize = {395'267,
+                              356'843,
+                              0,
+                              1'026'943, // Runs containing this number are transmission
+                              31'716,
+                              0,
+                              0};
+    constexpr a7 emptysize = {513'225,
+                              0,  // no empty run for this setting
+                              1'265'431,  // no empty run here either
+                              865'630,
+                              0,
+                              0,
+                              0};          // Empty-target measurement
+    constexpr a7 fulldata  = {36'004'149,
+                              8'051'865,
+                              38'803'327,
+                              58'865'437,
+                              40'608'365,
+                              55'363'036,
+                              160'490'664};//192'409'095}; full physics run
+
+    const  vector<vector<vector<int>>> plasticrange{
+            {{480, 620},  {700, 920}, {220, 330}, {270, 1510}},
+            {{337, 520},  {450, 750}, {220, 330}, {330, 1200}},
+            {{350, 550},  {450, 800}, {215, 380}, {350, 1100}},
+            {{375, 575},  {450, 850}, {215, 400}, {350, 1200}},
+            {{850, 1250}, {450, 800}, {320, 550}, {250, 1500}},
+            {{900, 1500}, {450, 900}, {330, 630}, {250, 2250}},
+            {{600, 1600}, {450, 800}, {400, 700}, {250, 2400}}
     };
 
     const std::vector<std::vector<uint>> pidZrange{
@@ -61,9 +64,6 @@ namespace runinfo{
          "80ZnP2P", "81ZnP2P", "77CuP2P", "78CuP2P", "79CuP2P", "82GeP3P", "83GeP3P",
          "80GaP3P", "81GaP3P", "82GaP3P", "78ZnP3P", "79ZnP3P", "80ZnP3P", "77CuP3P",
          "78CuP3P"}}; // test
-
-    //const std::vector<double> tottransmission{ 0.8177,0.9106,0.898,0.8848};
-    //const std::vector<double> tottransmissionerror;
 }
 
 namespace nancy{
@@ -326,7 +326,7 @@ namespace nancy{
 
     //Cutting the IC values to combat pile-up
     const std::vector<std::vector<double>> iclimit{
-        {8000,1000,4000,5700}, //110Nb
+        {8000,10000,4000,5700}, //110Nb
         {5000,6500,2000,3000}, //88Ge
         {5800,7300,2500,3500}, //94Se
         {6400,8100,2800,4000}, //100Kr

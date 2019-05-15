@@ -191,7 +191,8 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                                          minres.chargeweight[1]);
             }
 
-            if(minres.thetaz.size() > 1 ){ // at least two tracks need to survive
+            if(minres.chargeweight.size() > 1 ){
+                // at least two tracks need to survive
                 _minos1dresults.at(0).Fill(minres.z_vertex);
                 _minos1dresults.at(1).Fill(minres.phi_vertex);
             }
@@ -496,9 +497,18 @@ void PID::crosssection() {
                              1./numberdensity*(reactionpid2-chargestatevictims)/
                              reactionpid1/tottransmission);
     // 1% absolute error + 5% relative error
-    double cserror = crosssection*pow(1./reactionpid1 + 2./reactionpid2+
+    /* = crosssection*pow(1./reactionpid1 + 2./reactionpid2+
                          pow(tottransmissionerror+ 0.02/tottransmission,2)+
-                         pow(numberdensityerror,2), 0.5);  // Error on Transm.
+                         pow(numberdensityerror,2), 0.5);  // Error on Transm.*/
+
+    double cserror = sqrt(
+        pow(sqrt((double)reactionpid2)/(numberdensity*reactionpid1*tottransmission),2)+
+        pow(sqrt(chargestatevictims)/(numberdensity*reactionpid1*tottransmission),2)+
+        pow(crosssection/sqrt((double)reactionpid1),2) +
+        pow((tottransmissionerror + 0.02*tottransmission)/crosssection, 2) +
+        pow(numberdensityerror/crosssection, 2)
+        );
+
     if(isnan(cserror)) cserror = 0;
     if(isnan(crosssection)) crosssection = 0;
 
@@ -513,9 +523,10 @@ void PID::crosssection() {
               << reactionpid2.load()/reactF5.at(1).GetEntries() << " CSC: "
               << chargestatevictims;
     if(setting::isemptyortrans())
-        stringout << " Ratio: " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
-                  <<" \u00b1 "  << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()*
-                     pow(1./reactionpid2+ 1./reactionpid1.load(),0.5) << " %";
+        stringout
+            << " Ratio: " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
+            <<" \u00b1 "  << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()*
+                pow(1./reactionpid2+ 1./reactionpid1.load(),0.5) << " %";
     cout  << stringout.str() << endl;
 
     txtwriter txt;

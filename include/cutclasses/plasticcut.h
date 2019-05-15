@@ -30,6 +30,7 @@ private:
     std::vector<TH2I> qcorr2D;  // Charge Correlation between 1 & 2
     std::vector<TH1I> qcorr;    // deposited charge at detector
     std::vector<TH2I> tqcorr2D; // Charge-Time correlation
+    std::vector<TH1I> qxF11;
     std::vector<std::vector<std::string>> arrayname, arraytitle;
 
     int numplastic = 4; // 4

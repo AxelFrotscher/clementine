@@ -172,7 +172,7 @@ vector<TCutG*> setting::getplasticcut(){
 
     //Get Cut
     TFile cutfile("../config/plasticcut.root");
-    if(!(cutfile.IsOpen())) std::__throw_invalid_argument(
+    if(!cutfile.IsOpen()) std::__throw_invalid_argument(
                 "Could not open cut file at config/cut.root\n");
     if (isemptyortrans()) return temp;
     else{
@@ -183,6 +183,16 @@ vector<TCutG*> setting::getplasticcut(){
             else cout << "Warning: Plastic Cut " << i << " Setting "
                       << setname.at(settingnumber) << " not found." << endl;
         }
+    }
+
+    // Get extra 70Fe investigation plastic cuts
+    if(setname.at(settingnumber) == "70Fe"){
+        TFile F11chargefile("../config/cuts/70Fe/70FeF11plasticcharge.root");
+        if(!F11chargefile.IsOpen()) std::__throw_invalid_argument(
+           "Could not open F11 cut file at ../config/cuts/70Fe/70Fe... .root\n");
+        temp.push_back((TCutG*)F11chargefile.Get("70Fe11plasticpedestal"));
+        temp.push_back((TCutG*)F11chargefile.Get("70Fe11plasticregular"));
+        temp.push_back((TCutG*)F11chargefile.Get("70Fe11plasticweird"));
     }
 
     return temp;
