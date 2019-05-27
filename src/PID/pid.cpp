@@ -20,7 +20,7 @@ using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
 
 void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                     const bool minosanalyse) {
-    // Step 1: duplicate the data structure
+    /// Step 1: duplicate the data structure
     decltype(reactF5)          _reactF5;
     decltype(minosresults)     _minosresults;
     decltype(minos1dresults)   _minos1dresults;
@@ -68,7 +68,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
     const vector<int> ppacangledistance{650,945,700,500}; // in mm
 
     for(int eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
-        // Don't take sorted out events
+        /// Don't take sorted out events
         progress.increaseevent();
         if(!goodevents.at(eventcounter).at(0)) continue;
 
@@ -194,8 +194,9 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
             if(minres.chargeweight.size() > 1 ){
                 // at least two tracks need to survive
                 _minos1dresults.at(0).Fill(minres.z_vertex);
-                _minos1dresults.at(1).Fill(minres.phi_vertex);
             }
+
+            for(auto &i: minres.phi_vertex) _minos1dresults.at(1).Fill(i);
 
             // Get Vertex data
             if(reaction.find("P2P") != string::npos && minres.vertexdist.size() == 1) // P2P-mode
@@ -205,10 +206,13 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
             // Get Lambda Errors
             for(auto &i: minres.lambda2dE) _minos1dresults.at(3).Fill(i);
+
+            // Get all theta angles as 1d
+            for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
         }
     }
 
-    // Step 3: rejoining data structure
+    /// Step 3: rejoining data structure
     unitemutex.lock();
     for(uint i=0;i<reactF5.size();i++)
         reactF5.at(i).Add(&_reactF5.at(i));
@@ -505,8 +509,8 @@ void PID::crosssection() {
         pow(sqrt((double)reactionpid2)/(numberdensity*reactionpid1*tottransmission),2)+
         pow(sqrt(chargestatevictims)/(numberdensity*reactionpid1*tottransmission),2)+
         pow(crosssection/sqrt((double)reactionpid1),2) +
-        pow((tottransmissionerror + 0.02*tottransmission)/crosssection, 2) +
-        pow(numberdensityerror/crosssection, 2)
+        pow((tottransmissionerror + 0.02*tottransmission)*crosssection, 2) +
+        pow(numberdensityerror*crosssection, 2)
         );
 
     if(isnan(cserror)) cserror = 0;
@@ -854,6 +858,7 @@ void PID::histogramsetup() {
     minos1dresults.emplace_back("phidistr", "Reaction angle distribution", 90, 0,180);
     minos1dresults.emplace_back("vertexdistr", "Distance between proton tracks", 300,0, 50);
     minos1dresults.emplace_back("lambdaE", "Angular Error of tracks", 300,0, 15);
+    minos1dresults.emplace_back("theta", "#theta of all protons", 180,0, 180);
 
     minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
     minos1dresults.at(0).GetYaxis()->SetTitle("N");
@@ -863,6 +868,8 @@ void PID::histogramsetup() {
     minos1dresults.at(2).GetYaxis()->SetTitle("N");
     minos1dresults.at(3).GetXaxis()->SetTitle("#Delta #lambda_{track} / #circ");
     minos1dresults.at(3).GetYaxis()->SetTitle("N");
+    minos1dresults.at(4).GetXaxis()->SetTitle("#theta / #circ");
+    minos1dresults.at(4).GetYaxis()->SetTitle("N");
 
     for(auto &i: minosresults) i.SetOption("colz");
 

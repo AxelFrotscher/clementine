@@ -33,19 +33,20 @@ using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_strin
     for(auto &i:goodevents) for(auto &j:i) j.exchange(true);
 
     setting set;
-    set.setcountno((int)chain.GetEntries());
-    const string settingname = set.getsetname();
-    const string modename = set.getmodename();
-    const bool minosbool = set.getminos();
+    setting::setcountno((int)chain.GetEntries());
+    const string settingname = setting::getsetname();
+    const string modename = setting::getmodename();
+    const bool minosbool = setting::getminos();
 
     /// lambda to generate expression
     auto gentxt = [input, settingname, modename, minosbool](auto suffix){
         if(minosbool){
-            return "output/"+ settingname + "_" + modename + "_MINOS_" +
-                   input.at(0).substr(34,9) + suffix;
+            return "/home/afrotscher/Clementine/build/output/"+ settingname +
+                   "_" + modename + "_MINOS_" + input.at(0).substr(34,9) +
+                   suffix;
         }
-        else return "output/"+ settingname + "_" + modename + "_CS_" +
-               input.at(0).substr(34,9) + suffix;
+        else return "/home/afrotscher/Clementine/build/output/"+ settingname +
+                    "_" + modename + "_CS_" + input.at(0).substr(34,9) + suffix;
     };
 
     /// Initialize ROOT and txt outputfile
@@ -66,18 +67,18 @@ using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_strin
      }
 
     /// Get Z vs. A/Q
-    const vector<string> reactionmodes = set.getreactions();
+    const vector<string> reactionmodes = setting::getreactions();
 
     /// All reaction modes:
     TGraphErrors crosssection;
-    crosssection.SetName(Form("cs%s", set.getsetname().c_str()));
+    crosssection.SetName(Form("cs%s", setting::getsetname().c_str()));
     crosssection.SetTitle("Cross Sections Frotscher 2019");
 
     for(auto &i: reactionmodes){
         PID(input,goodevents,outputfile,i, crosssection);
     }
 
-    TGraphErrors nancytcs = nancycs(set.getsetnumber());
+    TGraphErrors nancytcs = nancycs(setting::getsetnumber());
     outputfile->cd();
     nancytcs.Write();
     crosssection.Write();

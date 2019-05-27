@@ -103,7 +103,7 @@ struct TMinosResult{
 struct TMinosPass{
     double r_vertex;
     vector<double> thetaz;
-    double phi_vertex;
+    vector<double> phi_vertex;
     double trackNbr;
     double trackNbr_final;
     double z_vertex;
@@ -113,7 +113,7 @@ struct TMinosPass{
     vector<double> lambda2dE;
 
     TMinosPass(double r_vertex_, vector<double> thetaz_,
-               double phi_vertex_, double trackNbr_, double trackNbr_Final,
+               vector<double> &phi_vertex_, double trackNbr_, double trackNbr_Final,
                double z_vertex_, vector<double> lambda2d_,
                vector<double> chargeweight_, vector<double> vertexdist_,
                vector<double> lambda2dE_):
@@ -160,7 +160,8 @@ private:
 
     vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
 
-    double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0, phi_vertex=0;
+    double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0;
+
 
     int filled =0 ;
     double Tshaping =0;
@@ -174,6 +175,7 @@ private:
     vector<TH3C> &minossingleevent;
     vector<double> theta{0,0,0};
     vector<double> chargeweight;
+    vector<double> phi_vertex={};
     TMinosClust fitdata;
     TMinosResult dataresult;
     inline static std::mutex minos5;

@@ -166,7 +166,10 @@ TCutG* setting::getbrhocut() {
 vector<TCutG*> setting::getplasticcut(){
     // Getting the cuts for F3-7-8-11 ln(Q1/Q2)[t1-t2]
     auto nam = [](auto str){
-        return setname.at(settingnumber) + str + "plastic";};
+        string mode = "plastic";
+        if(setting::isemptyrun) mode += "empty";
+        if(setting::istransmissionrun) mode += "trans";
+        return setname.at(settingnumber) + str + mode;};
 
     vector<TCutG*> temp;
 
@@ -174,16 +177,21 @@ vector<TCutG*> setting::getplasticcut(){
     TFile cutfile("../config/plasticcut.root");
     if(!cutfile.IsOpen()) std::__throw_invalid_argument(
                 "Could not open cut file at config/cut.root\n");
-    if (isemptyortrans()) return temp;
-    else{
+
         for(auto &i: {3,7,8,11}){
             if(cutfile.Get(nam(i)) != nullptr ){
                 temp.push_back((TCutG*)cutfile.Get(nam(i)));
             }
-            else cout << "Warning: Plastic Cut " << i << " Setting "
+            else{ cout << "Warning: Plastic Cut " << i << " Setting "
                       << setname.at(settingnumber) << " not found." << endl;
+                if((TCutG*)cutfile.Get("plasticdummy") != nullptr){
+                    cout << "Found dummy cut (max range). Using this cut... "
+                         << endl;
+                    temp.push_back((TCutG*)cutfile.Get("plasticdummy"));
+                }
+            }
         }
-    }
+
 
     // Get extra 70Fe investigation plastic cuts
     if(setname.at(settingnumber) == "70Fe"){

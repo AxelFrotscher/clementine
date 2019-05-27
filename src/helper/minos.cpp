@@ -359,10 +359,20 @@ TMinosPass minosana::analyze() {
     lambda2dc.erase(std::max_element(lambda2dc.begin(), lambda2dc.end()));
     sort(lambda2dc.begin(), lambda2dc.end());
 
-    phi_vertex = acos((parFit_1r[1]*parFit_2r[1] + parFit_1r[3]*parFit_2r[3] +1)/
-                      (sqrt(pow(parFit_1r[1], 2) + pow(parFit_1r[3], 2) + 1) *
-                       sqrt(pow(parFit_2r[1], 2) + pow(parFit_2r[3], 2) + 1))) *
-                       180. / TMath::Pi();
+    auto phiinter = [](auto p1, auto p2){
+        assert(p1.size() ==4 && p2.size() == 4);
+        return acos((p1[1]*p2[1]+p1[3]*p2[3] +1)/(sqrt(pow(p1[1],2)+pow(p1[3],2))*
+                    sqrt(pow(p2[1],2)+pow(p2[3],2) +1 ))) * 180. / TMath::Pi();
+    };
+
+    // Calculate all interangles between the protons
+    if(trackNbr_FINAL > 1){
+        phi_vertex.push_back(phiinter(parFit_1r,parFit_2r));
+        if(trackNbr_FINAL > 2){
+            phi_vertex.push_back(phiinter(parFit_1r,parFit_3r));
+            phi_vertex.push_back(phiinter(parFit_3r,parFit_2r));
+        }
+    }
 
     if(trackNbr_FINAL != 3) lambda2dc = {}; // Filter out other events
 
@@ -393,7 +403,6 @@ TMinosPass minosana::analyze() {
 
         if(dt > 0) chargeweight.back() /= dt;
     }
-    //sort(chargeweight.begin(), chargeweight.end());
 
     vector<double> verticedist;
     if(trackNbr_FINAL == 2) verticedist.push_back(distancelineline(parFit_1r, parFit_2r));

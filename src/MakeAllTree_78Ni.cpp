@@ -366,7 +366,7 @@ void generatetree(const string infile, const string output) {
                 }
             }
         }
-        if(!minostrackxy.size()) minostrackxy.push_back({0,0});
+        if(minostrackxy.empty()) minostrackxy.push_back({0,0});
 
         tree->Fill();
         neve++;
@@ -470,7 +470,8 @@ void generatetree(const string infile, const string output) {
     fout.Close();
     printf("Writing TTree complete!\n");
 
-    TFile tpcdrift(Form("output/MINOS/%s.root", runname.c_str()), "Update");
+    TFile tpcdrift(Form("/home/afrotscher/Clementine/build/output/MINOS/%s"
+                        ".root", runname.c_str()), "Update");
     if (!tpcdrift.GetListOfKeys()->Contains(runname.c_str()))
         timedrift.Write();
     tpcdrift.Close();
