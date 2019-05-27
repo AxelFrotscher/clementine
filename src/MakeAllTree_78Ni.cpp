@@ -33,7 +33,7 @@ using std::cout, std::endl, std::string, std::vector,
       std::__throw_invalid_argument, std::ifstream, std::stringstream, std::max,
       std::__throw_bad_function_call;
 
-void generatetree(const string infile, const string output) {
+void generatetree(const string &infile, const string &output) {
     //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
     cout << "Now in Estore -> " << infile << endl;
 
@@ -140,10 +140,10 @@ void generatetree(const string infile, const string output) {
 
     // Trigger bits are broken in anaroot manual recover (kudos to n.hupin)
     uint EventInfo_FBIT =0;
-    TClonesArray * fbitarray;
+    TClonesArray * fbitarray = nullptr;
 
     for(auto i : datanodes){
-        TClonesArray * array;
+        TClonesArray * array = nullptr;
         if(i=="EventInfo_FBIT") {
             fbitarray = (TClonesArray *)sman->FindDataContainer("EventInfo");
             //tree->Branch("EventInfo_FBIT", &EventInfo_FBIT, "EventInfo_FBIT/I");
@@ -344,7 +344,7 @@ void generatetree(const string infile, const string output) {
         minoscalibvalues.clear();
         minostrackxy.clear();
         minostime.clear();
-        auto *minos = new TArtCalibMINOSData;
+        auto minos = new TArtCalibMINOSData;
         for(int i=0; i<minoscalib->GetNumCalibMINOS(); i++){
             minos = minoscalib->GetCalibMINOS(i);
             minoscalibvalues.push_back(*minos->GetCalibValueArray());
@@ -441,7 +441,8 @@ void generatetree(const string infile, const string output) {
 
             // Set fit parameters
             TF1 fit_function("fit_function",
-                [](double *x, double *p){ /// Check for boundaries of x
+                [](const double *x,const double *p){ /// Check for boundaries
+              // of x
                     if(x[0] < p[1] || x[0] > 512) return 250.;
                     else return p[0] * exp(-3.*(x[0]-p[1])/p[2])*sin((x[0]-p[1])/p[2]) *
                                 pow((x[0]-p[1])/p[2], 3) + 250;}, 0, 511, 3);

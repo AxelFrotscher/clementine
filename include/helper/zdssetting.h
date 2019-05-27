@@ -33,8 +33,8 @@ public:
     static const std::vector<uint> getZrange();
     static const std::vector<std::string> getreactions();
     static const bool isemptyortrans(){return isemptyrun || istransmissionrun;}
-    const std::vector<double> getPIDincutvalue();
-    const std::vector<double> getPIDoutcutvalue();
+    static const std::vector<double> getPIDincutvalue();
+    static const std::vector<double> getPIDoutcutvalue();
     static const std::string getmodename();
     static std::string getsetname(){return setname.at(settingnumber);};
     std::vector<uint> goodruns;

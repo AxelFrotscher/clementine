@@ -4,7 +4,6 @@
 #include <iostream>
 #include "TArtEventStore.hh"
 
-void generatetree(std::__cxx11::string infile, std::__cxx11::string output);
-//void progressbar(int currevent, int totevent, int offset, int barwidth=30);
+void generatetree(const std::string &infile, const std::string &output);
 
 uint getset(TArtEventStore &estore);
