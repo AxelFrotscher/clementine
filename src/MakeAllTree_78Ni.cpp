@@ -344,7 +344,7 @@ void generatetree(const string &infile, const string &output) {
         minoscalibvalues.clear();
         minostrackxy.clear();
         minostime.clear();
-        auto minos = new TArtCalibMINOSData;
+        TArtCalibMINOSData* minos; // = new TArtCalibMINOSData;
         for(int i=0; i<minoscalib->GetNumCalibMINOS(); i++){
             minos = minoscalib->GetCalibMINOS(i);
             minoscalibvalues.push_back(*minos->GetCalibValueArray());
