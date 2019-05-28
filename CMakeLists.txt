@@ -9,7 +9,6 @@ message(STATUS "ROOT: ${ROOTSYS}")
 #set($ENV{ROOTSYS} /ldas-ikda/soft/src/cern/root/install/6.16.00/)
 list(APPEND CMAKE_PREFIX_PATH ${ROOTSYS})
 
-
 #Locate ROOT package
 find_package(ROOT REQUIRED COMPONENTS RIO Net)
 

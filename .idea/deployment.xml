@@ -5,12 +5,19 @@
       <paths name="Remote Host (0a8bbd16-f576-40ed-83a3-4590734f5260)">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/tmp.OHOxDHKlKC" local="$PROJECT_DIR$" />
+            <mapping deploy="/home/afrotscher/Clementine" local="$PROJECT_DIR$" />
           </mappings>
           <excludedPaths>
             <excludedPath local="true" path="$PROJECT_DIR$/build" />
             <excludedPath local="true" path="$PROJECT_DIR$/debug-build" />
           </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="Remote Ldas02 (dcfcff5c-a592-4477-bc76-13f3dfca3595)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/afrotscher/Clementine" local="$PROJECT_DIR$" web="/" />
+          </mappings>
         </serverdata>
       </paths>
     </serverData>

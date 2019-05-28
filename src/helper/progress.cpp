@@ -58,8 +58,8 @@ void progressbar::draw(){
         cout << pstr;
         lastevent.at(i) = currevt.at(i); // Replace value for next draw() call
     }
-    cout << "\r";
     cout.flush();
+    cout << "\r"; // for remote execution AFTER the flushing...
 
     // Update the "old" values
     lasttime = duration_cast<milliseconds>(
