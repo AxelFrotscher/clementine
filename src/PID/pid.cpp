@@ -565,7 +565,14 @@ void PID::reactionparameters() {
         {"110NbP0P", incval110Nb, targetval110Nb},
         {"110MoP3P", incval110Mo, targetval108Zr},
         {"111MoP3P", incval111Mo, targetval109Zr},
-        {"112MoP3P", incval112Mo, targetval110Zr}};
+        {"112MoP3P", incval112Mo, targetval110Zr},
+        {"113TcP3P", incval113Tc, targetval111Nb},
+        {"112TcP3P", incval112Tc, targetval110Nb},
+        {"114TcP3P", incval114Tc, targetval112Nb},
+        {"113MoP3P", incval113Mo, targetval111Zr},
+        {"110MoP2P", incval110Mo, targetval109Nb},
+        {"111MoP2P", incval111Mo, targetval110Nb},
+        {"112MoP2P", incval112Mo, targetval111Nb}};
 
     for(auto &i: master){
         if(reaction == std::get<string>(i.at(0))){
@@ -579,15 +586,7 @@ void PID::reactionparameters() {
 
     binning = 50;
     if(reaction == "111NbPPN"){      incval = incval111Nb; targetval = targetval110Nb; }
-
-    else if(reaction == "113TcP3P"){ incval = nancy::incval113Tc; targetval = nancy::targetval111Nb; }
-    else if(reaction == "112TcP3P"){ incval = nancy::incval112Tc; targetval = nancy::targetval110Nb; }
-    else if(reaction == "114TcP3P"){ incval = nancy::incval114Tc; targetval = nancy::targetval112Nb; }
-    else if(reaction == "113MoP3P"){ incval = nancy::incval113Mo; targetval = nancy::targetval111Zr; }
-    else if(reaction == "110MoP2P"){ incval = nancy::incval110Mo; targetval = nancy::targetval109Nb; }
-    else if(reaction == "111MoP2P"){ incval = nancy::incval111Mo; targetval = nancy::targetval110Nb; }
-    else if(reaction == "112MoP2P"){ incval = nancy::incval112Mo; targetval = nancy::targetval111Nb; }
-
+    
     else if(reaction == "90SeP2P"){  incval = nancy::incval90Se;  targetval = nancy::targetval89As; }
     else if(reaction == "90SeP3P"){  incval = nancy::incval90Se;  targetval = nancy::targetval88Ge; }
     else if(reaction == "89SeP2P"){  incval = nancy::incval89Se;  targetval = nancy::targetval88As; }
