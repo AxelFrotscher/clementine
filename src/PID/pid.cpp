@@ -2,17 +2,18 @@
 // Created by afrotscher on 8/7/18.
 //
 
-#include "minos.h"
-#include <libconstant.h>
 #include "PID/pid.h"
-#include "histogram_cuts.hh"
-#include "txtwriter.h"
-#include <thread>
-#include "progress.h"
 #include "TF1.h"
-#include <algorithm>
+#include "histogram_cuts.hh"
+#include "minos.h"
+#include "progress.h"
+#include "txtwriter.h"
 #include "zdssetting.h"
+#include <algorithm>
+#include <libconstant.h>
 #include <sstream>
+#include <thread>
+#include <variant>
 
 using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
       std::stringstream, std::to_string, std::__throw_invalid_argument,
@@ -308,7 +309,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     progressbar finishcondition;
     while(progressbar::ongoing()) finishcondition.draw();
 
-    // Calculate the transmission and the crosssection
+    // Calculate the transmission and the cross section
     PID::offctrans();
     PID::chargestatecut();
     PID::crosssection();
@@ -546,28 +547,39 @@ void PID::crosssection() {
 
 void PID::reactionparameters() {
     // Setup cut values
-    setting set;
     if(setting::isemptyortrans()){
-        incval = set.getPIDincutvalue();
-        targetval = set.getPIDoutcutvalue();
+        incval = setting::getPIDincutvalue();
+        targetval = setting::getPIDoutcutvalue();
         reaction = setting::getmodename();
-
         return;
     }
 
+    using namespace nancy;
+    ///test
+    vector<vector<std::variant<string,const vector<double>>>> master{
+        {"111NbPPN", incval111Nb, targetval110Nb},
+        {"111NbPP2N",incval111Nb, targetval109Nb},
+        {"111NbP2P", incval111Nb, targetval110Zr},
+        {"110NbPPN", incval110Nb, targetval109Nb},
+        {"110NbP2P", incval110Nb, targetval109Zr},
+        {"110NbP0P", incval110Nb, targetval110Nb},
+        {"110MoP3P", incval110Mo, targetval108Zr},
+        {"111MoP3P", incval111Mo, targetval109Zr},
+        {"112MoP3P", incval112Mo, targetval110Zr}};
+
+    for(auto &i: master){
+        if(reaction == std::get<string>(i.at(0))){
+            incval    = std::get<const vector<double>>(i.at(1));
+            targetval = std::get<const vector<double>>(i.at(2));
+            return;
+        }
+    }
+
+    ///test
+
     binning = 50;
-    if(reaction == "111NbPPN"){      incval = nancy::incval111Nb; targetval = nancy::targetval110Nb; }
-    else if(reaction == "111NbPP2N"){incval = nancy::incval111Nb; targetval = nancy::targetval109Nb; }
-    else if(reaction == "111NbP2P"){ incval = nancy::incval111Nb; targetval = nancy::targetval110Zr;
-                                     binning   = 80; }
-    else if(reaction == "110NbPPN"){ incval = nancy::incval110Nb; targetval = nancy::targetval109Nb;
-                                     binning = 100; }
-    else if(reaction == "110NbP2P"){ incval = nancy::incval110Nb; targetval = nancy::targetval109Zr;
-                                     binning = 40; }
-    else if(reaction == "110NbP0P"){ incval = nancy::incval110Nb; targetval = nancy::targetval110Nb; }
-    else if(reaction == "110MoP3P"){ incval = nancy::incval110Mo; targetval = nancy::targetval108Zr; }
-    else if(reaction == "111MoP3P"){ incval = nancy::incval111Mo; targetval = nancy::targetval109Zr; }
-    else if(reaction == "112MoP3P"){ incval = nancy::incval112Mo; targetval = nancy::targetval110Zr; }
+    if(reaction == "111NbPPN"){      incval = incval111Nb; targetval = targetval110Nb; }
+
     else if(reaction == "113TcP3P"){ incval = nancy::incval113Tc; targetval = nancy::targetval111Nb; }
     else if(reaction == "112TcP3P"){ incval = nancy::incval112Tc; targetval = nancy::targetval110Nb; }
     else if(reaction == "114TcP3P"){ incval = nancy::incval114Tc; targetval = nancy::targetval112Nb; }
@@ -575,6 +587,7 @@ void PID::reactionparameters() {
     else if(reaction == "110MoP2P"){ incval = nancy::incval110Mo; targetval = nancy::targetval109Nb; }
     else if(reaction == "111MoP2P"){ incval = nancy::incval111Mo; targetval = nancy::targetval110Nb; }
     else if(reaction == "112MoP2P"){ incval = nancy::incval112Mo; targetval = nancy::targetval111Nb; }
+
     else if(reaction == "90SeP2P"){  incval = nancy::incval90Se;  targetval = nancy::targetval89As; }
     else if(reaction == "90SeP3P"){  incval = nancy::incval90Se;  targetval = nancy::targetval88Ge; }
     else if(reaction == "89SeP2P"){  incval = nancy::incval89Se;  targetval = nancy::targetval88As; }

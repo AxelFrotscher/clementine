@@ -52,6 +52,6 @@ private:
     static inline bool istransmissionrun = false;
     static inline bool isemptyrun = false;
     static inline bool minos = false;
-    static inline const std::vector<std::string> setname{"110Nb", "88Ge",
-                                       "94Se", "100Kr", "66Cr", "70Fe", "78Ni"};
+    static inline const std::vector<std::string> setname{
+                      "110Nb", "88Ge", "94Se", "100Kr", "66Cr", "70Fe", "78Ni"};
 };
