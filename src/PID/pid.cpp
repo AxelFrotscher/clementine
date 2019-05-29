@@ -2,17 +2,18 @@
 // Created by afrotscher on 8/7/18.
 //
 
-#include "minos.h"
-#include <libconstant.h>
 #include "PID/pid.h"
-#include "histogram_cuts.hh"
-#include "txtwriter.h"
-#include <thread>
-#include "progress.h"
 #include "TF1.h"
-#include <algorithm>
+#include "histogram_cuts.hh"
+#include "minos.h"
+#include "progress.h"
+#include "txtwriter.h"
 #include "zdssetting.h"
+#include <algorithm>
+#include <libconstant.h>
 #include <sstream>
+#include <thread>
+#include <variant>
 
 using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
       std::stringstream, std::to_string, std::__throw_invalid_argument,
@@ -20,7 +21,7 @@ using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
 
 void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                     const bool minosanalyse) {
-    // Step 1: duplicate the data structure
+    /// Step 1: duplicate the data structure
     decltype(reactF5)          _reactF5;
     decltype(minosresults)     _minosresults;
     decltype(minos1dresults)   _minos1dresults;
@@ -68,7 +69,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
     const vector<int> ppacangledistance{650,945,700,500}; // in mm
 
     for(int eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
-        // Don't take sorted out events
+        /// Don't take sorted out events
         progress.increaseevent();
         if(!goodevents.at(eventcounter).at(0)) continue;
 
@@ -194,8 +195,9 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
             if(minres.chargeweight.size() > 1 ){
                 // at least two tracks need to survive
                 _minos1dresults.at(0).Fill(minres.z_vertex);
-                _minos1dresults.at(1).Fill(minres.phi_vertex);
             }
+
+            for(auto &i: minres.phi_vertex) _minos1dresults.at(1).Fill(i);
 
             // Get Vertex data
             if(reaction.find("P2P") != string::npos && minres.vertexdist.size() == 1) // P2P-mode
@@ -205,10 +207,13 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
             // Get Lambda Errors
             for(auto &i: minres.lambda2dE) _minos1dresults.at(3).Fill(i);
+
+            // Get all theta angles as 1d
+            for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
         }
     }
 
-    // Step 3: rejoining data structure
+    /// Step 3: rejoining data structure
     unitemutex.lock();
     for(uint i=0;i<reactF5.size();i++)
         reactF5.at(i).Add(&_reactF5.at(i));
@@ -304,7 +309,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     progressbar finishcondition;
     while(progressbar::ongoing()) finishcondition.draw();
 
-    // Calculate the transmission and the crosssection
+    // Calculate the transmission and the cross section
     PID::offctrans();
     PID::chargestatecut();
     PID::crosssection();
@@ -505,8 +510,8 @@ void PID::crosssection() {
         pow(sqrt((double)reactionpid2)/(numberdensity*reactionpid1*tottransmission),2)+
         pow(sqrt(chargestatevictims)/(numberdensity*reactionpid1*tottransmission),2)+
         pow(crosssection/sqrt((double)reactionpid1),2) +
-        pow((tottransmissionerror + 0.02*tottransmission)/crosssection, 2) +
-        pow(numberdensityerror/crosssection, 2)
+        pow((tottransmissionerror + 0.02*tottransmission)*crosssection, 2) +
+        pow(numberdensityerror*crosssection, 2)
         );
 
     if(isnan(cserror)) cserror = 0;
@@ -542,35 +547,46 @@ void PID::crosssection() {
 
 void PID::reactionparameters() {
     // Setup cut values
-    setting set;
     if(setting::isemptyortrans()){
-        incval = set.getPIDincutvalue();
-        targetval = set.getPIDoutcutvalue();
+        incval = setting::getPIDincutvalue();
+        targetval = setting::getPIDoutcutvalue();
         reaction = setting::getmodename();
-
         return;
     }
 
+    using namespace nancy;
+    ///test
+    vector<vector<std::variant<string,const vector<double>>>> master{
+        {"111NbPPN", incval111Nb, targetval110Nb},
+        {"111NbPP2N",incval111Nb, targetval109Nb},
+        {"111NbP2P", incval111Nb, targetval110Zr},
+        {"110NbPPN", incval110Nb, targetval109Nb},
+        {"110NbP2P", incval110Nb, targetval109Zr},
+        {"110NbP0P", incval110Nb, targetval110Nb},
+        {"110MoP3P", incval110Mo, targetval108Zr},
+        {"111MoP3P", incval111Mo, targetval109Zr},
+        {"112MoP3P", incval112Mo, targetval110Zr},
+        {"113TcP3P", incval113Tc, targetval111Nb},
+        {"112TcP3P", incval112Tc, targetval110Nb},
+        {"114TcP3P", incval114Tc, targetval112Nb},
+        {"113MoP3P", incval113Mo, targetval111Zr},
+        {"110MoP2P", incval110Mo, targetval109Nb},
+        {"111MoP2P", incval111Mo, targetval110Nb},
+        {"112MoP2P", incval112Mo, targetval111Nb}};
+
+    for(auto &i: master){
+        if(reaction == std::get<string>(i.at(0))){
+            incval    = std::get<const vector<double>>(i.at(1));
+            targetval = std::get<const vector<double>>(i.at(2));
+            return;
+        }
+    }
+
+    ///test
+
     binning = 50;
-    if(reaction == "111NbPPN"){      incval = nancy::incval111Nb; targetval = nancy::targetval110Nb; }
-    else if(reaction == "111NbPP2N"){incval = nancy::incval111Nb; targetval = nancy::targetval109Nb; }
-    else if(reaction == "111NbP2P"){ incval = nancy::incval111Nb; targetval = nancy::targetval110Zr;
-                                     binning   = 80; }
-    else if(reaction == "110NbPPN"){ incval = nancy::incval110Nb; targetval = nancy::targetval109Nb;
-                                     binning = 100; }
-    else if(reaction == "110NbP2P"){ incval = nancy::incval110Nb; targetval = nancy::targetval109Zr;
-                                     binning = 40; }
-    else if(reaction == "110NbP0P"){ incval = nancy::incval110Nb; targetval = nancy::targetval110Nb; }
-    else if(reaction == "110MoP3P"){ incval = nancy::incval110Mo; targetval = nancy::targetval108Zr; }
-    else if(reaction == "111MoP3P"){ incval = nancy::incval111Mo; targetval = nancy::targetval109Zr; }
-    else if(reaction == "112MoP3P"){ incval = nancy::incval112Mo; targetval = nancy::targetval110Zr; }
-    else if(reaction == "113TcP3P"){ incval = nancy::incval113Tc; targetval = nancy::targetval111Nb; }
-    else if(reaction == "112TcP3P"){ incval = nancy::incval112Tc; targetval = nancy::targetval110Nb; }
-    else if(reaction == "114TcP3P"){ incval = nancy::incval114Tc; targetval = nancy::targetval112Nb; }
-    else if(reaction == "113MoP3P"){ incval = nancy::incval113Mo; targetval = nancy::targetval111Zr; }
-    else if(reaction == "110MoP2P"){ incval = nancy::incval110Mo; targetval = nancy::targetval109Nb; }
-    else if(reaction == "111MoP2P"){ incval = nancy::incval111Mo; targetval = nancy::targetval110Nb; }
-    else if(reaction == "112MoP2P"){ incval = nancy::incval112Mo; targetval = nancy::targetval111Nb; }
+    if(reaction == "111NbPPN"){      incval = incval111Nb; targetval = targetval110Nb; }
+    
     else if(reaction == "90SeP2P"){  incval = nancy::incval90Se;  targetval = nancy::targetval89As; }
     else if(reaction == "90SeP3P"){  incval = nancy::incval90Se;  targetval = nancy::targetval88Ge; }
     else if(reaction == "89SeP2P"){  incval = nancy::incval89Se;  targetval = nancy::targetval88As; }
@@ -854,6 +870,7 @@ void PID::histogramsetup() {
     minos1dresults.emplace_back("phidistr", "Reaction angle distribution", 90, 0,180);
     minos1dresults.emplace_back("vertexdistr", "Distance between proton tracks", 300,0, 50);
     minos1dresults.emplace_back("lambdaE", "Angular Error of tracks", 300,0, 15);
+    minos1dresults.emplace_back("theta", "#theta of all protons", 180,0, 180);
 
     minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
     minos1dresults.at(0).GetYaxis()->SetTitle("N");
@@ -863,6 +880,8 @@ void PID::histogramsetup() {
     minos1dresults.at(2).GetYaxis()->SetTitle("N");
     minos1dresults.at(3).GetXaxis()->SetTitle("#Delta #lambda_{track} / #circ");
     minos1dresults.at(3).GetYaxis()->SetTitle("N");
+    minos1dresults.at(4).GetXaxis()->SetTitle("#theta / #circ");
+    minos1dresults.at(4).GetYaxis()->SetTitle("N");
 
     for(auto &i: minosresults) i.SetOption("colz");
 

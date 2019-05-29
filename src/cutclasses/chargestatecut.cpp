@@ -10,8 +10,7 @@
 
 using std::vector, std::string, std::thread, std::atomic;
 
-void ccsc::innerloop(treereader &tree, vector<vector<atomic<bool>>> &goodevents,
-                       std::vector<uint> range) {
+void ccsc::innerloop(treereader &tree, std::vector<uint> range) {
     // precious tight inner loop
     // Cloning histograms
     decltype(cschist) _cschist;
@@ -48,7 +47,7 @@ void ccsc::innerloop(treereader &tree, vector<vector<atomic<bool>>> &goodevents,
     progressbar::reset();
 }
 
-void ccsc::analyse(const std::vector<std::string> input, TFile* output){
+void ccsc::analyse(const std::vector<std::string> &input, TFile* output){
 
     vector<treereader> tree;
     tree.reserve(threads); // MUST stay as reallocation will call d'tor
@@ -86,7 +85,7 @@ void ccsc::analyse(const std::vector<std::string> input, TFile* output){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&ccsc::innerloop, this, std::ref(tree.at(i)),
-                               ref(goodevents),ranges));
+                               ranges));
     }
 
     for (auto &t: th) t.detach();

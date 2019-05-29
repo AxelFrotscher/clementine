@@ -1,30 +1,31 @@
 //#include <Rtypes.h>
 #include "MakeAllTree_78Ni.hh"
-#include "progress.h"
-#include "TArtStoreManager.hh"
-#include "TArtEventStore.hh"
 #include "TArtBigRIPSParameters.hh"
+#include "TArtCalibFocalPlane.hh"
+#include "TArtCalibMINOS.hh"
 #include "TArtCalibPID.hh"
-#include "TArtRecoPID.hh"
-#include "TVectorD.h"
-#include "TFile.h"
-#include "TArtPPAC.hh"
 #include "TArtCalibPPAC.hh"
 #include "TArtEventInfo.hh"
-#include "TArtCalibFocalPlane.hh"
+#include "TArtEventStore.hh"
 #include "TArtFocalPlane.hh"
-#include <iostream>
-#include <TH2F.h>
-#include <TF1.h>
-#include "TGraph.h"
 #include "TArtMINOSParameters.hh"
-#include "TArtCalibMINOS.hh"
+#include "TArtPPAC.hh"
+#include "TArtRecoPID.hh"
+#include "TArtStoreManager.hh"
+#include "TFile.h"
+#include "TGraph.h"
 #include "TMath.h"
 #include "TMinuit.h"
-#include <Math/Vector3D.h>
-#include <filesystem>
-#include "zdssetting.h"
+#include "TVectorD.h"
 #include "minos.h"
+#include "progress.h"
+#include "zdssetting.h"
+#include <Math/Vector3D.h>
+#include <TF1.h>
+#include <TH2F.h>
+#include <csignal>
+#include <filesystem>
+#include <iostream>
 
 R__LOAD_LIBRARY(libanacore.so)
 R__LOAD_LIBRARY(libminos.so)
@@ -33,8 +34,8 @@ using std::cout, std::endl, std::string, std::vector,
       std::__throw_invalid_argument, std::ifstream, std::stringstream, std::max,
       std::__throw_bad_function_call;
 
-void generatetree(const string infile, const string output) {
-    //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
+void generatetree(const string &infile, const string &output) {
+    //signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
     cout << "Now in Estore -> " << infile << endl;
 
     // Create StoreManager both for calibration "TArtCalib..." and 
@@ -42,10 +43,9 @@ void generatetree(const string infile, const string output) {
     auto *sman = TArtStoreManager::Instance();
     // Create EventStore to control the loop and get the EventInfo
     TArtEventStore estore;
-    //estore.SetInterrupt(&stoploop);
+
     if (!estore.Open(infile.c_str()))
-        __throw_invalid_argument(("Could not open" +
-                                  infile).c_str());
+        __throw_invalid_argument(("Could not open" + infile).c_str());
 
     uint setting = getset(estore); // 0 -> 2014, 1 -> 2015
     // Create BigRIPSParameters to get Plastics, PPACs, ICs and FocalPlanes 
@@ -140,10 +140,10 @@ void generatetree(const string infile, const string output) {
 
     // Trigger bits are broken in anaroot manual recover (kudos to n.hupin)
     uint EventInfo_FBIT =0;
-    TClonesArray * fbitarray;
+    TClonesArray * fbitarray = nullptr;
 
     for(auto i : datanodes){
-        TClonesArray * array;
+        TClonesArray * array = nullptr;
         if(i=="EventInfo_FBIT") {
             fbitarray = (TClonesArray *)sman->FindDataContainer("EventInfo");
             //tree->Branch("EventInfo_FBIT", &EventInfo_FBIT, "EventInfo_FBIT/I");
@@ -344,7 +344,7 @@ void generatetree(const string infile, const string output) {
         minoscalibvalues.clear();
         minostrackxy.clear();
         minostime.clear();
-        auto *minos = new TArtCalibMINOSData;
+        TArtCalibMINOSData* minos; // = new TArtCalibMINOSData;
         for(int i=0; i<minoscalib->GetNumCalibMINOS(); i++){
             minos = minoscalib->GetCalibMINOS(i);
             minoscalibvalues.push_back(*minos->GetCalibValueArray());
@@ -366,7 +366,7 @@ void generatetree(const string infile, const string output) {
                 }
             }
         }
-        if(!minostrackxy.size()) minostrackxy.push_back({0,0});
+        if(minostrackxy.empty()) minostrackxy.push_back({0,0});
 
         tree->Fill();
         neve++;
@@ -441,7 +441,8 @@ void generatetree(const string infile, const string output) {
 
             // Set fit parameters
             TF1 fit_function("fit_function",
-                [](double *x, double *p){ /// Check for boundaries of x
+                [](const double *x,const double *p){ /// Check for boundaries
+              // of x
                     if(x[0] < p[1] || x[0] > 512) return 250.;
                     else return p[0] * exp(-3.*(x[0]-p[1])/p[2])*sin((x[0]-p[1])/p[2]) *
                                 pow((x[0]-p[1])/p[2], 3) + 250;}, 0, 511, 3);
@@ -470,7 +471,8 @@ void generatetree(const string infile, const string output) {
     fout.Close();
     printf("Writing TTree complete!\n");
 
-    TFile tpcdrift(Form("output/MINOS/%s.root", runname.c_str()), "Update");
+    TFile tpcdrift(Form("/home/afrotscher/Clementine/build/output/MINOS/%s"
+                        ".root", runname.c_str()), "Update");
     if (!tpcdrift.GetListOfKeys()->Contains(runname.c_str()))
         timedrift.Write();
     tpcdrift.Close();

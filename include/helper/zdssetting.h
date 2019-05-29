@@ -33,8 +33,8 @@ public:
     static const std::vector<uint> getZrange();
     static const std::vector<std::string> getreactions();
     static const bool isemptyortrans(){return isemptyrun || istransmissionrun;}
-    const std::vector<double> getPIDincutvalue();
-    const std::vector<double> getPIDoutcutvalue();
+    static const std::vector<double> getPIDincutvalue();
+    static const std::vector<double> getPIDoutcutvalue();
     static const std::string getmodename();
     static std::string getsetname(){return setname.at(settingnumber);};
     std::vector<uint> goodruns;
@@ -52,6 +52,6 @@ private:
     static inline bool istransmissionrun = false;
     static inline bool isemptyrun = false;
     static inline bool minos = false;
-    static inline const std::vector<std::string> setname{"110Nb", "88Ge",
-                                       "94Se", "100Kr", "66Cr", "70Fe", "78Ni"};
+    static inline const std::vector<std::string> setname{
+                      "110Nb", "88Ge", "94Se", "100Kr", "66Cr", "70Fe", "78Ni"};
 };
