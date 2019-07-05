@@ -96,7 +96,7 @@ TGraphErrors nancycs(const int &setnumber){
      temp.SetName("csnancy");
 
      vector<vector<double>> massnumbers{
-         {110,110,111,111,112,113},  //nb,mo,nb,mo,mo,tc
+         {110.,110.,111.,111.,112.,113.},  //nb,mo,nb,mo,mo,tc
          {},
          {95,95,96,97},  //br,kr,kr,rb
          {100},

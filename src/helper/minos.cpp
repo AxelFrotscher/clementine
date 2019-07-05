@@ -153,7 +153,7 @@ TMinosPass minosana::analyze() {
     vector<double> xin, yin, zin, qin, xout, yout, zout, qout;
     int cluster_temp = 0, array_final = 0;
 
-    vector<TGraph> grxz(trackNbr), gryz(trackNbr);
+    vector<TGraph> grxz(trackNbr+1), gryz(trackNbr+1);
 
     for (int i = 0; i < padsleft2; i++) {
         // if-Loop executed only at the End
@@ -166,7 +166,7 @@ TMinosPass minosana::analyze() {
             qin.push_back(Qpadnew[i]);
         }
 
-        // x vector not empty AND (new track OR last entry of the loop
+        // x vector not empty AND (new track OR last entry of the loop)
         if (!xin.empty() && ((cluster_temp +1 == clusternbr[i] && i) ||
                            i == (Xpadnew.size() - 1))) {
             int ringsum = 0;
@@ -291,7 +291,6 @@ TMinosPass minosana::analyze() {
         min.mnemat(&temp[0][0], 4);
         covxy.at(1) = temp[1][3]; // entry i=0, j=2
 
-
         for (int i = 0; i < parFit_2.size(); i++)
             min.GetParameter(i, parFit_2.at(i), err_2.at(i));
     }
@@ -339,7 +338,8 @@ TMinosPass minosana::analyze() {
     }
     sort(theta.begin(), theta.end()); // Sort angles
 
-    vector<double> lambda2d{ // angles in xy-plane for all tracks
+  // angles in xy-plane for all tracks
+    vector<double> lambda2d{
         atan2(parFit_1r.at(3), parFit_1r.at(1))*180/TMath::Pi(),
         atan2(parFit_2r.at(3), parFit_2r.at(1))*180/TMath::Pi(),
         atan2(parFit_3r.at(3), parFit_3r.at(1))*180/TMath::Pi()
@@ -360,9 +360,12 @@ TMinosPass minosana::analyze() {
     sort(lambda2dc.begin(), lambda2dc.end());
 
     auto phiinter = [](auto p1, auto p2){
+        /// This method calculates the relative angles between two protons
         assert(p1.size() ==4 && p2.size() == 4);
-        return acos((p1[1]*p2[1]+p1[3]*p2[3] +1)/(sqrt(pow(p1[1],2)+pow(p1[3],2))*
-                    sqrt(pow(p2[1],2)+pow(p2[3],2) +1 ))) * 180. / TMath::Pi();
+        return acos( (p1[1] * p2[1] + p1[3] * p2[3] + 1)/
+                    (sqrt(pow(p1[1], 2) + pow(p1[3], 2) + 1) *
+                     sqrt(pow(p2[1], 2) + pow(p2[3], 2) + 1))) *
+               180. / TMath::Pi();
     };
 
     // Calculate all interangles between the protons
@@ -405,7 +408,8 @@ TMinosPass minosana::analyze() {
     }
 
     vector<double> verticedist;
-    if(trackNbr_FINAL == 2) verticedist.push_back(distancelineline(parFit_1r, parFit_2r));
+    if(trackNbr_FINAL == 2)
+        verticedist.push_back(distancelineline(parFit_1r, parFit_2r));
     else if(trackNbr_FINAL == 3){
         verticedist.push_back(distancelineline(parFit_1r, parFit_2r));
         verticedist.push_back(distancelineline(parFit_1r, parFit_3r));
@@ -414,7 +418,7 @@ TMinosPass minosana::analyze() {
 
     // Estimate the angular uncertainty in lambda
     auto lambdaerror = [](vector<double> pf, vector<double> err, double covxy){
-        // Calculates the Gaussian error of the lambda angle for each track
+        /// Calculates the Gaussian error of the lambda angle for each track
         assert(pf.size() == 4);
         return 180./TMath::Pi()/(pow(pf[1],2)+ pow(pf[3],2))*sqrt(
                 pow(pf[1]*err[3],2) + pow(-pf[3]*err[1],2) - 2*pf[1]*pf[3]*covxy);
@@ -909,8 +913,8 @@ double distancelinepoint(double x, double y, double z, double *p){
     return ((xp-x0).Cross(u)).Mag2();
 }
 
-void minosana::vertex(vector<double> &p, vector<double> &pp, double &xv,
-                      double &yv, double &zv){
+void minosana::vertex(const vector<double> &p, const vector<double> &pp,
+                      double &xv, double &yv, double &zv){
     /// Calculates the vertex of two lines (p,pp) [closest distance]
     /// and stores x, y, and z in (xv, yv, zv)
     assert(p.size() == 4 && pp.size() == 4);

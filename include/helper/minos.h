@@ -152,7 +152,7 @@ private:
                       vector<double> &z_out,vector<double> &q_out);
     void FindStart(vector<double> &pStart, vector<double> &chi, vector<int> &fitstatus,
                              TGraph &grxz, TGraph &gryz);
-    static void vertex(vector<double> &p, vector<double> &pp, double &xv,
+    static void vertex(const vector<double> &p, const vector<double> &pp, double &xv,
                           double &yv, double &zv);
     static double distancelineline(vector<double> &l1, vector<double> &l2);
     void debug();

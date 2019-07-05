@@ -10,10 +10,11 @@ message(STATUS "ROOT: ${ROOTSYS}")
 list(APPEND CMAKE_PREFIX_PATH ${ROOTSYS})
 
 #Locate ROOT package
-find_package(ROOT REQUIRED COMPONENTS RIO Net)
+find_package(ROOT REQUIRED COMPONENTS  RIO Net)
+include(${ROOT_USE_FILE}) # Enables CLion to find root headers
 
 #Define useful functions
-include(${ROOT_USE_FILE})
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     /home/afrotscher/soft/anaroot/4.5.36/include    # anaroot installation
@@ -53,5 +54,6 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 elseif(CMAKE_BUILD_TYPE MATCHES Release)
     target_compile_definitions(${PROJECT_NAME} PUBLIC DEBUG=0)
 endif()
+
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
