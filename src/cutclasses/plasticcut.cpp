@@ -12,19 +12,14 @@
 using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
 void plasticcut::innerloop(treereader &tree, vector<uint> range) {
-    // Step 1: cloning histograms
-    decltype(qcorr)    _qcorr;
-    decltype(qcorr2D)  _qcorr2D;
-    decltype(tqcorr2D) _tqcorr2D;
-    decltype(qxF11)    _qxF11;
+    /// Step 1: cloning histograms
+    decltype(qcorr)    _qcorr(qcorr);
+    decltype(qcorr2D)  _qcorr2D(qcorr2D);
+    decltype(tqcorr2D) _tqcorr2D(tqcorr2D);
+    decltype(qxF11)    _qxF11(qxF11);
 
-    for(auto &i : qcorr)    _qcorr.emplace_back(i);
-    for(auto &i : qcorr2D)  _qcorr2D.emplace_back(i);
-    for(auto &i : tqcorr2D) _tqcorr2D.emplace_back(i);
-    for(auto &i : qxF11)    _qxF11.emplace_back(i);
-
-    // Step 2: Preparing Variables
-    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    /// Step 2: Preparing Variables
+    const uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     progressbar progress(range.at(1)-range.at(0), threadno);
 
@@ -153,10 +148,10 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
         tqcorr2D.emplace_back((arrayname.at(i).at(2)+"cut").c_str(),
                               arraytitle.at(i).at(2).c_str(), 450,-250,200, 500,-2.5,2.5);
     }
-    qxF11.emplace_back("F11ped", "F11 pedestal plastic position", 80,-40,40);
-    qxF11.emplace_back("F11reg", "F11 regular plastic position", 80,-40,40);
-    qxF11.emplace_back("F11wei", "F11 weird plastic position", 80,-40,40);
 
+    qxF11 = {{"F11ped", "F11 pedestal plastic position", 80, -40, 40},
+             {"F11reg", "F11 regular plastic position", 80, -40, 40},
+             {"F11wei", "F11 weird plastic position", 80, -40, 40}};
 
     for(auto &i : qcorr){
         i.GetXaxis()->SetTitle("#sqrt{Q_{l}Q_{r}} [ch]");
@@ -176,7 +171,7 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
     }
 
     // Start the looop
-    vector<int> cutpre = {0,0};
+    std::array<int, 2> cutpre = {0,0};
     for(auto &i: goodevents){
         cutpre.at(0) += i.at(0);
         cutpre.at(1) += i.at(1);
@@ -192,16 +187,16 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
-        th.emplace_back(thread(&plasticcut::innerloop, this, std::ref(tree.at(i)),
-                               ranges));
+        th.emplace_back(thread(&plasticcut::innerloop, this,
+                               std::ref(tree.at(i)), ranges));
     }
 
     for (auto &i: th) i.detach();
 
     while(progressbar::ongoing()) finishcondition.draw();
 
-    vector<string> folders{"Plastics/2D", "Plastics/Q1Q2", "Plastics/TQCorr",
-                           "Plastics/F11weird"};
+    std::array<string, 4> folders{"Plastics/2D", "Plastics/Q1Q2",
+                                  "Plastics/TQCorr", "Plastics/F11weird"};
     for (auto &str:folders) output->mkdir(str.c_str());
 
     output->cd("Plastics/2D");
@@ -214,7 +209,7 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
     for (auto &histo: qxF11) histo.Write();
     output->cd("");
 
-    vector<int> cutafter ={0,0};
+    std::array<int, 2> cutafter ={0,0};
     for(auto &i: goodevents){
         cutafter.at(0) += i.at(0);
         cutafter.at(1) += i.at(1);

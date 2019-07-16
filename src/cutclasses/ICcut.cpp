@@ -10,21 +10,16 @@
 
 using std::vector, std::atomic, std::string, std::thread, std::to_string;
 
-void iccut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
-                        &goodevents, vector<uint> range) {
-    //Step 1: Cloning histograms
-    decltype(comparediag) _comparediag;
-    for(auto &i: comparediag){
-        _comparediag.emplace_back();
-        for(auto &j :i) _comparediag.back().emplace_back(j);
-    }
+void iccut::innerloop(treereader &tree, vector<uint> range) {
+    ///Step 1: Cloning histograms
+    decltype(comparediag) _comparediag(comparediag);
 
-    //Step 2: Preparing Variables
-    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    ///Step 2: Preparing Variables
+    const uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     progressbar progress(range.at(1)-range.at(0),threadno);
-    setting set;
-    const bool trans = setting::isemptyortrans();
+    //setting set;
+    //const bool trans = setting::isemptyortrans();
     vector<double> limits = setting::geticlimits();
     assert(limits.size() == 4);
 
@@ -34,13 +29,13 @@ void iccut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
             tree.getevent(i);
 
             vector<bool> inrange = {false, false};
-            for(int i=0; i<numchannel; i++){
-                if(tree.BigRIPSIC_fADC[0][i] > limits.at(0) &&
-                   tree.BigRIPSIC_fADC[0][i] < limits.at(1)){
+            for(int j=0; j<numchannel; j++){
+                if(tree.BigRIPSIC_fADC[0][j] > limits.at(0) &&
+                   tree.BigRIPSIC_fADC[0][j] < limits.at(1)){
                     inrange.at(0) = true;
                 }
-                if(tree.BigRIPSIC_fADC[1][i] > limits.at(2) &&
-                   tree.BigRIPSIC_fADC[1][i] < limits.at(3)){
+                if(tree.BigRIPSIC_fADC[1][j] > limits.at(2) &&
+                   tree.BigRIPSIC_fADC[1][j] < limits.at(3)){
                     inrange.at(1) = true;
                 }
             }
@@ -76,7 +71,7 @@ void iccut::innerloop(treereader &tree, vector<vector<atomic<bool>>>
     progressbar::reset();
 }
 
-void iccut::analyse(const std::vector<std::string> input, TFile *output) {
+void iccut::analyse(const std::vector<std::string> &input, TFile *output) {
 
     vector<treereader> tree;
     tree.reserve(threads); // MUST stay as reallocation will call d'tor
@@ -87,16 +82,16 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
     vector <string> readoutkeys{"BigRIPSIC.nhitchannel", "BigRIPSIC.fADC[32]"};
     for(auto &i: tree) i.setloopkeys(readoutkeys);
 
-
     for(int i=1; i<numchannel; i++){
         comparediag.emplace_back();
         vector<string> arrname = {"ICratio" + to_string(i) + "to0fpl7",
                                   "ICratio" + to_string(i) + "to0fpl11"};
         string arrtitle = "Peak ADC Ratio " + to_string(i) + " to 0";
-        comparediag.back().emplace_back(arrname.at(0).c_str(),arrtitle.c_str(),
-                                        1024,0,16384,375,-1500,1500);
-        comparediag.back().emplace_back(arrname.at(1).c_str(),arrtitle.c_str(),
-                                        1024,0,16384,375,-1500,1500);
+
+        comparediag.back() =
+         {{arrname.at(0).c_str(),arrtitle.c_str(),1024,0,16384,375,-1500,1500},
+          {arrname.at(1).c_str(),arrtitle.c_str(),1024,0,16384,375,-1500,1500}};
+
         for(auto &elem: comparediag.back()){
             elem.SetOption("colz");
             elem.GetXaxis()->SetTitle("ADC0 [ch]");
@@ -105,7 +100,7 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
     }
     printf("Successfully generated Histograms for the IC-cut...\n");
 
-    vector<int> cutpre ={0,0};
+    std::array<int, 2> cutpre = {0,0};
     for(auto &i: goodevents){
         cutpre.at(0) += i.at(0);
         cutpre.at(1) += i.at(1);
@@ -117,7 +112,7 @@ void iccut::analyse(const std::vector<std::string> input, TFile *output) {
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&iccut::innerloop, this, std::ref(tree.at(i)),
-                               ref(goodevents),ranges));
+                               ranges));
     }
 
     for (auto &i: th) i.detach();

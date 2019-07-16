@@ -13,11 +13,10 @@ using std::vector, std::string, std::thread, std::atomic;
 void ccsc::innerloop(treereader &tree, std::vector<uint> range) {
     // precious tight inner loop
     // Cloning histograms
-    decltype(cschist) _cschist;
-    for(auto &i: cschist) _cschist.emplace_back(i);
+    decltype(cschist) _cschist(cschist);
 
     // Step 2: Preparing variables
-    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    const uint threadno = range.at(0)/(range.at(1)-range.at(0));
     double brhoratio = 0;
 
     progressbar progress(range.at(1)-range.at(0), threadno);
@@ -41,8 +40,7 @@ void ccsc::innerloop(treereader &tree, std::vector<uint> range) {
 
     // Step 3: rejoin the data
     unitemutex.lock();
-    for(uint i=0; i<_cschist.size();i++)
-        cschist.at(i).Add(&_cschist.at(i));
+    for(uint i=0; i<_cschist.size();i++) cschist.at(i).Add(&_cschist.at(i));
     unitemutex.unlock();
     progressbar::reset();
 }
@@ -56,8 +54,8 @@ void ccsc::analyse(const std::vector<std::string> &input, TFile* output){
     printf("Beginning with the CCSC. %i threads.\n", threads);
 
     // Generate output histogram
-    cschist.emplace_back("csc", "Charged state change", 500,0.9,1.1,1000,3,7);
-    cschist.emplace_back("csccut", "Charged state change cut", 500,0.95,1.05,1000,3,7);
+    cschist = {{"csc", "Charged state change", 500,0.9,1.1,1000,3,7},
+               {"csccut", "Charged state change cut", 500,0.95,1.05,1000,3,7}};
 
     for(auto &histo: cschist){
         histo.SetOption("colz");
@@ -70,7 +68,7 @@ void ccsc::analyse(const std::vector<std::string> &input, TFile* output){
     for(auto &i: tree) i.setloopkeys(keys);
 
     // Get Cut from right setting | mode
-    setting set;
+    // setting set;
     //if(set.isemptyortrans()){ // Cut after F7 not sensible for empty/trans runs
     //    cout << "Empty or trans run. Not doing CCSC cut." << endl; return;
     //}

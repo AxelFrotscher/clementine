@@ -12,22 +12,12 @@
 
 using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
-void higherorder::innerloop(treereader &tree, vector<vector<atomic<bool>>>
-                            &goodevents, vector<uint> range) {
+void higherorder::innerloop(treereader &tree, vector<uint> range) {
     // Step 1: Cloning histograms
-    decltype(culpritdiag) _culpritdiag;
-    for(auto &i: culpritdiag){
-        _culpritdiag.emplace_back();
-
-        for(auto &j:i){
-            _culpritdiag.back().emplace_back();
-
-            for(auto &k:j) _culpritdiag.back().back().emplace_back(k);
-        }
-    }
+    decltype(culpritdiag) _culpritdiag(culpritdiag);
 
     // Step 2: Preparing Variables
-    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    const uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     progressbar progress(range.at(1)-range.at(0), threadno);
 
@@ -90,7 +80,7 @@ void higherorder::innerloop(treereader &tree, vector<vector<atomic<bool>>>
     }
     unitemutex.unlock();
 
-    progress.reset();
+    progressbar::reset();
 }
 
 void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
@@ -107,9 +97,8 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
     for(auto &i: tree) i.setloopkeys(keys);
 
     // Decide which cut to use based on total event number
-    setting set;
-    cutval = set.getHOcutval();
-    p1 = set.getHOparameters();
+    cutval = setting::getHOcutval();
+    p1 = setting::getHOparameters();
 
     // Initialize all the diagrams
     for(uint i=0; i<arrname.size();i++){ // Loop F7, F11
@@ -143,19 +132,19 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
     for(uint i=0; i<threads; i++){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                               (uint)((i+1)*goodevents.size()/threads-1)};
-        th.emplace_back(thread(&higherorder::innerloop, this, std::ref(tree.at(i)),
-                               ref(goodevents),ranges));
+        th.emplace_back(thread(&higherorder::innerloop, this,
+                               std::ref(tree.at(i)), ranges));
     }
 
     for(auto &i: th) i.detach();
 
     progressbar finishcondition;
-    while(finishcondition.ongoing()) finishcondition.draw();
+    while(progressbar::ongoing()) finishcondition.draw();
 
     // After analysis get correlations represented by a linear fit
-    auto corrlinfit = new TF1("Linear Fit", linfit, cutval[0][1]-cutfrac*cutval[0][3],
+    TF1 corrlinfit("Linear Fit", linfit, cutval[0][1]-cutfrac*cutval[0][3],
                               cutval[0][1]+cutfrac*cutval[0][3], 2);
-    corrlinfit->SetParNames("absolute", "linear");
+    corrlinfit.SetParNames("absolute", "linear");
     for (auto &elem : culpritdiag) {
         projections.emplace_back();
 
@@ -164,7 +153,7 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
 
             for(uint i_corr=0; i_corr<=corrcount;i_corr++){
                 projections.back().back().push_back(elem2.at(i_corr).ProfileY());
-                projections.back().back().back()->Fit(corrlinfit, "Q");
+                projections.back().back().back()->Fit(&corrlinfit, "Q");
             }
         }
     }
@@ -193,5 +182,4 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
 
     //Clean up tree
     for(auto &i: projections) for(auto &j: i) for(auto &k:j) k->Delete();
-    corrlinfit->Delete();
 }

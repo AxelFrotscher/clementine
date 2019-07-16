@@ -144,8 +144,6 @@ TMinosPass minosana::analyze() {
         Zpadnew[indexfill] = z_mm;
         Qpadnew[indexfill] = q_pad;
     } // End of all entries
-    // Look at some events
-    debug();
 
     /// 4: MINOS Filtering the tracks off possible noise with Hough3D //
 
@@ -180,7 +178,7 @@ TMinosPass minosana::analyze() {
                                            pow(yout[k], 2.)) - 45.2) / 2.1)))++;
             }
             for (auto &j: ringtouch) if (j > 0) ringsum++;
-            if (zmax > 290) ringsum = 16;
+            if (zmax > 290) ringsum = 16; // particles escaping through the back
 
             // Decide whether we have a track, and add to 2D-plane TGraphs
             if (xout.size() > 10 && ringsum >= 15) {
@@ -217,6 +215,9 @@ TMinosPass minosana::analyze() {
         return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
                           z_vertex, {}, {}, {}, {});
     }
+
+  // Look at some events
+  if(trackNbr_FINAL ==2) debug();
 
     /// 5. Fitting filtered tracks in 3D (weight by charge, TMinuit) //
     vector<double> pStart_1{0,1,0,1}, pStart_2{0,1,0,1},pStart_3{0,1,0,1},
@@ -369,7 +370,10 @@ TMinosPass minosana::analyze() {
     };
 
     // Calculate all interangles between the protons
-    if(trackNbr_FINAL > 1){
+    // require events to be simulation-like
+    const bool simulation_pass = lambda2dc.at(1) > 160-7./9.*lambda2dc.at(0);
+
+    if(trackNbr_FINAL > 1 && simulation_pass){
         phi_vertex.push_back(phiinter(parFit_1r,parFit_2r));
         if(trackNbr_FINAL > 2){
             phi_vertex.push_back(phiinter(parFit_1r,parFit_3r));
@@ -883,12 +887,12 @@ void minosana::debug(){
         minossingleevent.emplace_back(
                 Form("t%iEvt%lu",threadno,minossingleevent.size()),
                 Form("Thread %i, Event %lu",threadno,minossingleevent.size()),
-                100,-100,100,100,-100,100,200,-100,300);
+                100,-100,100,100,-100,100);
         for(int i=0; i<Xpadnew.size();i++) minossingleevent.back().Fill(
-                                    Xpadnew.at(i),Ypadnew.at(i), Zpadnew.at(i));
+                                    Xpadnew.at(i),Ypadnew.at(i));
         minossingleevent.back().GetXaxis()->SetTitle("X [mm]");
         minossingleevent.back().GetYaxis()->SetTitle("Y [mm]");
-        minossingleevent.back().GetZaxis()->SetTitle("Z [mm]");
+        minossingleevent.back().SetMarkerStyle(3);
     }
 }
 

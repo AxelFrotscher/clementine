@@ -9,11 +9,9 @@ class triggercut {
 public:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
-    void innerloop(treereader &tree,
-                   std::vector<std::vector<std::atomic<bool>>> &goodevents,
-                   std::vector<uint> range);
-    void analyse(std::vector<std::string> input);
-    triggercut(const std::vector<std::string> input,
+    void innerloop(treereader &tree, std::vector<uint> range);
+    void analyse(const std::vector<std::string> &input);
+    triggercut(const std::vector<std::string> &input,
                std::vector<std::vector<std::atomic<bool>>> &goodevents_)
             : goodevents(goodevents_){
         analyse(input);

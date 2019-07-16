@@ -131,7 +131,7 @@ public:
              vector<vector<double>> *minoscalibvalues_,
              vector<vector<double>> *minostime_, vector<double> *xpad_,
              vector<double> *ypad_, vector<double> *qpad_, int threadno_,
-             vector<TH3C> &minossingleevent_):
+             vector<TH2C> &minossingleevent_):
              filled(filled_), Tshaping(TShaping_), TimeBinElec(TimeBinElec_),
              DelayTrigger(DelayTrigger_), VDrift(VDrift_),
              minostrackxy(*minostrackxy_), minoscalibvalues(*minoscalibvalues_),
@@ -172,7 +172,7 @@ private:
     vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostrackxy;
     vector<vector<double>> minostime;
-    vector<TH3C> &minossingleevent;
+    vector<TH2C> &minossingleevent;
     vector<double> theta{0,0,0};
     vector<double> chargeweight;
     vector<double> phi_vertex={};

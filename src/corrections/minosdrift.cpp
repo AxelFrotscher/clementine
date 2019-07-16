@@ -88,7 +88,6 @@ void minosdrift::make_drift(const std::vector<std::string> &input) {
     prestrings.insert(prestrings.end(), resultio.begin(), resultio.end());
     std::sort(prestrings.begin()+3, prestrings.end());
 
-
     /// Write out newly generated file
     std::ofstream hi(filelocation.at(setting::getsetnumber()));
     for(auto &i: prestrings) hi << i << endl;

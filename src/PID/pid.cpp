@@ -22,37 +22,14 @@ using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
 void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                     const bool minosanalyse) {
     /// Step 1: duplicate the data structure
-    decltype(reactF5)          _reactF5;
-    decltype(minosresults)     _minosresults;
-    decltype(minos1dresults)   _minos1dresults;
-    decltype(reactPPAC)        _reactPPAC;
-    decltype(PIDplot)          _PIDplot;
-    decltype(minos3dresults)   _minos3dresults;
+    decltype(reactF5)          _reactF5(reactF5);
+    decltype(minosresults)     _minosresults(minosresults);
+    decltype(minos1dresults)   _minos1dresults(minos1dresults);
+    decltype(reactPPAC)        _reactPPAC(reactPPAC);
+    decltype(PIDplot)          _PIDplot(PIDplot);
+    decltype(minos3dresults)   _minos3dresults(minos3dresults);
     // MINOS with single events
-    decltype(minossingleevent) _minossingleevent;
-
-    _reactF5.reserve(reactF5.size());
-    for(auto &i: reactF5) _reactF5.emplace_back(i);
-
-    _reactPPAC.reserve(reactPPAC.size());
-    for(auto &i: reactPPAC){
-        _reactPPAC.emplace_back();
-        for(auto &j:i) _reactPPAC.back().emplace_back(j);
-    }
-
-    _PIDplot.reserve(PIDplot.size());
-    for(auto &i: PIDplot){
-        _PIDplot.emplace_back();
-        for(auto &j:i) _PIDplot.back().emplace_back(j);
-    }
-
-    _minosresults.reserve(minosresults.size());
-    for(auto &i: minosresults)   _minosresults.emplace_back(i);
-    _minos1dresults.reserve(minos1dresults.size());
-    for(auto &i: minos1dresults) _minos1dresults.emplace_back(i);
-
-    _minos3dresults.reserve(minos3dresults.size());
-    for(auto &i: minos3dresults) _minos3dresults.emplace_back(i);
+    decltype(minossingleevent) _minossingleevent(minossingleevent);
 
     double maxbrho = 10; // Tm, higher than all my values
     if(incval.size() == 8){
@@ -65,21 +42,23 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
     vector<vector<double>> valinc;     // Store temporary beam values
 
-    const vector<int> ppacFpositions{12,17,25,33}; //F5-2B, F7-2B, F9-2B, F11-2B
-    const vector<int> ppacangledistance{650,945,700,500}; // in mm
+    const std::array<int, 4> ppacFpositions{12,17,25,33}; //F5-2B, F7-2B,
+    // F9-2B, F11-2B
+    const std::array<int, 4> ppacangledistance{650,945,700,500}; // in mm
 
+    /// 2. Do the event loop
     for(int eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
         /// Don't take sorted out events
         progress.increaseevent();
         if(!goodevents.at(eventcounter).at(0)) continue;
 
         tree.getevent(eventcounter);
-        double beamaoqcorr = tree.BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
+        const double beamaoqcorr = tree.BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
                 (p1.F7absF5X+tree.F5X*p1.F7linF5X) -
                 tree.F5A*p1.F7linF5A -
                 tree.F3X*p1.F7linF3X;
 
-        double beamaoqcorr2 = tree.BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
+        const double beamaoqcorr2 = tree.BigRIPSBeam_aoq[4] +  p1.F11absF9X0-
                 (p1.F11absF9X+tree.F9X*p1.F11linF9X) -
                 tree.F9A*p1.F11linF9A -
                 tree.F11A*p1.F11linF11A;
@@ -790,7 +769,7 @@ void PID::histogramsetup() {
     // Nasty histogram setup routine
     setting set;
     const vector<uint> y = setting::getZrange(); // y boundaries
-    const vector<double> x{500, 2.45, 2.85};  // xbins, lower x, upper x
+    const std::array<double, 3> x{500, 2.45, 2.85};  // xbins, lower x, upper x
 
     vector<vector<string>> t1s = {{"pidinc", "PID Incoming F3-F7"},
         {"pidout", "PID Outgoing F8-F11"}, {"pidincut","PID Inc cut  F3-F7"},
@@ -808,52 +787,48 @@ void PID::histogramsetup() {
     for(auto &i : t2s) PIDplot.at(1).emplace_back(i.at(0).c_str(),i.at(1).c_str(),
                                           x[0],x[1],x[2],y[0],y[1],y[2]);
 
-    reactF5.emplace_back("F5beam", "F5 beam profile", binning,-100,100);
-    reactF5.emplace_back("F5react", "F5-position of reacted particles",
-                              binning,-100,100);
+    reactF5 = {{"F5beam", "F5 beam profile", binning,-100,100},
+               {"F5react", "F5-position of reacted particles", binning,-100,100}};
 
     const int brhoslice = 320;
-    const vector<double> bl = {6.5,7.3};
+    const std::array<double, 2> bl = {6.5,7.3};
 
     string t = "projection B#rho #sigma";
-    brhoprojection.emplace_back();
-    brhoprojection.emplace_back();
-    brhoprojection.at(0).emplace_back("F5brhop", "F5X projection B#rho",brhoslice,bl[0],bl[1]);
-    brhoprojection.at(0).emplace_back("F7brhop", "F7X projection B#rho",brhoslice,bl[0],bl[1]);
-    brhoprojection.at(0).emplace_back("F9brhop", "F9X projection B#rho",brhoslice,bl[0],bl[1]);
-    brhoprojection.at(0).emplace_back("F11brhop", "F11X projection B#rho",brhoslice,bl[0],bl[1]);
-    brhoprojection.at(1).emplace_back("F5brhostd", Form("F5X %s", t.c_str()),brhoslice,bl[0],bl[1]);
-    brhoprojection.at(1).emplace_back("F7brhostd", Form("F7X %s", t.c_str()),brhoslice,bl[0],bl[1]);
-    brhoprojection.at(1).emplace_back("F9brhostd", Form("F9X %s", t.c_str()),brhoslice,bl[0],bl[1]);
-    brhoprojection.at(1).emplace_back("F11brhostd", Form("F11X %s", t.c_str()),brhoslice,bl[0],bl[1]);
+    brhoprojection =
+        {{{"F5brhop", "F5X projection B#rho", brhoslice, bl[0], bl[1]},
+          {"F7brhop", "F7X projection B#rho", brhoslice, bl[0], bl[1]},
+          {"F9brhop", "F9X projection B#rho", brhoslice, bl[0], bl[1]},
+          {"F11brhop", "F11X projection B#rho", brhoslice, bl[0], bl[1]}},
+         {{"F5brhostd", Form("F5X %s", t.c_str()), brhoslice, bl[0], bl[1]},
+          {"F7brhostd", Form("F7X %s", t.c_str()), brhoslice, bl[0], bl[1]},
+          {"F9brhostd", Form("F9X %s", t.c_str()), brhoslice, bl[0], bl[1]},
+          {"F11brhostd", Form("F11X %s", t.c_str()), brhoslice, bl[0], bl[1]}}};
 
     for(int j=0; j<4; j++){
         reactPPAC.emplace_back();
         string no = "F" + to_string(5+2*j); // form F5+F7+F9+F11
         int k =1; // Scaling factor F9
         if(j==2 || j==0) k=3; // make space wider for F9 and F5
-        reactPPAC.back().emplace_back((no+"pos").c_str(), ("PID "+no+" beamshape").c_str(),
-                          250,-40*k,40*k,200,-30*k,30*k);
-        reactPPAC.back().emplace_back((no+"ang").c_str(), ("PID "+no+" beam angular shape").c_str(),
-                          100,-50,50,100,-50,50);
-        reactPPAC.back().emplace_back((no+"brho").c_str(), ("PID "+no+" B#rho Distribution").c_str(),
-                          250,-40*k,40*k,brhoslice,bl[0],bl[1]);
+
+        reactPPAC.back() =
+            {{(no+"pos").c_str(), ("PID "+no+" beamshape").c_str(),
+                                        250, -40.*k, 40.*k, 200, -30.*k, 30.*k},
+             {(no+"ang").c_str(), ("PID "+no+" beam angular shape").c_str(),
+                                                    100, -50, 50, 100, -50, 50},
+             {(no+"brho").c_str(), ("PID "+no+" B#rho Distribution").c_str(),
+                                  250, -40.*k, 40.*k, brhoslice, bl[0], bl[1]}};
     }
 
-    minos3dresults.emplace_back("theta", "#theta 3D correlation",
-                                90,0,90,90,0,90,90,0,90);
+    minos3dresults = {{"theta", "#theta 3D corr.", 90,0,90,90,0,90,90,0,90}};
     minos3dresults.at(0).GetXaxis()->SetTitle("#theta_{min} / #circ");
     minos3dresults.at(0).GetYaxis()->SetTitle("#theta_{med} / #circ");
     minos3dresults.at(0).GetZaxis()->SetTitle("#theta_{max} / #circ");
 
-    minosresults.emplace_back("theta", "#theta correlation",
-                              90,0,90,90,0,90);
-    minosresults.emplace_back("tracknbr", "Track No. vs. Final Track No.",
-                              10,-0.5,9.5,10,-0.5,9.5);
-    minosresults.emplace_back("lambda", "Two smaller 2d angles for p,3p",
-                              60,0,120, 90, 0, 180);
-    minosresults.emplace_back("minoscharge", "Charge deposition of protons",
-                              150, 0, 1500, 150, 0, 1500);
+    minosresults =
+        {{"theta", "#theta correlation", 90, 0, 90, 90, 0, 90},
+         {"tracknbr", "Track No. vs. Final Track No.", 10,-0.5,9.5,10,-0.5,9.5},
+         {"lambda", "Two smaller 2d angles for p,3p", 60, 0, 120, 90, 0, 180},
+         {"minoscharge", "Charge deposition of protons",150,0,1500,150,0,1500}};
 
     minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} #circ");
     minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / #circ");
@@ -864,40 +839,36 @@ void PID::histogramsetup() {
     minosresults.at(3).GetXaxis()->SetTitle("Q_{1}/l_{TPC} AU");
     minosresults.at(3).GetYaxis()->SetTitle("Q_{2}/l_{TPC} AU");
 
-    minos1dresults.emplace_back("zdistr", "Reaction distribution", 100,-70,130);
-    minos1dresults.emplace_back("phidistr2", "Reaction angle two tracks",
-                                90, 0, 180);
-    minos1dresults.emplace_back("vertexdistr", "Distance between proton tracks",
-                                300, 0, 50);
-    minos1dresults.emplace_back("lambdaE", "Angular Error of tracks", 300,0, 15);
-    minos1dresults.emplace_back("theta", "#theta of all protons", 180,0, 180);
-    minos1dresults.emplace_back("phidistr3", "Reaction angle three tracks",
-                                90, 0, 180);
-
-    minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
-    minos1dresults.at(0).GetYaxis()->SetTitle("N");
-    minos1dresults.at(1).GetXaxis()->SetTitle("#phi / #circ");
-    minos1dresults.at(1).GetYaxis()->SetTitle("N");
-    minos1dresults.at(2).GetXaxis()->SetTitle("#Delta x_{vertex} / mm");
-    minos1dresults.at(2).GetYaxis()->SetTitle("N");
-    minos1dresults.at(3).GetXaxis()->SetTitle("#Delta #lambda_{track} / #circ");
-    minos1dresults.at(3).GetYaxis()->SetTitle("N");
-    minos1dresults.at(4).GetXaxis()->SetTitle("#theta / #circ");
-    minos1dresults.at(4).GetYaxis()->SetTitle("N");
-    minos1dresults.at(5).GetXaxis()->SetTitle("#phi / #circ");
-    minos1dresults.at(5).GetYaxis()->SetTitle("N");
-
     for(auto &i: minosresults) i.SetOption("colz");
 
-    fitplot.emplace_back("chisqfit","reduced #chi^{2}-fitrange", binning-1,1,
-                              binning, binning-1,1,binning);
+    minos1dresults =
+        {{"zdistr", "Reaction distribution", 100,-70,130},
+         {"phidistr2", "Reaction angle two tracks", 90, 0, 180},
+         {"vertexdistr", "Distance between proton tracks", 300, 0, 50},
+         {"lambdaE", "Angular Error of tracks", 300,0, 15},
+         {"theta", "#theta of all protons", 180,0, 180},
+         {"phidistr3", "Reaction angle three tracks", 90, 0, 180}};
+
+    minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
+    minos1dresults.at(1).GetXaxis()->SetTitle("#phi / #circ");
+    minos1dresults.at(2).GetXaxis()->SetTitle("#Delta x_{vertex} / mm");
+    minos1dresults.at(3).GetXaxis()->SetTitle("#Delta #lambda_{track} / #circ");
+    minos1dresults.at(4).GetXaxis()->SetTitle("#theta / #circ");
+    minos1dresults.at(5).GetXaxis()->SetTitle("#phi / #circ");
+
+    for(auto &elem: minos1dresults) elem.GetYaxis()->SetTitle("N");
+
+    fitplot =
+        {{"chisqfit","reduced #chi^{2}-fitrange", binning-1,1,
+                   (double)binning, binning-1,1,(double)binning},
+         {"F9XF5X", "PID F9F5-X correlation", binning,-100, 100, 100,-120,120}};
+
     fitplot.at(0).GetXaxis()->SetTitle("Starting Bin");
     fitplot.at(0).GetYaxis()->SetTitle("Number of Bins");
     fitplot.at(0).SetMaximum(2.*maxchisq);
-    fitplot.emplace_back("F9XF5X", "PID F9F5-X correlation", binning,-100,
-                              100, 100,-120,120);
     fitplot.at(1).GetXaxis()->SetTitle("F5X");
     fitplot.at(1).GetYaxis()->SetTitle("F9X");
+
     for (auto &i: fitplot) i.SetOption("colz");
 
     for (auto &elem: reactF5){
@@ -923,7 +894,7 @@ void PID::histogramsetup() {
     }
 
     for(int i=0; i<reactPPAC.size(); i++){
-        string no = "F" + to_string(5+2*i);
+        const string no = "F" + to_string(5+2*i);
         reactPPAC.at(i).at(0).GetXaxis()->SetTitle((no+"X [mm]").c_str());
         reactPPAC.at(i).at(0).GetYaxis()->SetTitle((no+"Y [mm]").c_str());
         reactPPAC.at(i).at(1).GetXaxis()->SetTitle((no+"A [mrad]").c_str());

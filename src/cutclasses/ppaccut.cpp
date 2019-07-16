@@ -10,21 +10,13 @@
 
 using std::vector, std::string, std::thread, std::atomic;
 
-void ppaccut::innerloop(treereader &tree, vector<vector<atomic<bool>>> &goodevents,
-                        vector<uint> range) {
-    // Step 1: cloning histograms
-    decltype(effPPAC) _effPPAC;
-    decltype(sumdiffppac) _sumdiffppac;
+void ppaccut::innerloop(treereader &tree, vector<uint> range) {
+    /// Step 1: cloning histograms
+    decltype(effPPAC) _effPPAC(effPPAC);
+    decltype(sumdiffppac) _sumdiffppac(sumdiffppac);
 
-    for(auto &i : effPPAC) _effPPAC.emplace_back(i);
-
-    for(auto &i: sumdiffppac){
-        _sumdiffppac.emplace_back();
-        for (auto &j: i) _sumdiffppac.back().emplace_back(j);
-    }
-
-    // Step 2: Preparing variables
-    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    /// Step 2: Preparing variables
+    const uint threadno = range.at(0)/(range.at(1)-range.at(0));
     vector<bool> temptruth(4, true); // variable for position checking
 
     progressbar progress(range.at(1)-range.at(0), threadno);
@@ -93,10 +85,10 @@ void ppaccut::innerloop(treereader &tree, vector<vector<atomic<bool>>> &goodeven
     }
     unitemutex.unlock();
 
-    progress.reset();
+    progressbar::reset();
 }
 
-void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
+void ppaccut::analyse(const std::vector<std::string> &input, TFile* output){
 
     vector<treereader> tree;
     tree.reserve(threads); // MUST stay as reallocation will call d'tor
@@ -113,23 +105,23 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
     for(auto &i:tree) i.setloopkeys(keys);
 
     //36 Values per Array (Event)
-    effPPAC.emplace_back("effPPACX","Efficiency of PPAC X",numplane,0,numplane);
-    effPPAC.emplace_back("effPPACY","Efficiency of PPAC Y",numplane,0,numplane);
+    effPPAC = {{"effPPACX","Efficiency of PPAC X",numplane,0,(double)numplane},
+               {"effPPACY","Efficiency of PPAC Y",numplane,0,(double)numplane}};
 
-    vector<string> arrname = { "PPACXsum","PPACXdiff","PPACYsum", "PPACYdiff"};
-    vector<string> arrtitle = {
+    std::array<string, 4> arrname = { "PPACXsum","PPACXdiff","PPACYsum",
+                                 "PPACYdiff"};
+    std::array<string, 4> arrtitle = {
             "Sum of Signals PPACX", "Difference of Signals PPACX",
             "Sum of Signals PPACY", "Difference of Signals PPACY"};
 
-    for(uint i = 0; i<2;i++) sumdiffppac.emplace_back(vector<TH2I>{});
-    sumdiffppac.at(0).emplace_back(arrname.at(0).c_str(),arrtitle.at(0).c_str(),
-                                        numplane,0,numplane,300,000,300);
-    sumdiffppac.at(0).emplace_back(arrname.at(1).c_str(),arrtitle.at(1).c_str(),
-                                        numplane,0,numplane,800,-200,200);
-    sumdiffppac.at(1).emplace_back(arrname.at(2).c_str(),arrtitle.at(2).c_str(),
-                                        numplane,0,numplane,150,0,150);
-    sumdiffppac.at(1).emplace_back(arrname.at(3).c_str(),arrtitle.at(3).c_str(),
-                                        numplane,0,numplane,800,-200,200);
+    sumdiffppac = {{{arrname.at(0).c_str(),arrtitle.at(0).c_str(),
+                        numplane,0,(double)numplane,300,000,300},
+                    {arrname.at(1).c_str(),arrtitle.at(1).c_str(),
+                        numplane,0,(double)numplane,800,-200,200}},
+                   {{arrname.at(2).c_str(),arrtitle.at(2).c_str(),
+                        numplane,0,(double)numplane,150,0,150},
+                    {arrname.at(3).c_str(),arrtitle.at(3).c_str(),
+                        numplane,0,(double)numplane,800,-200,200}}};
 
     for(auto &hist : sumdiffppac){
         uint toggle =0;
@@ -146,7 +138,7 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
     effPPAC.at(0).GetYaxis()->SetTitle("PPACX(x)/Plastic(F11)");
     effPPAC.at(1).GetYaxis()->SetTitle("PPACY(x)/Pplastic(F11)");
 
-    vector<int> cutpre ={0,0};
+    std::array<int, 2> cutpre = {0,0};
     for(auto &i: goodevents){
         cutpre.at(0) += i.at(0);
         cutpre.at(1) += i.at(1);
@@ -158,12 +150,12 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                                (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&ppaccut::innerloop, this, std::ref(tree.at(i)),
-                               ref(goodevents),ranges));
+                               ranges));
     }
 
     for (auto &i: th) i.detach();
 
-    while(finishcondition.ongoing()) finishcondition.draw();
+    while(progressbar::ongoing()) finishcondition.draw();
 
     output->mkdir("PPAC/FiredEff");
     output->cd("PPAC/FiredEff");
@@ -172,8 +164,8 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
         i.Write();
     }
 
-    vector<string> xy = {"X","Y"};
-    vector<string> sd = {"Sum", "Diff"};
+    std::array<string, 2> xy = {"X","Y"};
+    std::array<string, 2> sd = {"Sum", "Diff"};
 
     // Generating output structure
     for(uint j=0; j<2; j++){ // Loop over X and Y//
@@ -187,7 +179,7 @@ void ppaccut::analyse(const std::vector<std::string> input, TFile* output){
 
     output->cd("");
 
-    vector<int> cutafter = {0,0};
+    std::array<int, 2> cutafter = {0,0};
     for(auto &i:goodevents){
         cutafter.at(0) += i.at(0);
         cutafter.at(1) += i.at(1);

@@ -15,10 +15,9 @@ using std::vector, std::atomic, std::string, std::cout, std::endl, std::thread,
       std::ref;
 
 void triggercut::innerloop(treereader &tree,
-                           vector<vector<atomic<bool>>> &goodevents,
                            const std::vector<uint> range) {
     uint i = range.at(0);
-    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    const uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     // Construct progressbar object
     progressbar progress(range.at(1)-range.at(0),threadno);
@@ -37,7 +36,7 @@ void triggercut::innerloop(treereader &tree,
     progressbar::reset();
 }
 
-void triggercut::analyse(const vector<string> input){
+void triggercut::analyse(const vector<string> &input){
 
     txtwriter txt;
     
@@ -63,7 +62,7 @@ void triggercut::analyse(const vector<string> input){
         vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
                               (uint)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&triggercut::innerloop, this,
-                               ref(tree.at(i)),ref(goodevents), ranges));
+                               ref(tree.at(i)), ranges));
     }
 
     for(auto &t : th) t.detach();

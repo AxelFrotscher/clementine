@@ -11,12 +11,11 @@
 using std::vector, std::cout, std::endl, std::atomic, std::string, std::thread;
 
 void targetcut::innerloop(treereader &tree, vector<uint> range) {
-    //Step 1: Cloning histograms
-    decltype(tarhist) _tarhist;
-    for(auto &i:tarhist) _tarhist.emplace_back(i);
+    /// Step 1: Cloning histograms
+    decltype(tarhist) _tarhist(tarhist);
 
-    //Step 2: preparing variables
-    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    /// Step 2: preparing variables
+    const uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     progressbar progress(range.at(1)-range.at(0), threadno);
 
@@ -85,9 +84,7 @@ void targetcut::innerloop(treereader &tree, vector<uint> range) {
 
     // Step 3: rejoining histograms
     unitemutex.lock();
-    for(uint i=0; i<tarhist.size();i++){
-        tarhist.at(i).Add(&_tarhist.at(i));
-    }
+    for(uint i=0; i<tarhist.size();i++)  tarhist.at(i).Add(&_tarhist.at(i));
     unitemutex.unlock();
     progressbar::reset();
 }
@@ -104,8 +101,8 @@ void targetcut::analyse(const vector<string> &input, TFile *output) {
     vector<string> keys{"BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSPPAC.fpl"};
     for(auto &i: tree) i.setloopkeys(keys);
 
-    tarhist.emplace_back("target", "Beam Profile F8", 1000,-50,50,1000,-50,50);
-    tarhist.emplace_back("targetcut", "Cut Beam Profile F8", 1000,-50,50,1000,-50,50);
+    tarhist = {{"target", "Beam Profile F8", 1000,-50,50,1000,-50,50},
+               {"targetcut", "Cut Beam Profile F8", 1000,-50,50,1000,-50,50}};
 
     for(auto &histo: tarhist){
         histo.SetOption("colz");
