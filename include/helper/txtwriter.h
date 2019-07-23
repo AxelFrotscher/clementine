@@ -10,17 +10,16 @@
 class txtwriter{
 public:
     explicit txtwriter(std::string filename_){
-        filename = filename_;
+        filename = std::move(filename_);
         begin = std::chrono::system_clock::now();
     };
 
     explicit txtwriter() = default;
-    void addline(std::string line);
-    void writetofile();
+    static void addline(const std::string &line);
+    static void writetofile();
 
 private:
-    static std::string filename;
-    static std::vector<std::string> outputbuffer;
-
-    static std::chrono::system_clock::time_point begin;
+    inline static std::string filename;
+    inline static std::vector<std::string> outputbuffer;
+    inline static std::chrono::system_clock::time_point begin;
 };

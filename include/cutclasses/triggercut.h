@@ -9,7 +9,7 @@ class triggercut {
 public:
     std::vector<std::vector<std::atomic<bool>>> &goodevents;
 
-    void innerloop(treereader &tree, std::vector<uint> range);
+    void innerloop(treereader &tree, const std::vector<uint> range);
     void analyse(const std::vector<std::string> &input);
     triggercut(const std::vector<std::string> &input,
                std::vector<std::vector<std::atomic<bool>>> &goodevents_)
@@ -18,7 +18,7 @@ public:
     };
 
 private:
-    //TFile *output;
+
     const int badtrg = 0b110; // triggerbit to exclude (does not contain F7DS)
     int threads = std::min(25, std::max((int)sqrt(goodevents.size())/600,2));
 };

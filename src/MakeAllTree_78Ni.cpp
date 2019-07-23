@@ -1,4 +1,3 @@
-//#include <Rtypes.h>
 #include "MakeAllTree_78Ni.hh"
 #include "TArtBigRIPSParameters.hh"
 #include "TArtCalibFocalPlane.hh"
@@ -47,7 +46,7 @@ void generatetree(const string &infile, const string &output) {
     if (!estore.Open(infile.c_str()))
         __throw_invalid_argument(("Could not open" + infile).c_str());
 
-    uint setting = getset(estore); // 0 -> 2014, 1 -> 2015
+    const uint setting = getset(estore); // 0 -> 2014, 1 -> 2015
     // Create BigRIPSParameters to get Plastics, PPACs, ICs and FocalPlanes 
     // parameters from ".xml" files
     TArtBigRIPSParameters para;
@@ -290,7 +289,8 @@ void generatetree(const string &infile, const string &output) {
         }
 
         // Determine well focused events
-        const vector<uint> ppacuse{8,9,11}; // Which PPAC's to use (match w/ ppacname!)
+        const std::array<uint, 3> ppacuse{8,9,11}; // Which PPAC's to use (match
+        // w/ ppacname!)
 
         for(uint i=0; i<ppacuse.size(); i++){ // Loop over every PPAC
             uint ppacno = ppacuse.at(i);
@@ -394,7 +394,6 @@ void generatetree(const string &infile, const string &output) {
         }
 
         if(trackNbr <1 || trackNbr > 4) continue;
-
 
         /// Fill minos tpcdrift histogram
         for(int i=0; i<minoscalibvalues.size(); i++){ /// Loop over all pads

@@ -71,7 +71,7 @@ using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_strin
 
     /// All reaction modes:
     TGraphErrors crosssection;
-    crosssection.SetName(Form("cs%s", setting::getsetname().c_str()));
+    crosssection.SetName(Form("cs%s", settingname.c_str()));
     crosssection.SetTitle("Cross Sections Frotscher 2019");
 
     for(auto &i: reactionmodes){

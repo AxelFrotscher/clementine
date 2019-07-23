@@ -9,40 +9,33 @@
 #include "txtwriter.h"
 #include <thread>
 #include <numeric>
-#include <deque>
 
 using std::vector, std::atomic, std::string, std::cout, std::endl, std::thread,
       std::ref;
 
-void triggercut::innerloop(treereader &tree,
-                           const std::vector<uint> range) {
-    uint i = range.at(0);
+void triggercut::innerloop(treereader &tree, const vector<uint> range) {
+
     const uint threadno = range.at(0)/(range.at(1)-range.at(0));
 
     // Construct progressbar object
     progressbar progress(range.at(1)-range.at(0),threadno);
 
-    while(i<range.at(1)){
-        if(goodevents.at(i).at(0)){
-            tree.getevent(i);
-            if(tree.EventInfo_fBit[0] == badtrg || tree.EventInfo_fBit[0] == 11){
-                for(auto &j:goodevents.at(i))  j.exchange(false);
-            }
-        }
-        i++;
+    for(int i = range.at(0); i<range.at(1); i++){
         progress.increaseevent();
+        if(!goodevents.at(i).at(0)) continue;
+        tree.getevent(i);
+        if(tree.EventInfo_fBit[0] == badtrg || tree.EventInfo_fBit[0] == 11){
+            for(auto &j:goodevents.at(i))  j.exchange(false);
+        }
     }
-
     progressbar::reset();
 }
 
 void triggercut::analyse(const vector<string> &input){
 
-    txtwriter txt;
-    
     if(!setting::isemptyortrans() && setting::getminos()){
         cout << "Physics Run. Omitting trigger cut to gain statistics" << endl;
-        txt.addline("No trigger cut on DALI Trigger applied.");
+        txtwriter::addline("No trigger cut on DALI Trigger applied.");
         return;
     }
 
@@ -76,6 +69,6 @@ void triggercut::analyse(const vector<string> &input){
     printf("\nTrigger Cut out %lu Events %.2f %%\n", goodevents.size()-cutout,
            100*(1-cutout/(double)goodevents.size()));
 
-    txt.addline(Form("Trigger Cut for DALI %i events (%.2f %%).", cutout,
+    txtwriter::addline(Form("Trigger Cut for DALI %i events (%.2f %%).", cutout,
                      100*(1-cutout/(double)goodevents.size())));
 }

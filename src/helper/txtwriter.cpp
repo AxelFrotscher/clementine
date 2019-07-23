@@ -6,11 +6,7 @@
 #include "txtwriter.h"
 #include <chrono>
 
-std::string txtwriter::filename;
-std::vector<std::string> txtwriter::outputbuffer;
-std::chrono::system_clock::time_point txtwriter::begin;
-
-void txtwriter::addline(std::string line) {
+void txtwriter::addline(const std::string &line) {
     // Perform checks on line
 
     //add it to the queue

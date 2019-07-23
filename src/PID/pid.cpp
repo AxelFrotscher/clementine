@@ -37,13 +37,13 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
         else if(reaction.find("P3P") != string::npos) maxbrho = incval.at(7);
     }
 
-    uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    const uint threadno = range.at(0)/(range.at(1)-range.at(0));
     progressbar progress(range.at(1)-range.at(0), threadno);
 
     vector<vector<double>> valinc;     // Store temporary beam values
 
-    const std::array<int, 4> ppacFpositions{12,17,25,33}; //F5-2B, F7-2B,
-    // F9-2B, F11-2B
+    //F5-2B, F7-2B, F9-2B, F11-2B
+    const std::array<int, 4> ppacFpositions{12,17,25,33};
     const std::array<int, 4> ppacangledistance{650,945,700,500}; // in mm
 
     /// 2. Do the event loop
@@ -197,8 +197,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
     /// Step 3: rejoining data structure
     unitemutex.lock();
-    for(uint i=0;i<reactF5.size();i++)
-        reactF5.at(i).Add(&_reactF5.at(i));
+    for(uint i=0;i<reactF5.size();i++) reactF5.at(i).Add(&_reactF5.at(i));
 
     for(uint i=0;i<minosresults.size();i++)
         minosresults.at(i).Add(&_minosresults.at(i));
@@ -484,10 +483,6 @@ void PID::crosssection() {
                              1./numberdensity*(reactionpid2-chargestatevictims)/
                              reactionpid1/tottransmission);
     // 1% absolute error + 5% relative error
-    /* = crosssection*pow(1./reactionpid1 + 2./reactionpid2+
-                         pow(tottransmissionerror+ 0.02/tottransmission,2)+
-                         pow(numberdensityerror,2), 0.5);  // Error on Transm.*/
-
     double cserror = sqrt(
         pow(sqrt((double)reactionpid2)/(numberdensity*reactionpid1*tottransmission),2)+
         pow(sqrt(chargestatevictims)/(numberdensity*reactionpid1*tottransmission),2)+
@@ -516,8 +511,7 @@ void PID::crosssection() {
                 pow(1./reactionpid2+ 1./reactionpid1.load(),0.5) << " %";
     cout  << stringout.str() << endl;
 
-    txtwriter txt;
-    txt.addline(stringout.str());
+    txtwriter::addline(stringout.str());
 
     cout << "Ratio " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
          << "% " << endl;
@@ -700,7 +694,6 @@ void PID::chargestatecut(){
       projectileN -= 1;
       projectileZ -= 1;
     }
-
 
     double aoq = projectileN/(double)projectileZ; // AoQ of daughter Nucleus
     double aoqoffset = aoq - targetval.at(0);

@@ -26,70 +26,69 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
     bool extraF11analyse = false;
     if(mycut.at(threadno).size() == 7) extraF11analyse = true;
 
-    for(int i=range.at(0);i < range.at(1);i++){
-        if(goodevents.at(i).at(0)){
-            tree.getevent(i);
+    for(int i=range.at(0); i < range.at(1); i++){
+        progress.increaseevent();
+        if(!goodevents.at(i).at(0)) continue;  // Only take nice events
+        tree.getevent(i);
 
-            //F7 banana-cut, "uncut histogram's
-            if(mycut.at(threadno).at(1)->IsInside(
-                    tree.BigRIPSPlastic_fTLRaw[1]-tree.BigRIPSPlastic_fTRRaw[1],
-                    TMath::Log(tree.BigRIPSPlastic_fQLRaw[1]/
-                                       (double)tree.BigRIPSPlastic_fQRRaw[1]))){
-                for(uint j=0; j<numplastic; j++){              // plastic loop
-                    if((tree.BigRIPSPlastic_fQLRaw[j] >0 )&&
-                       (tree.BigRIPSPlastic_fQRRaw[j] >0)){   // 0 charge veto
-                        _qcorr2D.at(2*j).Fill(tree.BigRIPSPlastic_fQLRaw[j],
-                                           tree.BigRIPSPlastic_fQRRaw[j]);
-                        _qcorr.at(2*j).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
-                                              tree.BigRIPSPlastic_fQRRaw[j]));
-                        if((tree.BigRIPSPlastic_fTLRaw[j] >0) &&
-                           (tree.BigRIPSPlastic_fTRRaw[j] >0) ){ // 0 time veto
-                            _tqcorr2D.at(2*j).Fill(tree.BigRIPSPlastic_fTLRaw[j]-
-                                                  tree.BigRIPSPlastic_fTRRaw[j],
+        //F7 banana-cut, "uncut histogram's
+        if(mycut.at(threadno).at(1)->IsInside(
+            tree.BigRIPSPlastic_fTLRaw[1]-tree.BigRIPSPlastic_fTRRaw[1],
+            TMath::Log(tree.BigRIPSPlastic_fQLRaw[1]/
+                       (double)tree.BigRIPSPlastic_fQRRaw[1]))){
+            for(uint j=0; j<numplastic; j++){              // plastic loop
+                if((tree.BigRIPSPlastic_fQLRaw[j] >0 )&&
+                   (tree.BigRIPSPlastic_fQRRaw[j] >0)){   // 0 charge veto
+                    _qcorr2D.at(2*j).Fill(tree.BigRIPSPlastic_fQLRaw[j],
+                                          tree.BigRIPSPlastic_fQRRaw[j]);
+                    _qcorr.at(2*j).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
+                                             tree.BigRIPSPlastic_fQRRaw[j]));
+                    if((tree.BigRIPSPlastic_fTLRaw[j] >0) &&
+                       (tree.BigRIPSPlastic_fTRRaw[j] >0) ){ // 0 time veto
+                        _tqcorr2D.at(2*j).Fill(tree.BigRIPSPlastic_fTLRaw[j]-
+                                               tree.BigRIPSPlastic_fTRRaw[j],
                                        TMath::Log(tree.BigRIPSPlastic_fQLRaw[j]/
                                         (double)tree.BigRIPSPlastic_fQRRaw[j]));
-                        }
                     }
                 }
             }
+        }
 
-            //Cut out events properly:
-            if(!(mycut.at(threadno).at(0)->IsInside(
-                    tree.BigRIPSPlastic_fTLRaw[0]-tree.BigRIPSPlastic_fTRRaw[0],
-                    TMath::Log(tree.BigRIPSPlastic_fQLRaw[0]/
-                               (double)tree.BigRIPSPlastic_fQRRaw[0])) &&
-                 mycut.at(threadno).at(1)->IsInside(
-                    tree.BigRIPSPlastic_fTLRaw[1]-tree.BigRIPSPlastic_fTRRaw[1],
-                    TMath::Log(tree.BigRIPSPlastic_fQLRaw[1]/
-                               (double)tree.BigRIPSPlastic_fQRRaw[1])))){
+        //Cut out events properly:
+        if(!(mycut.at(threadno).at(0)->IsInside(
+                tree.BigRIPSPlastic_fTLRaw[0]-tree.BigRIPSPlastic_fTRRaw[0],
+                TMath::Log(tree.BigRIPSPlastic_fQLRaw[0]/
+                           (double)tree.BigRIPSPlastic_fQRRaw[0])) &&
+             mycut.at(threadno).at(1)->IsInside(
+                tree.BigRIPSPlastic_fTLRaw[1]-tree.BigRIPSPlastic_fTRRaw[1],
+                TMath::Log(tree.BigRIPSPlastic_fQLRaw[1]/
+                           (double)tree.BigRIPSPlastic_fQRRaw[1])))){
 
-                // If not in F3 and F7, cut out event completely
-                for(auto &k:goodevents.at(i)) k.exchange(false);
+            // If not in F3 and F7, cut out event completely
+            for(auto &k:goodevents.at(i)) k.exchange(false);
+        }
+        else{ // Test F7 and F11, no because we want cross sections
+            for(uint j=0; j<numplastic; j++){              // plastic loop
+                if(!(tree.BigRIPSPlastic_fTLRaw[j] >0 && // 0 time veto
+                     tree.BigRIPSPlastic_fTRRaw[j] >0) ) continue;
+                _qcorr2D.at(2*j+1).Fill(tree.BigRIPSPlastic_fQLRaw[j],
+                                        tree.BigRIPSPlastic_fQRRaw[j]);
+                _qcorr.at(2*j+1).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
+                                           tree.BigRIPSPlastic_fQRRaw[j]));
+                _tqcorr2D.at(2*j+1).Fill(tree.BigRIPSPlastic_fTLRaw[j]-
+                                         tree.BigRIPSPlastic_fTRRaw[j],
+                                         TMath::Log(tree.BigRIPSPlastic_fQLRaw[j]/
+                                         (double)tree.BigRIPSPlastic_fQRRaw[j]));
+
             }
-            else{ // Test F7 and F11, no because we want cross sections
-                for(uint j=0; j<numplastic; j++){              // plastic loop
-                    if(!(tree.BigRIPSPlastic_fTLRaw[j] >0 && // 0 time veto
-                         tree.BigRIPSPlastic_fTRRaw[j] >0) ) continue;
-                    _qcorr2D.at(2*j+1).Fill(tree.BigRIPSPlastic_fQLRaw[j],
-                                            tree.BigRIPSPlastic_fQRRaw[j]);
-                    _qcorr.at(2*j+1).Fill(sqrt(tree.BigRIPSPlastic_fQLRaw[j]*
-                                               tree.BigRIPSPlastic_fQRRaw[j]));
-                    _tqcorr2D.at(2*j+1).Fill(tree.BigRIPSPlastic_fTLRaw[j]-
-                                             tree.BigRIPSPlastic_fTRRaw[j],
-                                             TMath::Log(tree.BigRIPSPlastic_fQLRaw[j]/
-                                             (double)tree.BigRIPSPlastic_fQRRaw[j]));
-
-                }
-                // Extra special Obertelli plastic F11 (index=3) analysis
-                if(!extraF11analyse) continue;
-                for(int j=4; j<7; j++){
-                    if(mycut.at(threadno).at(j)->IsInside(tree.BigRIPSPlastic_fQLRaw[3],
-                                                      tree.BigRIPSPlastic_fQRRaw[3]))
+            // Extra special Obertelli plastic F11 (index=3) analysis
+            if(!extraF11analyse) continue;
+            for(int j=4; j<7; ++j){
+                if(mycut.at(threadno).at(j)->IsInside(tree.BigRIPSPlastic_fQLRaw[3],
+                                                     tree.BigRIPSPlastic_fQRRaw[3]))
                     _qxF11.at(j-4).Fill(tree.F11X);
-                }
             }
         }
-        progress.increaseevent();
     }
 
     // Step 3 reuniting the diagrams
@@ -216,8 +215,10 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
     }
 
     printf("\nPlastic Cut out %i F1-7 Events (%.3f %%) %i F1-11 Events (%.3f %%) \n",
-           cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
-           cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
+           cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/
+                                        (double)goodevents.size(),
+           cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/
+                                        (double)goodevents.size());
 
     for(auto &I: mycut) for(auto &j:I) delete j;
 }
