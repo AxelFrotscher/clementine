@@ -474,6 +474,7 @@ void PID::crosssection() {
     const double numberdensity = 0.433; // atoms/cm2 for 10cm LH2
     const double numberdensityerror = 0.00924; // relative error
     const double tottransmissionerror = 0.05; // conservative relative error
+    const double rel_num_dens_crap = 0.046; // relative amount of atoms F7<->D8
 
     // Reduce CS contribution by Brho cut
     if(reactF5.at(1).GetEntries() > 0)
@@ -481,7 +482,8 @@ void PID::crosssection() {
 
     double crosssection = std::max(0.,
                              1./numberdensity*(reactionpid2-chargestatevictims)/
-                             reactionpid1/tottransmission);
+                             reactionpid1/tottransmission*
+                             (1-rel_num_dens_crap/(1+rel_num_dens_crap)));
     // 1% absolute error + 5% relative error
     double cserror = sqrt(
         pow(sqrt((double)reactionpid2)/(numberdensity*reactionpid1*tottransmission),2)+
