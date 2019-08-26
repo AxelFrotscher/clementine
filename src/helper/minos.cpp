@@ -211,7 +211,7 @@ TMinosPass minosana::analyze() {
         //else continue;
     } // end of loop on pads
 
-    if(trackNbr_FINAL == 0){
+    if(trackNbr_FINAL == 0 ||  trackNbr_FINAL > 3){
         return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
                           z_vertex, {}, {}, {}, {});
     }

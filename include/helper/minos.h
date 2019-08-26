@@ -164,9 +164,9 @@ private:
 
 
     int filled =0 ;
-    double Tshaping =0;
+    double Tshaping;
     double TimeBinElec = 0;
-    double DelayTrigger =0;
+    double DelayTrigger;
     double VDrift = 0;
     int threadno=0;
     vector<vector<double>> minoscalibvalues;

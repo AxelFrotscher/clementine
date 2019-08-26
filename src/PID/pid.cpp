@@ -182,16 +182,26 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
             else for(auto &i: minres.phi_vertex) _minos1dresults.at(5).Fill(i);
 
             // Get Vertex data
-            if(reaction.find("P2P") != string::npos && minres.vertexdist.size() == 1) // P2P-mode
-                _minos1dresults.at(2).Fill(minres.vertexdist[0]);
-            if(reaction.find("P3P") != string::npos && minres.vertexdist.size() == 3) // P3P-mode
-                for(auto &i: minres.vertexdist) _minos1dresults.at(2).Fill(i);
+            if(reaction.find("P2P") != string::npos && minres.vertexdist.size
+            () == 1) { // P2P-mode
+              _minos1dresults.at(2).Fill(minres.vertexdist[0]);
+
+              // Get all theta angles as 1d
+              if(minres.trackNbr_final == 2)
+                  for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
+            }
+
+            if(reaction.find("P3P") != string::npos && minres.vertexdist.size
+            () == 3) { // P3P-mode
+              for (auto &i : minres.vertexdist)
+                _minos1dresults.at(2).Fill(i);
+
+              // Get all theta angles as 1d
+              for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
+            }
 
             // Get Lambda Errors
             for(auto &i: minres.lambda2dE) _minos1dresults.at(3).Fill(i);
-
-            // Get all theta angles as 1d
-            for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
         }
     }
 
