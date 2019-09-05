@@ -161,168 +161,171 @@ namespace nancy{
           cutval[6][1][0]},  // F11absF9X0
     };
 
+    using a10 = const std::array<double ,10>;
+    using a4 = const std::array<double ,4>;
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
-    const std::vector<double> incval111Nb{
+    a10 incval111Nb{
             2.7125, // center x
             41.0,   // center y
             0.009,  // radius x
             0.6,    // radius y
             .4772,  // transmission (p,2p)
-            6.892,  // Brho acceptance cut (p,2p)
+            6.731,  // Brho lower acceptance cut (p,2p)
+            6.892,  // Brho higher acceptance cut (p,2p)
             .4668,  // transmission (p,3p)
-            6.80    // Brho acceptance cut (p,3p)
+            6.69,   // Brho lower acceptance cut (p,3p)
+            6.80    // Brho higher acceptance cut (p,3p)
     };
 
     // Fifth value is simulated total transmission from F7 through LH2-Target
     // for P,2P. 6th is for P,3P
-    const std::vector<double> targetval112Nb{2.729, 41.0, .01, .5,};
-    const std::vector<double> targetval111Nb{2.707, 40.9, .01, .5,};
-    const std::vector<double> targetval110Nb{2.683, 40.95,.01, .6,};
-    const std::vector<double> targetval109Nb{2.66, 40.9, incval111Nb.at(2),
-                                             incval111Nb.at(3)};
-    const std::vector<double> targetval111Zr{2.775, 40,   .01, .4,};
-    const std::vector<double> targetval110Zr{2.75,  40.0, .01, .5,};
-    const std::vector<double> targetval109Zr{2.725, 39.9, .01, .5,};
-    const std::vector<double> targetval108Zr{2.6992,39.91,.01, .4,};
 
-    const std::vector<double> incval110Mo{2.6247, 41.9, .006, .6, .467, 6.844, .461, 6.754};
-    const std::vector<double> incval110Nb{2.6882, 40.9, .006, .6, .477, 6.868, .467, 6.775};
-    const std::vector<double> incval111Mo{2.6482, 41.9, .006, .6, .469, 6.867, .459, 6.778};
-    const std::vector<double> incval112Mo{2.672,  41.9, .006, .6, .469, 6.891, .458, 6.800};
-    const std::vector<double> incval113Mo{2.696,  41.92,.004, .6, .467, 6.914, .459, 6.824};
-    const std::vector<double> incval112Tc{2.6103, 42.9, .004, .6, .461, 6.868, .451, 6.779};
-    const std::vector<double> incval113Tc{2.6334, 42.86,.004, .6, .461, 6.890, .451, 6.802};
-    const std::vector<double> incval114Tc{2.6568, 42.88,.004, .5, .458, 6.913, .451, 6.825};
+    a4 targetval112Nb{2.729, 41.0, .01, .5,};
+    a4 targetval111Nb{2.707, 40.9, .01, .5,};
+    a4 targetval110Nb{2.683, 40.95,.01, .6,};
+    a4 targetval109Nb{2.66, 40.9, .01, .5};
+    a4 targetval111Zr{2.775, 40,   .01, .4,};
+    a4 targetval110Zr{2.75,  40.0, .01, .5,};
+    a4 targetval109Zr{2.725, 39.9, .01, .5,};
+    a4 targetval108Zr{2.6992,39.91,.01, .4,};
+
+  a10 incval110Mo{2.6247, 41.9, .006, .6, .467, 6.677, 6.844, .461, 6.637, 6.754};
+  a10 incval110Nb{2.6882, 40.9, .006, .6, .477, 6.705, 6.868, .467, 6.665, 6.775};
+  a10 incval111Mo{2.6482, 41.9, .006, .6, .469, 6.702, 6.867, .459, 6.661, 6.778};
+  a10 incval112Mo{2.672,  41.9, .006, .6, .469, 6.727, 6.891, .458, 6.687, 6.800};
+  a10 incval113Mo{2.696,  41.92,.004, .6, .467, 6.751, 6.914, .459, 6.711, 6.824};
+  a10 incval112Tc{2.6103, 42.9, .004, .6, .461, 6.700, 6.868, .451, 6.661, 6.779};
+  a10 incval113Tc{2.6334, 42.86,.004, .6, .461, 6.724, 6.890, .451, 6.685, 6.802};
+  a10 incval114Tc{2.6568, 42.88,.004, .5, .458, 6.758, 6.913, .451, 6.709, 6.825};
 
     // Second setting
-    const std::vector<double> incval90Se{2.651, 34.0, .006, .6, .546, 7.076, .543, 6.954};
-    const std::vector<double> incval89Se{2.623, 34.0, .005, .6, .545, 7.055, .543, 6.933};
-    const std::vector<double> incval88As{2.670, 33.0, .006, .6, .552, 7.052, .546, 6.926};
-    const std::vector<double> incval89As{2.701, 33.0, .006, .6, .545, 7.073, .546, 6.947};
-    const std::vector<double> incval88Ge{2.7533,32.0, .008, .6};
-    const std::vector<double> targetval87Ga{2.812, 30.35, .01, .5,};
-    const std::vector<double> targetval87Ge{2.725, 31.24, .01, .5,};
-    const std::vector<double> targetval88Ge{2.762, 31.23, .012,.5,};
-    const std::vector<double> targetval88As{2.679, 32.27, .01, .5,};
-    const std::vector<double> targetval89As{2.711, 32.3,  .012,.5,};
-    //const std::vector<double> targetval90Se{2.662, 33.27, .01, .5};
+    a10 incval90Se{2.651, 34.0, .006, .6, .546, 6.817, 7.076, .543, 6.748, 6.954};
+    a10 incval89Se{2.623, 34.0, .005, .6, .545, 6.795, 7.055, .543, 6.725, 6.933};
+    a10 incval88As{2.670, 33.0, .006, .6, .552, 6.796, 7.052, .546, 6.724, 6.926};
+    a10 incval89As{2.701, 33.0, .006, .6, .545, 6.818, 7.073, .546, 6.747, 6.947};
+    a4 incval88Ge{2.7533,32.0, .008, .6};
+    a4 targetval87Ga{2.812, 30.35, .01, .5,};
+    a4 targetval87Ge{2.725, 31.24, .01, .5,};
+    a4 targetval88Ge{2.762, 31.23, .012,.5,};
+    a4 targetval88As{2.679, 32.27, .01, .5,};
+    a4 targetval89As{2.711, 32.3,  .012,.5,};
+    //a4 targetval90Se{2.662, 33.27, .01, .5};
 
     // Third setting
-    const std::vector<double> incval93Br{2.6578, 35.0, 0.007, 0.6, .536, 6.912, .532, 6.800};
-    const std::vector<double> incval94Br{2.6878, 35.0, 0.007, 0.6, .533, 6.933, .533, 6.821};
-    const std::vector<double> incval95Br{2.7172, 35.0, 0.008, 0.6, .531, 6.955, .532, 6.842};
-    const std::vector<double> incval94Kr{2.6116, 36.0, 0.006, 0.6, .532, 6.914, .529, 6.806};
-    const std::vector<double> incval95Kr{2.640,  36.0, 0.006, 0.6, .528, 6.935, .528, 6.827};
-    const std::vector<double> incval96Kr{2.670,  36.0, 0.006, 0.6, .526, 6.956, .527, 6.848};
-    const std::vector<double> incval97Rb{2.6246, 37.0, 0.006, 0.6, .521, 6.959, .523, 6.853};
+    a10 incval93Br{2.6578, 35.0, 0.007, 0.6, .536, 6.679, 6.912, .532, 6.622, 6.800};
+    a10 incval94Br{2.6878, 35.0, 0.007, 0.6, .533, 6.704, 6.933, .533, 6.647, 6.821};
+    a10 incval95Br{2.7172, 35.0, 0.008, 0.6, .531, 6.728, 6.955, .532, 0.000, 6.842};
+    a10 incval94Kr{2.6116, 36.0, 0.006, 0.6, .532, 6.677, 6.914, .529, 6.622, 6.806};
+    a10 incval95Kr{2.640,  36.0, 0.006, 0.6, .528, 6.701, 6.935, .528, 6.646, 6.827};
+    a10 incval96Kr{2.670,  36.0, 0.006, 0.6, .526, 6.726, 6.956, .527, 6.671, 6.848};
+    a10 incval97Rb{2.6246, 37.0, 0.006, 0.6, .521, 6.724, 6.959, .523, 6.671, 6.853};
 
-    const std::vector<double> targetval91As{2.7622, 32.42, .011, .6};
-    const std::vector<double> targetval92As{2.7933, 32.49, .011, .6};
-    const std::vector<double> targetval93As{2.8236, 32.54, .011, .6};
-    const std::vector<double> targetval92Se{2.7091, 33.39, .011, .6};
-    const std::vector<double> targetval93Se{2.7419, 33.44, .011, .6};
-    const std::vector<double> targetval94Se{2.7711, 33.49, .011, .6};
-    const std::vector<double> targetval93Br{2.6627, 34.30, .009, .6};
-    const std::vector<double> targetval94Br{2.6932, 34.43, .010, .6};
-    const std::vector<double> targetval95Br{2.7215, 34.41, .012, .6};
-    const std::vector<double> targetval96Kr{2.6756, 35.42, .009, .6};
+    a4 targetval91As{2.7622, 32.42, .011, .6};
+    a4 targetval92As{2.7933, 32.49, .011, .6};
+    a4 targetval93As{2.8236, 32.54, .011, .6};
+    a4 targetval92Se{2.7091, 33.39, .011, .6};
+    a4 targetval93Se{2.7419, 33.44, .011, .6};
+    a4 targetval94Se{2.7711, 33.49, .011, .6};
+    a4 targetval93Br{2.6627, 34.30, .009, .6};
+    a4 targetval94Br{2.6932, 34.43, .010, .6};
+    a4 targetval95Br{2.7215, 34.41, .012, .6};
+    a4 targetval96Kr{2.6756, 35.42, .009, .6};
 
     // Fourth Setting
-    const std::vector<double> incval99Rb {2.6770, 37.00, .006, .6, .513, 6.985, .495, 6.877};
-    const std::vector<double> incval100Rb{2.7046, 37.00, .006, .6, .513, 7.007, .496, 6.898};
-    const std::vector<double> incval100Sr{2.6332, 38.00, .006, .6, .508, 6.987, .491, 6.881};
-    const std::vector<double> incval101Sr{2.6587, 38.00, .006, .6, .508, 7.008, .492, 6.903};
-    const std::vector<double> incval102Sr{2.6857, 38.00, .006, .6, .506, 7.029, .495, 6.925};
-    const std::vector<double> incval102Y {2.6172, 39.00, .006, .6, .503, 7.010, .488, 6.908};
-    const std::vector<double> incval103Y {2.6426, 39.00, .006, .6, .501, 7.031, .491, 6.930};
+    a10 incval99Rb {2.6770, 37.00, .006, .6, .513, 6.768, 6.985, .495, 6.714, 6.877};
+    a10 incval100Rb{2.7046, 37.00, .006, .6, .513, 6.793, 7.007, .496, 6.739, 6.898};
+    a10 incval100Sr{2.6332, 38.00, .006, .6, .508, 6.767, 6.987, .491, 6.714, 6.881};
+    a10 incval101Sr{2.6587, 38.00, .006, .6, .508, 6.790, 7.008, .492, 6.738, 6.903};
+    a10 incval102Sr{2.6857, 38.00, .006, .6, .506, 6.814, 7.029, .495, 6.762, 6.925};
+    a10 incval102Y {2.6172, 39.00, .006, .6, .503, 6.789, 7.010, .488, 6.738, 6.908};
+    a10 incval103Y {2.6426, 39.00, .006, .6, .501, 6.813, 7.031, .491, 6.762, 6.930};
 
-    const std::vector<double> targetval97Br {2.7829,34.503, .011, .6};
-    const std::vector<double> targetval98Br {2.8115,34.553, .011, .6};
-    const std::vector<double> targetval98Kr {2.7333,35.422, .011, .6};
-    const std::vector<double> targetval99Kr {2.7613,35.485, .011, .5};
-    const std::vector<double> targetval100Kr{2.7891,35.506, .011, .6};
-    const std::vector<double> targetval99Rb {2.6874,36.389, .011, .6};
-    const std::vector<double> targetval100Rb{2.7145,36.412, .01,  .6};
-    const std::vector<double> targetval101Rb{2.7410,36.499, .01,  .6};
-    const std::vector<double> targetval101Sr{2.6697,37.438, .01,  .6};
-    const std::vector<double> targetval102Sr{2.6966,37.467, .01,  .6};
+    a4 targetval97Br {2.7829,34.503, .011, .6};
+    a4 targetval98Br {2.8115,34.553, .011, .6};
+    a4 targetval98Kr {2.7333,35.422, .011, .6};
+    a4 targetval99Kr {2.7613,35.485, .011, .5};
+    a4 targetval100Kr{2.7891,35.506, .011, .6};
+    a4 targetval99Rb {2.6874,36.389, .011, .6};
+    a4 targetval100Rb{2.7145,36.412, .01,  .6};
+    a4 targetval101Rb{2.7410,36.499, .01,  .6};
+    a4 targetval101Sr{2.6697,37.438, .01,  .6};
+    a4 targetval102Sr{2.6966,37.467, .01,  .6};
 
-    // Fifth Setting                                              , T(P,2P) Brhocut(P,2P),..
-    const std::vector<double> incval66Mn{2.6372, 25.09, .006, .6, .595, 6.937, .596, 6.772};
-    const std::vector<double> incval67Mn{2.6773, 25.07, .006, .6, .593, 6.958, .593, 6.793};
-    const std::vector<double> incval67Fe{2.5738, 26.05, .006, .6, .593, 6.944, .593, 6.786};
-    const std::vector<double> incval68Fe{2.6124, 26.07, .006, .6, .590, 6.965, .591, 6.807};
-    const std::vector<double> incval68Co{2.5151, 27.03, .006, .6, .589, 6.953, .590, 6.803};
-    const std::vector<double> incval69Co{2.5524, 27.00, .006, .6, .587, 6.974, .587, 6.824};
-    const std::vector<double> incval70Co{2.5893, 27.01, .006, .6, .584, 6.995, .585, 6.845};
-    const std::vector<double> incval70Ni{2.4957, 27.98, .006, .6, .584, 6.981, .585, 6.838};
-    const std::vector<double> incval71Ni{2.5317, 27.96, .006, .6, .582, 7.002, .582, 6.859};
+    // Fifth Setting      , T(P,2P) Brhocut(P,2P),..
+    a10 incval66Mn{2.6372, 25.09, .006, .6, .595, 6.629, 6.937, .596, 6.526, 6.772};
+    a10 incval67Mn{2.6773, 25.07, .006, .6, .593, 6.654, 6.958, .593, 6.550, 6.793};
+    a10 incval67Fe{2.5738, 26.05, .006, .6, .593, 6.632, 6.944, .593, 6.536, 6.786};
+    a10 incval68Fe{2.6124, 26.07, .006, .6, .590, 6.656, 6.965, .591, 6.559, 6.807};
+    a10 incval68Co{2.5151, 27.03, .006, .6, .589, 6.636, 6.953, .590, 6.544, 6.803};
+    a10 incval69Co{2.5524, 27.00, .006, .6, .587, 6.660, 6.974, .587, 6.567, 6.824};
+    a10 incval70Co{2.5893, 27.01, .006, .6, .584, 6.683, 6.995, .585, 6.590, 6.845};
+    a10 incval70Ni{2.4957, 27.98, .006, .6, .584, 6.664, 6.981, .585, 6.576, 6.838};
+    a10 incval71Ni{2.5317, 27.96, .006, .6, .582, 6.686, 7.002, .582, 6.599, 6.859};
 
-    const std::vector<double> targetval70Co{2.6020, 26.74, .015, .6};
-    const std::vector<double> targetval69Co{2.5652, 26.70, .015, .6};
-    const std::vector<double> targetval69Fe{2.6636, 25.69, .015, .6};
-    const std::vector<double> targetval68Fe{2.6255, 25.65, .015, .6};
-    const std::vector<double> targetval67Fe{2.5887, 25.57, .015, .6};
-    const std::vector<double> targetval68Mn{2.7291, 24.61, .015, .6};
-    const std::vector<double> targetval67Mn{2.6899, 24.55, .015, .6};
-    const std::vector<double> targetval66Mn{2.6515, 24.50, .015, .6};
-    const std::vector<double> targetval66Cr{2.7611, 23.51, .015, .6};
-    const std::vector<double> targetval65Cr{2.7222, 23.44, .015, .6};
-    const std::vector<double> targetval65V {2.8366, 22.45, .015, .6};
-    const std::vector<double> targetval64V {2.8007, 22.34, .015, .6};
+    a4 targetval70Co{2.6020, 26.74, .015, .6};
+    a4 targetval69Co{2.5652, 26.70, .015, .6};
+    a4 targetval69Fe{2.6636, 25.69, .015, .6};
+    a4 targetval68Fe{2.6255, 25.65, .015, .6};
+    a4 targetval67Fe{2.5887, 25.57, .015, .6};
+    a4 targetval68Mn{2.7291, 24.61, .015, .6};
+    a4 targetval67Mn{2.6899, 24.55, .015, .6};
+    a4 targetval66Mn{2.6515, 24.50, .015, .6};
+    a4 targetval66Cr{2.7611, 23.51, .015, .6};
+    a4 targetval65Cr{2.7222, 23.44, .015, .6};
+    a4 targetval65V {2.8366, 22.45, .015, .6};
+    a4 targetval64V {2.8007, 22.34, .015, .6};
 
     // Sixth setting (70Fe)
-    const std::vector<double> incval75Zn{2.4984, 29.91, .006, .6, .579, 6.890, .579, 6.763};
-    const std::vector<double> incval76Zn{2.5312, 29.91, .006, .6, .576, 6.911, .577, 6.782};
-    const std::vector<double> incval74Cu{2.5503, 28.95, .006, .6, .582, 6.883, .582, 6.750};
-    const std::vector<double> incval75Cu{2.5847, 28.98, .006, .6, .579, 6.904, .580, 6.771};
-    const std::vector<double> incval72Ni{2.5697, 27.94, .006, .6, .587, 6.855, .587, 6.715};
-    const std::vector<double> incval73Ni{2.6057, 27.98, .006, .6, .585, 6.876, .585, 6.736};
-    const std::vector<double> incval74Ni{2.6411, 28.00, .006, .6, .582, 6.900, .582, 6.760};
+    a10 incval75Zn{2.4984, 29.91, .006, .6, .579, 6.597, 6.890, .579, 6.521, 6.763};
+    a10 incval76Zn{2.5312, 29.91, .006, .6, .576, 6.621, 6.911, .577, 6.542, 6.782};
+    a10 incval74Cu{2.5503, 28.95, .006, .6, .582, 6.594, 6.883, .582, 6.514, 6.750};
+    a10 incval75Cu{2.5847, 28.98, .006, .6, .579, 6.619, 6.904, .580, 6.537, 6.771};
+    a10 incval72Ni{2.5697, 27.94, .006, .6, .587, 6.567, 6.855, .587, 6.484, 6.715};
+    a10 incval73Ni{2.6057, 27.98, .006, .6, .585, 6.592, 6.876, .585, 6.508, 6.736};
+    a10 incval74Ni{2.6411, 28.00, .006, .6, .582, 6.617, 6.900, .582, 6.532, 6.760};
 
-    const std::vector<double> targetval74Cu{2.5643, 29.05, .014, .6};
-    const std::vector<double> targetval75Cu{2.6017, 29.09, .014, .6};
-    const std::vector<double> targetval73Ni{2.6193, 27.98, .014, .6};
-    const std::vector<double> targetval74Ni{2.6546, 28.02, .014, .6};
-    const std::vector<double> targetval72Ni{2.5848, 27.98, .014, .6};
-    const std::vector<double> targetval71Co{2.6436, 26.88, .014, .6};
-    const std::vector<double> targetval72Co{2.6790, 26.95, .014, .6};
-    const std::vector<double> targetval73Co{2.7146, 27.00, .014, .6};
-    //const std::vector<double> targetval70Co{2.6059, 26.87, .014, .6};
-    //const std::vector<double> targetval69Fe{2.6715, 25.76, .014, .6};
-    const std::vector<double> targetval70Fe{2.7074, 25.79, .014, .6};
-    const std::vector<double> targetval71Fe{2.7426, 25.88, .014, .6};
-    const std::vector<double> targetval72Fe{2.7784, 25.92, .014, .6};
+    a4 targetval74Cu{2.5643, 29.05, .014, .6};
+    a4 targetval75Cu{2.6017, 29.09, .014, .6};
+    a4 targetval73Ni{2.6193, 27.98, .014, .6};
+    a4 targetval74Ni{2.6546, 28.02, .014, .6};
+    a4 targetval72Ni{2.5848, 27.98, .014, .6};
+    a4 targetval71Co{2.6436, 26.88, .014, .6};
+    a4 targetval72Co{2.6790, 26.95, .014, .6};
+    a4 targetval73Co{2.7146, 27.00, .014, .6};
+    //a4 targetval70Co{2.6059, 26.87, .014, .6};
+    //a4 targetval69Fe{2.6715, 25.76, .014, .6};
+    a4 targetval70Fe{2.7074, 25.79, .014, .6};
+    a4 targetval71Fe{2.7426, 25.88, .014, .6};
+    a4 targetval72Fe{2.7784, 25.92, .014, .6};
 
     // Seventh Setting (78Ni)
+    a10 incval82Ge{2.5612,31.85, .006, .6, .562, 6.723, 6.995, .561, 6.647, 6.870};
+    a10 incval83Ge{2.593, 31.91, .006, .6, .559, 6.745, 7.016, .560, 6.671, 6.891};
+    a10 incval80Ga{2.580, 30.91, .006, .6, .567, 6.698, 6.971, .565, 6.620, 6.840};
+    a10 incval81Ga{2.6126,30.93, .006, .6, .565, 6.721, 6.992, .564, 6.643, 6.861};
+    a10 incval82Ga{2.6446,30.93, .006, .6, .563, 6.746, 7.013, .563, 6.668, 6.882};
+    a10 incval78Zn{2.5986,29.92, .006, .6, .573, 6.672, 6.945, .566, 6.589, 6.807};
+    a10 incval79Zn{2.6329,29.95, .006, .6, .570, 6.696, 6.966, .566, 6.614, 6.828};
+    a10 incval80Zn{2.6663,29.96, .006, .6, .569, 6.722, 6.987, .567, 6.640, 6.850};
+    a10 incval81Zn{2.7007,29.96, .006, .6, .566, 6.748, 7.008, .565, 6.668, 6.874};
+    a10 incval77Cu{2.6538,28.94, .006, .6, .576, 6.671, 6.936, .568, 6.586, 6.798};
+    a10 incval78Cu{2.6890,28.97, .006, .6, .573, 6.697, 6.960, .569, 6.613, 6.822};
+    a10 incval79Cu{2.7245,29.00, .006, .6, .571, 6.723, 6.982, .569, 6.640, 6.844};
 
-    const std::vector<double> incval82Ge{2.5612,31.85, .006, .6, .562, 6.995, .561, 6.870};
-    const std::vector<double> incval83Ge{2.593, 31.91, .006, .6, .559, 7.016, .560, 6.891};
-    const std::vector<double> incval80Ga{2.580, 30.91, .006, .6, .567, 6.971, .565, 6.840};
-    const std::vector<double> incval81Ga{2.6126,30.93, .006, .6, .565, 6.992, .564, 6.861};
-    const std::vector<double> incval82Ga{2.6446,30.93, .006, .6, .563, 7.013, .563, 6.882};
-    const std::vector<double> incval78Zn{2.5986,29.92, .006, .6, .573, 6.945, .566, 6.807};
-    const std::vector<double> incval79Zn{2.6329,29.95, .006, .6, .570, 6.966, .566, 6.828};
-    const std::vector<double> incval80Zn{2.6663,29.96, .006, .6, .569, 6.987, .567, 6.850};
-    const std::vector<double> incval81Zn{2.7007,29.96, .006, .6, .566, 7.008, .565, 6.874};
-    const std::vector<double> incval77Cu{2.6538,28.94, .006, .6, .576, 6.936, .568, 6.798};
-    const std::vector<double> incval78Cu{2.6890,28.97, .006, .6, .573, 6.960, .569, 6.822};
-    const std::vector<double> incval79Cu{2.7245,29.00, .006, .6, .571, 6.982, .569, 6.844};
-
-    const std::vector<double> targetval81Ga{2.6121, 31.46, .014, .6};
-    const std::vector<double> targetval82Ga{2.6454, 31.52, .014, .6};
-    const std::vector<double> targetval79Zn{2.6348, 30.32, .014, .6};
-    const std::vector<double> targetval80Zn{2.6668, 30.38, .014, .6};
-    const std::vector<double> targetval81Zn{2.7000, 30.41, .014, .6};
-    const std::vector<double> targetval77Cu{2.6577, 29.29, .014, .6};
-    const std::vector<double> targetval78Cu{2.6901, 29.30, .014, .6};
-    const std::vector<double> targetval79Cu{2.7237, 29.32, .014, .6};
-    const std::vector<double> targetval80Cu{2.7586, 29.40, .014, .6};
-    const std::vector<double> targetval76Ni{2.7168, 28.17, .014, .6};
-    const std::vector<double> targetval77Ni{2.7500, 28.22, .014, .6};
-    const std::vector<double> targetval78Ni{2.7857, 28.30, .014, .6};
-    const std::vector<double> targetval75Co{2.7777, 27.10, .014, .6};
-    const std::vector<double> targetval76Co{2.8148, 27.20, .014, .6};
+    a4 targetval81Ga{2.6121, 31.46, .014, .6};
+    a4 targetval82Ga{2.6454, 31.52, .014, .6};
+    a4 targetval79Zn{2.6348, 30.32, .014, .6};
+    a4 targetval80Zn{2.6668, 30.38, .014, .6};
+    a4 targetval81Zn{2.7000, 30.41, .014, .6};
+    a4 targetval77Cu{2.6577, 29.29, .014, .6};
+    a4 targetval78Cu{2.6901, 29.30, .014, .6};
+    a4 targetval79Cu{2.7237, 29.32, .014, .6};
+    a4 targetval80Cu{2.7586, 29.40, .014, .6};
+    a4 targetval76Ni{2.7168, 28.17, .014, .6};
+    a4 targetval77Ni{2.7500, 28.22, .014, .6};
+    a4 targetval78Ni{2.7857, 28.30, .014, .6};
+    a4 targetval75Co{2.7777, 27.10, .014, .6};
+    a4 targetval76Co{2.8148, 27.20, .014, .6};
 
     //Cutting the IC values to combat pile-up
     const std::vector<std::vector<double>> iclimit{
@@ -405,9 +408,11 @@ namespace nancytrans{
           cutval[3][1][0]}, // F11absF9X0
     };
 
+    using a10 = std::array<double ,10>;
+    using a4 =  std::array<double ,4>;
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
     // center x centery radius x radius y
-    const std::vector<std::vector<double>> incval{
+    const std::vector<a10> incval{
         {2.681, 41.0, 0.009, 0.6},  //110Nb
         {2.701, 33.00, 0.007, 0.6}, // 89As
         {0.,0.,0.,0.},   // cut value should match centered beam nuclide
@@ -415,12 +420,12 @@ namespace nancytrans{
         {2.7333,37.00,0.006,0.6}  // 101Rb
     };
 
-    const std::vector<std::vector<double>> targetval{
-        {2.6799, 40.95, 0.012, incval.at(0).at(3), 1}, //110Nb
-        {2.7122, 32.328, 0.012, 0.65, 1}, // 89As
-        {0.,0.,0.,0., 1},
-        {2.7383, 36.571, 0.012, incval.at(3).at(3), 1}, //101Rb
-        {2.7383, 36.571, 0.012, incval.at(3).at(3), 1},
+    const std::vector<a4> targetval{
+        {2.6799, 40.95, 0.012, incval.at(0).at(3)}, //110Nb
+        {2.7122, 32.328, 0.012, 0.65}, // 89As
+        {0.,0.,0.,0.},
+        {2.7383, 36.571, 0.012, incval.at(3).at(3)}, //101Rb
+        {2.7383, 36.571, 0.012, incval.at(3).at(3)},
     };
 }
 
@@ -481,24 +486,26 @@ namespace nancyempty{
               cutval[3][1][0]}, // F11absF9X0
     };
 
+    using a10 = std::array<double ,10>;
+    using a4 =  std::array<double ,4>;
     // For the PID-plot ratios are needed. Boundaries for inc and outg. defined
-    const std::vector<std::vector<double>> incval{
-            {2.681, 41.0, 0.009, 0.5},
-            {2.6510, 34.00, 0.008, 0.6},
-            {2.717,35.00, 0.007,0.6},
-            {2.7328, 37.00,0.006,0.6},
-            {2.5981, 26.76,0.006,0.6},  // 68Fe(p,2p)
-            {2.7328, 37.00,0.006,0.6},
-            {2.6693, 30.46,0.006,0.6}   // 81Ga(p,2p)
+    const std::vector<a10> incval{
+            {2.681,   41.0, .009, .5},
+            {2.6510, 34.00, .008, .6},
+            {2.717,  35.00, .007, .6},
+            {2.7328, 37.00, .006, .6},
+            {2.5981, 26.76, .006, .6},  // 68Fe(p,2p)
+            {2.7328, 37.00, .006, .6},
+            {2.6693, 30.46, .006, .6}   // 81Ga(p,2p)
     };
 
-    const std::vector<std::vector<double>> targetval{
-            {2.7505, 39.27, 0.011, 0.6, 1},
-            {2.663, 33.302, 0.012, 0.65, 1},
-            {2.76, 33.22, 0.012, incval.at(2).at(3), 1},
-            {2.7759,35.212,0.012,0.6, 1},
+    const std::vector<a4> targetval{
+            {2.7505, 39.27, 0.011, 0.6},
+            {2.663, 33.302, 0.012, 0.65},
+            {2.76, 33.22, 0.012, .6},
+            {2.7759,35.212,0.012,0.6},
             {2.5425, 26.30, .016, .7},//{2.6000,25.202,0.012,0.6, 1},
-            {2.7759,35.212,0.012,0.6, 1},
-            {2.5966, 30.86, .014, .62, 1}//{2.6510,29.834,0.012,0.6, 1}
+            {2.7759,35.212,0.012,0.6},
+            {2.5966, 30.86, .014, .62}//{2.6510,29.834,0.012,0.6, 1}
     };
 }

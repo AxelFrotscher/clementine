@@ -242,7 +242,7 @@ const vector<std::string> setting::getreactions() {
     }
 }
 
-const vector<double> setting::getPIDincutvalue() {
+const std::array<double, 10> setting::getPIDincutvalue() {
     // return cut particle for incoming beam (trans/empty only)
     if(!setting::isemptyortrans())
         std::__throw_invalid_argument("Run in not empty or transmision run!\n");
@@ -256,7 +256,7 @@ const vector<double> setting::getPIDincutvalue() {
     return nancyempty::incval.at(0);
 }
 
-const vector<double> setting::getPIDoutcutvalue() {
+const std::array<double, 4> setting::getPIDoutcutvalue() {
     // return cut particle for incoming beam (trans/empty only)
     if(!setting::isemptyortrans())
         std::__throw_invalid_argument("Run in not empty or transmision run!\n");

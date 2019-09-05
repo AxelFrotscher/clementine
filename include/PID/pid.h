@@ -43,8 +43,8 @@ private:
     std::vector<TH2C> minossingleevent; // Contains histograms for single events
     std::vector<TH1I> minos1dresults;
 
-    std::vector<double> incval; // cut on incoming particles (F7)
-    std::vector<double> targetval; // second cut to detected particles (F11)
+    std::array<double ,10> incval; // cut on incoming particles (F7)
+    std::array<double, 4> targetval; // second cut to detected particles (F11)
 
     //Setup Crossection trigger:
     std::atomic<int> reactionpid1{0};

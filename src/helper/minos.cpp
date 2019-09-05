@@ -370,10 +370,7 @@ TMinosPass minosana::analyze() {
     };
 
     // Calculate all interangles between the protons
-    // require events to be simulation-like
-    const bool simulation_pass = lambda2dc.at(1) > 160-7./9.*lambda2dc.at(0);
-
-    if(trackNbr_FINAL > 1 && simulation_pass){
+    if(trackNbr_FINAL > 1){
         phi_vertex.push_back(phiinter(parFit_1r,parFit_2r));
         if(trackNbr_FINAL > 2){
             phi_vertex.push_back(phiinter(parFit_1r,parFit_3r));

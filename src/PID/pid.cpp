@@ -31,10 +31,16 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
     // MINOS with single events
     decltype(minossingleevent) _minossingleevent(minossingleevent);
 
-    double maxbrho = 10; // Tm, higher than all my values
-    if(incval.size() == 8){
-        if(     reaction.find("P2P") != string::npos) maxbrho = incval.at(5);
-        else if(reaction.find("P3P") != string::npos) maxbrho = incval.at(7);
+    double brho_max = 10; // Tm, higher than all my values
+    double brho_min = 6; // Tm, lower than all my values
+
+    if(     reaction.find("P2P") != string::npos){
+      brho_min = incval.at(5);
+      brho_max = incval.at(6);
+    }
+    else if(reaction.find("P3P") != string::npos){
+      brho_max = incval.at(8);
+      brho_max = incval.at(9);
     }
 
     const uint threadno = range.at(0)/(range.at(1)-range.at(0));
@@ -102,7 +108,8 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
             _PIDplot.at(1).at(3).Fill(beamaoqcorr2, tree.BigRIPSBeam_zet[4]);
         }
         // cut on energy(Brho) to avoid offcenter Transmission
-        if(tree.BigRIPSRIPS_brho[1] < maxbrho) reactionpid1++;
+        if(tree.BigRIPSRIPS_brho[1] < brho_max &&
+           tree.BigRIPSRIPS_brho[1] > brho_min) reactionpid1++;
 
         // Fill F5 value with PID
         _reactF5.at(0).Fill(tree.F5X);
@@ -114,7 +121,8 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
             && goodevents.at(eventcounter).at(1))) continue;
 
         // cut on energy(Brho) to avoid offcenter Transmission
-        if(tree.BigRIPSRIPS_brho[1] < maxbrho) reactionpid2++;
+        if(tree.BigRIPSRIPS_brho[1] < brho_max &&
+           tree.BigRIPSRIPS_brho[1] > brho_min) reactionpid2++;
         // Investigate F7 position of (p,2p) ions (off center effects)
         _reactF5.at(1).Fill(tree.F5X);
 
@@ -154,45 +162,39 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                     minostree.MinosClustQ, (int)threadno, _minossingleevent);
             TMinosPass minres = analysis.analyze();
 
-            if(minres.thetaz.size() ==  2)
+            if(minres.trackNbr_final == 2){
                 _minosresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1]);
+                _minosresults.at(3).Fill(minres.chargeweight[0],
+                                         minres.chargeweight[1]);
+                _minos1dresults.at(1).Fill(minres.phi_vertex.at(0));
+            }
 
             _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
 
-            if(minres.lambda2d.size() > 1 && minres.thetaz.size() == 3){
+            if(minres.trackNbr_final == 3){
                 _minosresults.at(2).Fill(minres.lambda2d.at(0),
                                          minres.lambda2d.at(1));
                 _minos3dresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1],
                                            minres.thetaz[2]);
+                for(auto &i: minres.phi_vertex) _minos1dresults.at(5).Fill(i);
             }
 
-            if(minres.chargeweight.size() == 2){
-                _minosresults.at(3).Fill(minres.chargeweight[0],
-                                         minres.chargeweight[1]);
-            }
-
-            if(minres.chargeweight.size() > 1 ){
+            if(minres.trackNbr_final > 1 ){
                 // at least two tracks need to survive
                 _minos1dresults.at(0).Fill(minres.z_vertex);
             }
 
-            /// Two track angles go for debug to different histogram
-            if(minres.phi_vertex.size() == 1)
-                _minos1dresults.at(1).Fill(minres.phi_vertex.at(0));
-            else for(auto &i: minres.phi_vertex) _minos1dresults.at(5).Fill(i);
-
             // Get Vertex data
-            if(reaction.find("P2P") != string::npos && minres.vertexdist.size
-            () == 1) { // P2P-mode
+            if(reaction.find("P2P") != string::npos &&
+               minres.trackNbr_final == 2) { // P2P-mode && 2 Tracks
               _minos1dresults.at(2).Fill(minres.vertexdist[0]);
 
               // Get all theta angles as 1d
-              if(minres.trackNbr_final == 2)
-                  for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
+              for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
             }
 
-            if(reaction.find("P3P") != string::npos && minres.vertexdist.size
-            () == 3) { // P3P-mode
+            if(reaction.find("P3P") != string::npos &&
+               minres.trackNbr_final == 3) { // P3P-mode && 3 Tracks
               for (auto &i : minres.vertexdist)
                 _minos1dresults.at(2).Fill(i);
 
@@ -233,7 +235,6 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                             _minossingleevent.end());
 
     unitemutex.unlock();
-
     progressbar::reset();
 }
 
@@ -270,7 +271,8 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
                         "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho"};
     for(auto &i:tree) i.setloopkeys(keys);
 
-    /// Make slow chain for MINOS readout
+    /// Make slow chain for
+
     vector<treereader> minostree;
     minostree.reserve(threads); // MUST stay as reallocation will call d'tor
     for(int i=0; i<threads; i++) minostree.emplace_back(input);
@@ -473,12 +475,10 @@ void PID::offctrans() {
 void PID::crosssection() {
     // Find out reaction type
     double tottransmission = 1;
-    if(incval.size() == 8){
-        if(     reaction.find("P2P") != string::npos)
+    if(     reaction.find("P2P") != string::npos)
             tottransmission = incval.at(4);
-        else if(reaction.find("P3P") != string::npos)
-            tottransmission = incval.at(6);
-    }
+    else if(reaction.find("P3P") != string::npos)
+            tottransmission = incval.at(7);
 
     // Calculate the final crosssection for this run
     const double numberdensity = 0.433; // atoms/cm2 for 10cm LH2
@@ -544,7 +544,7 @@ void PID::reactionparameters() {
 
     using namespace nancy;
 
-    vector<vector<std::variant<string,const vector<double>>>> master{
+    vector<std::array< std::variant<string, a4, a10>,3>> master{
         {"111NbPPN", incval111Nb, targetval110Nb},
         {"111NbPP2N",incval111Nb, targetval109Nb},
         {"111NbP2P", incval111Nb, targetval110Zr},
@@ -655,8 +655,8 @@ void PID::reactionparameters() {
 
     for(auto &i: master){
         if(reaction == std::get<string>(i.at(0))){
-            incval    = std::get<const vector<double>>(i.at(1));
-            targetval = std::get<const vector<double>>(i.at(2));
+            incval    = std::get<a10>(i.at(1));
+            targetval = std::get<a4>(i.at(2));
             return;
         }
     }
