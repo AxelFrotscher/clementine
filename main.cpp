@@ -95,7 +95,7 @@ int main(int argc, char**argv){
                 case 0:{
                     cout << "Analyzing emptyrun [0-" << s.emptyrun.size()-1 << "] "
                          << endl;
-                    for(int j=0; j<s.emptyrun.size(); j++){
+                    for(ulong j=0; j<s.emptyrun.size(); j++){
                         //Delete internal static storage of master class
                         auto man = TArtStoreManager::Instance();
                         delete man;
@@ -117,7 +117,7 @@ int main(int argc, char**argv){
                     if(!(cin >> i)) throw invalid_argument("WTH");
                     if(i == s.goodruns.size()){
                         cout << "Analyze ALL the events" << endl;
-                        for(int j=0; j<s.goodruns.size(); j++){
+                        for(ulong j=0; j<s.goodruns.size(); j++){
                             //Delete inernal static storage of master class
                             auto man = TArtStoreManager::Instance();
                             delete man;

@@ -39,7 +39,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
       brho_max = incval.at(6);
     }
     else if(reaction.find("P3P") != string::npos){
-      brho_max = incval.at(8);
+      brho_min = incval.at(8);
       brho_max = incval.at(9);
     }
 
@@ -53,7 +53,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
     const std::array<int, 4> ppacangledistance{650,945,700,500}; // in mm
 
     /// 2. Do the event loop
-    for(int eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
+    for(uint eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
         /// Don't take sorted out events
         progress.increaseevent();
         if(!goodevents.at(eventcounter).at(0)) continue;
@@ -133,7 +133,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
         // Fill Information to the beam profile/shape/energy
         // 17 == F7PPAC-2B, 15 == F7PPAC-1B
-        for(int i=0; i<_reactPPAC.size();i++){
+        for(ulong i=0; i<_reactPPAC.size();i++){
             _reactPPAC.at(i).at(0).Fill(
                     tree.BigRIPSPPAC_fX[ppacFpositions.at(i)],
                     tree.BigRIPSPPAC_fY[ppacFpositions.at(i)]);
@@ -191,6 +191,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
               // Get all theta angles as 1d
               for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
+              for(auto &i: minres.thetaerr) _minos1dresults.at(6).Fill(i);
             }
 
             if(reaction.find("P3P") != string::npos &&
@@ -200,6 +201,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
               // Get all theta angles as 1d
               for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
+              for(auto &i: minres.thetaerr) _minos1dresults.at(6).Fill(i);
             }
 
             // Get Lambda Errors
@@ -209,25 +211,25 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
     /// Step 3: rejoining data structure
     unitemutex.lock();
-    for(uint i=0;i<reactF5.size();i++) reactF5.at(i).Add(&_reactF5.at(i));
+    for(ulong i=0;i<reactF5.size();i++) reactF5.at(i).Add(&_reactF5.at(i));
 
-    for(uint i=0;i<minosresults.size();i++)
+    for(ulong i=0;i<minosresults.size();i++)
         minosresults.at(i).Add(&_minosresults.at(i));
 
-    for(uint i=0; i<minos1dresults.size(); i++)
+    for(ulong i=0; i<minos1dresults.size(); i++)
         minos1dresults.at(i).Add(&_minos1dresults.at(i));
 
-    for(uint i=0; i<minos3dresults.size(); i++)
+    for(ulong i=0; i<minos3dresults.size(); i++)
         minos3dresults.at(i).Add(&_minos3dresults.at(i));
 
-    for(uint i=0;i<reactPPAC.size();i++){
-        for(uint j=0; j<reactPPAC.at(0).size(); j++){
+    for(ulong i=0;i<reactPPAC.size();i++){
+        for(ulong j=0; j<reactPPAC.at(0).size(); j++){
             reactPPAC.at(i).at(j).Add(&_reactPPAC.at(i).at(j));
         }
     }
 
-    for(uint i=0;i<PIDplot.size();i++){
-        for(uint j=0;j<PIDplot.at(0).size();j++){
+    for(ulong i=0; i<PIDplot.size(); i++){
+        for(ulong j=0; j<PIDplot.at(0).size(); j++){
             PIDplot.at(i).at(j).Add(&_PIDplot.at(i).at(j));
         }
     }
@@ -321,12 +323,12 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     for(auto &elem: reactF5) elem.Write();
     if(bestfit) bestfit->Write();
 
-    for(int i=0; i<reactPPAC.size();i++){
+    for(ulong i=0; i<reactPPAC.size();i++){
         output->cd(folders.at(3+i).c_str());
         for(auto &elem: reactPPAC.at(i)) elem.Write();
     }
 
-    for(int i=0; i<brhoprojection.at(0).size(); i++){
+    for(ulong i=0; i<brhoprojection.at(0).size(); i++){
         output->cd(folders.at(3+i).c_str());
         for(auto &j : brhoprojection) j.at(i).Write();
     }
@@ -368,7 +370,7 @@ void PID::offctrans() {
     const int startbin = (uint)(reactF5.back().FindFirstBinAbove(0));
     const int stopbin = (uint)(reactF5.back().FindLastBinAbove(0));
     double sum =0, totalweight =0;
-    for(int i=startbin; i<stopbin;i++){
+    for(int i=startbin; i<stopbin; ++i){
         if((bool)reactF5.back().GetBinContent(i)) {
             sum += reactF5.back().GetBinContent(i) /
                    pow(reactF5.back().GetBinError(i), 2);
@@ -690,7 +692,7 @@ void PID::chargestatecut(){
     string temp = reaction;
     temp.erase(temp.length()-3); // Erasing the P2/3P-part
     temp.erase(0,reaction.substr(0,startindex).size()); // Erase Number
-    for(int i=1; i<chemelem.size(); i++){
+    for(ulong i=1; i<chemelem.size(); i++){
         if(temp == chemelem.at(i)){ projectileZ = i; break;}
     }
 
@@ -852,7 +854,8 @@ void PID::histogramsetup() {
          {"vertexdistr", "Distance between proton tracks", 300, 0, 50},
          {"lambdaE", "Angular Error of tracks", 300,0, 15},
          {"theta", "#theta of all protons", 180,0, 180},
-         {"phidistr3", "Reaction angle three tracks", 90, 0, 180}};
+         {"phidistr3", "Reaction angle three tracks", 90, 0, 180},
+         {"thetaE", "#theta uncertainty of tracks", 300,0, 15}};
 
     minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
     minos1dresults.at(1).GetXaxis()->SetTitle("#phi / #circ");
@@ -860,6 +863,7 @@ void PID::histogramsetup() {
     minos1dresults.at(3).GetXaxis()->SetTitle("#Delta #lambda_{track} / #circ");
     minos1dresults.at(4).GetXaxis()->SetTitle("#theta / #circ");
     minos1dresults.at(5).GetXaxis()->SetTitle("#phi / #circ");
+    minos1dresults.at(6).GetXaxis()->SetTitle("#Delta#theta / #circ");
 
     for(auto &elem: minos1dresults) elem.GetYaxis()->SetTitle("N");
 
@@ -881,7 +885,7 @@ void PID::histogramsetup() {
         elem.GetYaxis()->SetTitle("N");
     }
 
-    for(int i=0; i<brhoprojection.at(0).size(); i++){
+    for(ulong i=0; i<brhoprojection.at(0).size(); i++){
         string no = "F"+ to_string(5+2*i) + "X";
         brhoprojection.at(0).at(i).GetXaxis()->SetTitle("B#rho BigRIPS [Tm]");
         brhoprojection.at(1).at(i).GetXaxis()->SetTitle("B#rho BigRIPS [Tm]");
@@ -898,7 +902,7 @@ void PID::histogramsetup() {
         }
     }
 
-    for(int i=0; i<reactPPAC.size(); i++){
+    for(ulong i=0; i<reactPPAC.size(); i++){
         const string no = "F" + to_string(5+2*i);
         reactPPAC.at(i).at(0).GetXaxis()->SetTitle((no+"X [mm]").c_str());
         reactPPAC.at(i).at(0).GetYaxis()->SetTitle((no+"Y [mm]").c_str());
@@ -918,7 +922,7 @@ void PID::histogramsetup() {
 
 void PID::brhoprojections(){
     // Fill histograms of i.e. F5X(Brho), needs to be done afterwards
-    for(int i=0; i<brhoprojection.at(0).size(); i++){ // Loop over all Focal Planes
+    for(ulong i=0; i<brhoprojection.at(0).size(); i++){ // Loop over all Focal Planes
         for(int j=1; j<reactPPAC.at(i).at(2).GetNbinsY(); j++){ // Loop over all bins
             TH1D *temp = reactPPAC.at(i).at(2).ProjectionX(Form("_pfx%i",j),j,j,"e");
             double mean = temp->GetMean();

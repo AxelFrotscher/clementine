@@ -47,7 +47,7 @@ TMinosPass minosana::analyze() {
 
     if(trackNbr <1 || trackNbr > 4)
         return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                          z_vertex, {}, {}, {}, {});
+                          z_vertex, {}, {}, {}, {}, {});
 
     /// Bonus for Tracknumber between 1 and 4
     if (!filled) cerr << "Trackno.:" << trackNbr << " but no evts." << endl;
@@ -213,7 +213,7 @@ TMinosPass minosana::analyze() {
 
     if(trackNbr_FINAL == 0 ||  trackNbr_FINAL > 3){
         return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                          z_vertex, {}, {}, {}, {});
+                          z_vertex, {}, {}, {}, {}, {});
     }
 
   // Look at some events
@@ -327,15 +327,31 @@ TMinosPass minosana::analyze() {
     // cos theta = v1*v2/(|v1|*|v2|), v1 = (0,0,1)^T, v2 = (m1,m3,1)^T
     auto cthet = [](vector<double> a){
         assert(a.size() == 4);
-        return acos(1/pow(1+pow(a[1],2) + pow(a[3],2),.5)) * 180./TMath::Pi();};
+        return acos(1/pow(1 + pow(a[1],2) + pow(a[3],2),.5)) *
+               180./TMath::Pi();
+    };
 
-    theta.at(0) = cthet(parFit_1r);
-    theta.at(1) = cthet(parFit_2r);
-    theta.at(2) = cthet(parFit_3r);
+    auto thetaerror = [](vector<double> pf, vector<double> err, double covxy){
+        /// Calculates the Gaussian error of the theta angle for each track
+        assert(pf.size() == 4);
+        double norm = pf[1]*pf[1]+pf[3]*pf[3]+1;
+        return 180./TMath::Pi()*sqrt(pow(pf[1]*err[1]/(pow(norm,3/2.) *
+                                                   sqrt(1-1/(norm))),2.) +
+                                 pow(pf[3]*err[3]/(pow(norm,3/2.) *
+                                                   sqrt(1-1/(norm))),2.) +
+                                 2*pf[1]*pf[3]*covxy/(pow(norm,3)*(1-1/norm)));
+    };
+
+    theta = {cthet(parFit_1r), cthet(parFit_2r), cthet(parFit_3r)};
+
+    thetaerr = { thetaerror(parFit_1r, err_1, covxy.at(0)),
+                 thetaerror(parFit_2r, err_2, covxy.at(1)),
+                 thetaerror(parFit_3r, err_3, covxy.at(2)) };
 
     // Only calculate angles for real tracks
     while(trackNbr_FINAL < theta.size()){
         theta.pop_back();
+        thetaerr.pop_back();
     }
     sort(theta.begin(), theta.end()); // Sort angles
 
@@ -420,6 +436,7 @@ TMinosPass minosana::analyze() {
     // Estimate the angular uncertainty in lambda
     auto lambdaerror = [](vector<double> pf, vector<double> err, double covxy){
         /// Calculates the Gaussian error of the lambda angle for each track
+        /// projection
         assert(pf.size() == 4);
         return 180./TMath::Pi()/(pow(pf[1],2)+ pow(pf[3],2))*sqrt(
                 pow(pf[1]*err[3],2) + pow(-pf[3]*err[1],2) - 2*pf[1]*pf[3]*covxy);
@@ -434,7 +451,7 @@ TMinosPass minosana::analyze() {
     while(trackNbr_FINAL < lambdaE.size()) lambdaE.pop_back();
 
     return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                      z_vertex, lambda2dc, chargeweight, verticedist, lambdaE);
+                      z_vertex, lambda2dc, chargeweight, verticedist, lambdaE, thetaerr);
 }
 
 int minosana::Obertelli_filter(vector<double> &x, vector<double> &y,

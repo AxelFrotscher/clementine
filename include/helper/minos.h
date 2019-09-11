@@ -111,16 +111,17 @@ struct TMinosPass{
     vector<double> chargeweight;
     vector<double> vertexdist;
     vector<double> lambda2dE;
+    vector<double> thetaerr;
 
     TMinosPass(double r_vertex_, vector<double> thetaz_,
                vector<double> &phi_vertex_, double trackNbr_, double trackNbr_Final,
                double z_vertex_, vector<double> lambda2d_,
                vector<double> chargeweight_, vector<double> vertexdist_,
-               vector<double> lambda2dE_):
+               vector<double> lambda2dE_, vector<double> thetaerr_):
                r_vertex(r_vertex_), thetaz(thetaz_), phi_vertex(phi_vertex_),
                trackNbr(trackNbr_), trackNbr_final(trackNbr_Final),
                z_vertex(z_vertex_), lambda2d(lambda2d_), chargeweight(chargeweight_),
-               vertexdist(vertexdist_), lambda2dE(lambda2dE_){}
+               vertexdist(vertexdist_), lambda2dE(lambda2dE_), thetaerr(thetaerr_){}
 };
 
 class minosana{
@@ -174,6 +175,7 @@ private:
     vector<vector<double>> minostime;
     vector<TH2C> &minossingleevent;
     vector<double> theta{0,0,0};
+    vector<double> thetaerr{0,0,0};
     vector<double> chargeweight;
     vector<double> phi_vertex={};
     TMinosClust fitdata;

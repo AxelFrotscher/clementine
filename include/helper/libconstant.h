@@ -61,13 +61,15 @@ namespace runinfo{
         {"75ZnP2P", "76ZnP2P", "74CuP2P", "75CuP2P", "72NiP2P", "74NiP2P",
          "75ZnP3P", "76ZnP3P", "74CuP3P", "75CuP3P", "72NiP3P",
          "74NiP3P"}, // "73NiP2P", "73NiP3P",
-        {"82GeP2P", "83GeP2P", "80GaP2P", "81GaP2P", "82GaP2P", "78ZnP2P", "79ZnP2P",
-         "80ZnP2P", "82GeP3P", "83GeP3P", "80GaP3P", "81GaP3P", "82GaP3P", "78ZnP3P",
+        {//"82GeP2P", "83GeP2P",
+         "80GaP2P", "81GaP2P", "82GaP2P", "78ZnP2P", "79ZnP2P",
+         "80ZnP2P", //"82GeP3P", "83GeP3P",
+         "80GaP3P", "81GaP3P", "82GaP3P", "78ZnP3P",
          "79ZnP3P", "80ZnP3P"}}; // test
 }
 
 namespace nancy{
-    //Variables and constants used for 111Nb->110Zr setting
+    // Variables and constants used for 111Nb->110Zr setting
     // Cut Isotopes for higherorder correction, F3-7, and F8-11
 
     // center x, centery, radius x, radius y
