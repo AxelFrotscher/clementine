@@ -23,6 +23,7 @@ TMinosPass minosana::analyze() {
     vector<bool> clusterringbool;
     vector<int> clusternbr, clusterpads;
     int trackNbr = 0, trackNbr_FINAL = 0;
+    vector<double> eV = {}; // empty vector for unfilled data
 
     if (filled) {
         for (int iteration = 0; (Xpad.size() > 9 && iteration < 20); iteration++) {
@@ -46,9 +47,9 @@ TMinosPass minosana::analyze() {
     }
 
     if(trackNbr <1 || trackNbr > 4)
-        return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                          z_vertex, {}, {}, {}, {}, {});
-
+        return TMinosPass(r_vertex, theta, lambda, trackNbr, trackNbr_FINAL,
+                          z_vertex, eV, eV, eV, eV, eV);
+    
     /// Bonus for Tracknumber between 1 and 4
     if (!filled) cerr << "Trackno.:" << trackNbr << " but no evts." << endl;
 
@@ -212,8 +213,8 @@ TMinosPass minosana::analyze() {
     } // end of loop on pads
 
     if(trackNbr_FINAL == 0 ||  trackNbr_FINAL > 3){
-        return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                          z_vertex, {}, {}, {}, {}, {});
+        return TMinosPass(r_vertex, theta, lambda, trackNbr, trackNbr_FINAL,
+                          z_vertex, eV, eV, eV, eV, eV);
     }
 
   // Look at some events
@@ -356,27 +357,38 @@ TMinosPass minosana::analyze() {
     sort(theta.begin(), theta.end()); // Sort angles
 
   // angles in xy-plane for all tracks
-    vector<double> lambda2d{
-        atan2(parFit_1r.at(3), parFit_1r.at(1))*180/TMath::Pi(),
-        atan2(parFit_2r.at(3), parFit_2r.at(1))*180/TMath::Pi(),
-        atan2(parFit_3r.at(3), parFit_3r.at(1))*180/TMath::Pi()
-    };
+    vector<double> phi2d{
+        atan2(parFit_1r.at(3), parFit_1r.at(1))*180/TMath::Pi()};
+    
+    if(trackNbr_FINAL > 1){
+        phi2d.push_back(atan2(parFit_2r.at(3),
+                                 parFit_2r.at(1))*180/TMath::Pi());
+        if(trackNbr_FINAL > 2)  // Add one angle for each additional track
+            phi2d.push_back(atan2(parFit_3r.at(3),
+                                     parFit_3r.at(1))*180/TMath::Pi());
+    }
 
-    // Transform fomr neg. angles to positive
-    for(auto &i:lambda2d) if(i<0) i = 360 +i;
-    sort(lambda2d.begin(), lambda2d.end());
+    // Transform from negative angles to positive angles
+    for(auto &i:phi2d) if(i < 0) i = 360 + i;
+    sort(phi2d.begin(), phi2d.end());
 
-    vector<double> lambda2dc{
-        lambda2d.at(2)-lambda2d.at(1),
-        lambda2d.at(1)-lambda2d.at(0),
-        lambda2d.at(0)+360-lambda2d.at(2)
-    };
+    vector<double> phi2dc = {};
+    
+    if(trackNbr_FINAL == 2){
+        phi2dc = {phi2d.at(1) - phi2d.at(0),
+                  phi2d.at(0) + 360 - phi2d.at(1)};
+    }
+    else if(trackNbr_FINAL == 3){
+        phi2dc = {phi2d.at(2) - phi2d.at(1),
+                  phi2d.at(1) - phi2d.at(0),
+                  phi2d.at(0) + 360 - phi2d.at(2)};
+    }
 
     // Delete largest angle
-    lambda2dc.erase(std::max_element(lambda2dc.begin(), lambda2dc.end()));
-    sort(lambda2dc.begin(), lambda2dc.end());
+    if(!phi2dc.empty()) phi2dc.erase(std::max_element(phi2dc.begin(), phi2dc.end()));
+    sort(phi2dc.begin(), phi2dc.end());
 
-    auto phiinter = [](auto p1, auto p2){
+    auto lambdainter = [](auto p1, auto p2){
         /// This method calculates the relative angles between two protons
         assert(p1.size() ==4 && p2.size() == 4);
         return acos( (p1[1] * p2[1] + p1[3] * p2[3] + 1)/
@@ -387,14 +399,12 @@ TMinosPass minosana::analyze() {
 
     // Calculate all interangles between the protons
     if(trackNbr_FINAL > 1){
-        phi_vertex.push_back(phiinter(parFit_1r,parFit_2r));
+        lambda.push_back(lambdainter(parFit_1r, parFit_2r));
         if(trackNbr_FINAL > 2){
-            phi_vertex.push_back(phiinter(parFit_1r,parFit_3r));
-            phi_vertex.push_back(phiinter(parFit_3r,parFit_2r));
+            lambda.push_back(lambdainter(parFit_1r, parFit_3r));
+            lambda.push_back(lambdainter(parFit_3r, parFit_2r));
         }
     }
-
-    if(trackNbr_FINAL != 3) lambda2dc = {}; // Filter out other events
 
     double radin = 40, radout = 95;
     auto param = [](vector<double> pf, double radin){
@@ -434,7 +444,7 @@ TMinosPass minosana::analyze() {
     }
 
     // Estimate the angular uncertainty in lambda
-    auto lambdaerror = [](vector<double> pf, vector<double> err, double covxy){
+    auto phierror = [](vector<double> pf, vector<double> err, double covxy){
         /// Calculates the Gaussian error of the lambda angle for each track
         /// projection
         assert(pf.size() == 4);
@@ -442,16 +452,16 @@ TMinosPass minosana::analyze() {
                 pow(pf[1]*err[3],2) + pow(-pf[3]*err[1],2) - 2*pf[1]*pf[3]*covxy);
     };
 
-    vector<double> lambdaE{
-        lambdaerror(parFit_1r, err_1, covxy.at(0)),
-        lambdaerror(parFit_2r, err_2, covxy.at(1)),
-        lambdaerror(parFit_3r, err_3, covxy.at(2))
+    vector<double> phiE{
+            phierror(parFit_1r, err_1, covxy.at(0)),
+            phierror(parFit_2r, err_2, covxy.at(1)),
+            phierror(parFit_3r, err_3, covxy.at(2))
     };
     // Delete all errors not related to a real track
-    while(trackNbr_FINAL < lambdaE.size()) lambdaE.pop_back();
+    while(trackNbr_FINAL < phiE.size()) phiE.pop_back();
 
-    return TMinosPass(r_vertex, theta, phi_vertex, trackNbr, trackNbr_FINAL,
-                      z_vertex, lambda2dc, chargeweight, verticedist, lambdaE, thetaerr);
+    return TMinosPass(r_vertex, theta, lambda, trackNbr, trackNbr_FINAL,
+                      z_vertex, phi2dc, chargeweight, verticedist, phiE, thetaerr);
 }
 
 int minosana::Obertelli_filter(vector<double> &x, vector<double> &y,

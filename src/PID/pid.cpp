@@ -162,22 +162,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                     minostree.MinosClustQ, (int)threadno, _minossingleevent);
             TMinosPass minres = analysis.analyze();
 
-            if(minres.trackNbr_final == 2){
-                _minosresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1]);
-                _minosresults.at(3).Fill(minres.chargeweight[0],
-                                         minres.chargeweight[1]);
-                _minos1dresults.at(1).Fill(minres.phi_vertex.at(0));
-            }
-
-            _minosresults.at(1).Fill(minres.trackNbr,minres.trackNbr_final);
-
-            if(minres.trackNbr_final == 3){
-                _minosresults.at(2).Fill(minres.lambda2d.at(0),
-                                         minres.lambda2d.at(1));
-                _minos3dresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1],
-                                           minres.thetaz[2]);
-                for(auto &i: minres.phi_vertex) _minos1dresults.at(5).Fill(i);
-            }
+            _minosresults.at(1).Fill(minres.trackNbr, minres.trackNbr_final);
 
             if(minres.trackNbr_final > 1 ){
                 // at least two tracks need to survive
@@ -186,12 +171,23 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
 
             // Get Vertex data
             if(reaction.find("P2P") != string::npos &&
-               minres.trackNbr_final == 2) { // P2P-mode && 2 Tracks
-              _minos1dresults.at(2).Fill(minres.vertexdist[0]);
+                minres.trackNbr_final == 2) { // P2P-mode && 2 Tracks
+                _minos1dresults.at(2).Fill(minres.vertexdist[0]);
 
-              // Get all theta angles as 1d
-              for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
-              for(auto &i: minres.thetaerr) _minos1dresults.at(6).Fill(i);
+                // Get all theta angles as 1d
+                for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
+                for(auto &i: minres.thetaerr) _minos1dresults.at(6).Fill(i);
+
+                // Theta correlation plot:
+                _minosresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1]);
+                // Charge-plot (useless, no resolution)
+                _minosresults.at(3).Fill(minres.chargeweight[0],
+                                         minres.chargeweight[1]);
+                // reaction angle plot
+                _minos1dresults.at(1).Fill(minres.lambda.at(0));
+                
+                // projected angle plot
+                _minos1dresults.at(7).Fill(minres.phi2d.at(0));
             }
 
             if(reaction.find("P3P") != string::npos &&
@@ -200,12 +196,21 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
                 _minos1dresults.at(2).Fill(i);
 
               // Get all theta angles as 1d
-              for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
+              for(auto &i: minres.thetaz)   _minos1dresults.at(4).Fill(i);
               for(auto &i: minres.thetaerr) _minos1dresults.at(6).Fill(i);
+
+                _minosresults.at(2).Fill(minres.phi2d.at(0),
+                                         minres.phi2d.at(1));
+                _minos3dresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1],
+                                           minres.thetaz[2]);
+                for(auto &i: minres.lambda) _minos1dresults.at(5).Fill(i);
+    
+                // projected angle plot
+                _minos1dresults.at(7).Fill(minres.phi2d.at(0));
             }
 
-            // Get Lambda Errors
-            for(auto &i: minres.lambda2dE) _minos1dresults.at(3).Fill(i);
+            // Get Phi Errors
+            for(auto &i: minres.phi2dE) _minos1dresults.at(3).Fill(i);
         }
     }
 
@@ -834,15 +839,15 @@ void PID::histogramsetup() {
     minosresults =
         {{"theta", "#theta correlation", 90, 0, 90, 90, 0, 90},
          {"tracknbr", "Track No. vs. Final Track No.", 10,-0.5,9.5,10,-0.5,9.5},
-         {"lambda", "Two smaller 2d angles for p,3p", 60, 0, 120, 90, 0, 180},
+         {"phi", "Two smaller 2d angles for p,3p", 60, 0, 120, 90, 0, 180},
          {"minoscharge", "Charge deposition of protons",150,0,1500,150,0,1500}};
 
     minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} #circ");
     minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / #circ");
     minosresults.at(1).GetXaxis()->SetTitle("Track Number");
     minosresults.at(1).GetYaxis()->SetTitle("Final Track Number");
-    minosresults.at(2).GetXaxis()->SetTitle("smaller angle / #circ");
-    minosresults.at(2).GetYaxis()->SetTitle("larger angle / #circ");
+    minosresults.at(2).GetXaxis()->SetTitle("#phi_{s} / #circ");
+    minosresults.at(2).GetYaxis()->SetTitle("#phi_{m} / #circ");
     minosresults.at(3).GetXaxis()->SetTitle("Q_{1}/l_{TPC} AU");
     minosresults.at(3).GetYaxis()->SetTitle("Q_{2}/l_{TPC} AU");
 
@@ -850,20 +855,22 @@ void PID::histogramsetup() {
 
     minos1dresults =
         {{"zdistr", "Reaction distribution", 100,-70,130},
-         {"phidistr2", "Reaction angle two tracks", 90, 0, 180},
+         {"lambda2", "Reaction angle two tracks", 90, 0, 180},
          {"vertexdistr", "Distance between proton tracks", 300, 0, 50},
-         {"lambdaE", "Angular Error of tracks", 300,0, 15},
+         {"phiE", "Angular Error of tracks", 300,0, 15},
          {"theta", "#theta of all protons", 180,0, 180},
-         {"phidistr3", "Reaction angle three tracks", 90, 0, 180},
-         {"thetaE", "#theta uncertainty of tracks", 300,0, 15}};
+         {"lambda3", "Reaction angle three tracks", 90, 0, 180},
+         {"thetaE", "#theta uncertainty of tracks", 300,0, 15},
+         {"phismall", "Smallest #phi angle", 180,0,180}};
 
     minos1dresults.at(0).GetXaxis()->SetTitle("z / mm");
-    minos1dresults.at(1).GetXaxis()->SetTitle("#phi / #circ");
+    minos1dresults.at(1).GetXaxis()->SetTitle("#lambda / #circ");
     minos1dresults.at(2).GetXaxis()->SetTitle("#Delta x_{vertex} / mm");
-    minos1dresults.at(3).GetXaxis()->SetTitle("#Delta #lambda_{track} / #circ");
+    minos1dresults.at(3).GetXaxis()->SetTitle("#Delta #phi_{track} / #circ");
     minos1dresults.at(4).GetXaxis()->SetTitle("#theta / #circ");
-    minos1dresults.at(5).GetXaxis()->SetTitle("#phi / #circ");
+    minos1dresults.at(5).GetXaxis()->SetTitle("#lambda / #circ");
     minos1dresults.at(6).GetXaxis()->SetTitle("#Delta#theta / #circ");
+    minos1dresults.at(7).GetXaxis()->SetTitle("#phi_{s} / #circ");
 
     for(auto &elem: minos1dresults) elem.GetYaxis()->SetTitle("N");
 

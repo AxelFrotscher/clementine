@@ -101,27 +101,27 @@ struct TMinosResult{
 };
 
 struct TMinosPass{
-    double r_vertex;
-    vector<double> thetaz;
-    vector<double> phi_vertex;
-    double trackNbr;
-    double trackNbr_final;
-    double z_vertex;
-    vector<double> lambda2d;
-    vector<double> chargeweight;
-    vector<double> vertexdist;
-    vector<double> lambda2dE;
-    vector<double> thetaerr;
+    double r_vertex;                 // distance between reaction vertex and beam
+    vector<double> thetaz;           // beam angles for each track
+    vector<double> lambda;           // interangles between tracks
+    double trackNbr;                 // number of tracks pre-3D-hough
+    double trackNbr_final;           // final number of tracks
+    double z_vertex;                 // z-position of vertex
+    vector<double> phi2d;         // projected angles to x-y plane
+    vector<double> chargeweight;     // mean charge per track (pre length)
+    vector<double> vertexdist;       // distacne between the 3 vertices
+    vector<double> phi2dE;        // projected angles error
+    vector<double> thetaerr;         // theta error
 
-    TMinosPass(double r_vertex_, vector<double> thetaz_,
-               vector<double> &phi_vertex_, double trackNbr_, double trackNbr_Final,
-               double z_vertex_, vector<double> lambda2d_,
-               vector<double> chargeweight_, vector<double> vertexdist_,
-               vector<double> lambda2dE_, vector<double> thetaerr_):
-               r_vertex(r_vertex_), thetaz(thetaz_), phi_vertex(phi_vertex_),
-               trackNbr(trackNbr_), trackNbr_final(trackNbr_Final),
-               z_vertex(z_vertex_), lambda2d(lambda2d_), chargeweight(chargeweight_),
-               vertexdist(vertexdist_), lambda2dE(lambda2dE_), thetaerr(thetaerr_){}
+    TMinosPass(double r_vertex_, vector<double> &thetaz_,
+               vector<double> &lambda_, double trackNbr_, double trackNbr_Final,
+               double z_vertex_, vector<double> &phi2d_,
+               vector<double> &chargeweight_, vector<double> &vertexdist_,
+               vector<double> &phi2dE_, vector<double> &thetaerr_):
+            r_vertex(r_vertex_), thetaz(thetaz_), lambda(lambda_),
+            trackNbr(trackNbr_), trackNbr_final(trackNbr_Final),
+            z_vertex(z_vertex_), phi2d(phi2d_), chargeweight(chargeweight_),
+            vertexdist(vertexdist_), phi2dE(phi2dE_), thetaerr(thetaerr_){}
 };
 
 class minosana{
@@ -140,7 +140,7 @@ public:
              threadno(threadno_), minossingleevent(minossingleevent_){
 
     }
-    const TMinosResult getTMinosResult(){return dataresult;}
+    TMinosResult getTMinosResult(){return dataresult;}
     TMinosPass analyze();
 
     static int Obertelli_filter(vector<double> &x,vector<double> &y,vector<double> &q,
@@ -177,10 +177,10 @@ private:
     vector<double> theta{0,0,0};
     vector<double> thetaerr{0,0,0};
     vector<double> chargeweight;
-    vector<double> phi_vertex={};
+    vector<double> lambda={};
     TMinosClust fitdata;
     TMinosResult dataresult;
-    inline static std::mutex minos5;
+    //inline static std::mutex minos5;
 };
 
 // Ugly part outside of the class, because member-functions are trickier than

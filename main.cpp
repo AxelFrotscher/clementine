@@ -6,8 +6,6 @@
 #include "zdssetting.h"
 #include <iostream>
 #include <algorithm>
-#include <thread>
-#include <fstream>
 #include <vector>
 #include <Math/MinimizerOptions.h>
 #include "libconstant.h"
@@ -20,7 +18,7 @@ R__LOAD_LIBRARY(libanacore.so)
 using std::vector, std::string, std::ifstream, std::cout, std::endl, std::cerr,
       std::cin, std::invalid_argument, std::__throw_invalid_argument;
 
-const vector<string> getlist(const char *instring){
+vector<string> getlist(const char *instring){
     // read in the file list for all .rdif's
     ifstream infile(instring);
     if(!infile) cerr << "File list not found " << endl;
@@ -51,10 +49,10 @@ int main(int argc, char**argv){
     TMinuitMinimizer::UseStaticMinuit(kFALSE);
 
     // The Scope of this project is to analyse the 2015 SEASTAR
-    printf("Welcome to the analysis program for 2014/2015 SEASTAR DATA!\n"
+    cout << "Welcome to the analysis program for 2014/2015 SEASTAR DATA!\n"
            "[0] Preform the main analysis or \n"
            "[1] Would you like to analyse a .ridf file or\n"
-           "[2] Get the MINOS drift velocities ?\n");
+           "[2] Get the MINOS drift velocities ?\n" << endl;
     int analyse_raw = 0;
     if(!(cin >> analyse_raw)) throw invalid_argument("WTF");
 
@@ -62,9 +60,9 @@ int main(int argc, char**argv){
     //const uint analysedfile = 57; // 57 Index of analysed file (first, offset)
     const vector<string> input = getlist("../config/minosridf.txt");
 
-    printf("Which Setting do you want to analyse?\n"
+    cout <<"Which Setting do you want to analyse?\n"
            "[0] 110Nb \n[1] 88Ge \n[2] 94Se \n[3] 100Kr\n[4] 66Cr\n[5] 70Fe\n"
-           "[6] 78Ni\n");
+           "[6] 78Ni\n" << endl;
     int set = 0;
     if(!(cin >> set)) throw invalid_argument("That's no setting!");
     auto s = setting(set);
@@ -118,7 +116,7 @@ int main(int argc, char**argv){
                     if(i == s.goodruns.size()){
                         cout << "Analyze ALL the events" << endl;
                         for(ulong j=0; j<s.goodruns.size(); j++){
-                            //Delete inernal static storage of master class
+                            // Delete inernal static storage of master class
                             auto man = TArtStoreManager::Instance();
                             delete man;
                             generatetree(input.at(s.analysedfile+s.goodruns.at(j)),
@@ -128,8 +126,8 @@ int main(int argc, char**argv){
                     }
                     cout << "(Empty) Analyzing SEASTAR:"
                          << input.at(s.analysedfile+s.goodruns.at(i)) << endl;
-                    {generatetree(input.at(s.analysedfile+s.goodruns.at(i)),
-                                 output.at(i));}
+                    generatetree(input.at(s.analysedfile+s.goodruns.at(i)),
+                                 output.at(i));
                     break;
                 }
                 default: __throw_invalid_argument("Option not available\n");
@@ -165,7 +163,7 @@ int main(int argc, char**argv){
         }
         case 2:{
             cout << "Determining drift velocities for MINOS" << endl;
-            minosdrift hi(output);
+            minosdrift{output};
             break;
         }
         default:
