@@ -86,21 +86,21 @@ void setting::loadnumbers(int i) {
 void setting::checkphysicsrun() {
     // Determine type of analysed run
     if(eventcounts == runinfo::transsize.at(settingnumber) &&
-       settingnumber < runinfo::transsize.size()){
+       settingnumber < (int)runinfo::transsize.size()){
         std::cout << "Analysing Transmission run Setting "
                   << settingnumber << std::endl;
         istransmissionrun = true;
         return;
     }
     else if (eventcounts == runinfo::emptysize.at(settingnumber) &&
-             settingnumber < runinfo::emptysize.size()){
+             settingnumber < (int)runinfo::emptysize.size()){
         std::cout << "Analysing Empty Target run Setting "
                   << settingnumber << std::endl;
         isemptyrun = true;
         return;
     }
     else if(eventcounts == runinfo::fulldata.at(settingnumber) &&
-            settingnumber < runinfo::fulldata.size()){
+            settingnumber < (int)runinfo::fulldata.size()){
         std::cout << "Analysing full physics run Setting "
                   << settingnumber << std::endl;
         return;
@@ -112,11 +112,11 @@ void setting::checkphysicsrun() {
 
 const std::vector<std::vector<double>> setting::getHOcutval() {
     // Get the right cut values to perform a linear correction
-    if (istransmissionrun && (settingnumber < nancytrans::cutval.size()))
+    if (istransmissionrun && (settingnumber < (int)nancytrans::cutval.size()))
         return nancytrans::cutval.at(settingnumber);
-    if (isemptyrun && (settingnumber < nancyempty::cutval.size()))
+    if (isemptyrun && (settingnumber < (int)nancyempty::cutval.size()))
         return nancyempty::cutval.at(settingnumber);
-    if(settingnumber < nancy::cutval.size())
+    if(settingnumber < (int)nancy::cutval.size())
         return nancy::cutval.at(settingnumber);
 
     cout << "WARNING: No HO-Cutvals for Setting " << settingnumber << " using"
@@ -126,11 +126,11 @@ const std::vector<std::vector<double>> setting::getHOcutval() {
 
 const calibpar setting::getHOparameters() {
     // Get the right linear parameters
-    if (istransmissionrun && (settingnumber < nancytrans::hoparame.size()))
+    if (istransmissionrun && (settingnumber < (int)nancytrans::hoparame.size()))
         return nancytrans::hoparame.at(settingnumber);
-    if (isemptyrun && (settingnumber < nancyempty::hoparame.size()))
+    if (isemptyrun && (settingnumber < (int)nancyempty::hoparame.size()))
         return nancyempty::hoparame.at(settingnumber);
-    if(settingnumber < nancy::hoparame.size())
+    if(settingnumber < (int)nancy::hoparame.size())
         return nancy::hoparame.at(settingnumber);
 
     cout << "WARNING: No HO-Parameters for Setting " << settingnumber << " use"
@@ -208,7 +208,7 @@ vector<TCutG*> setting::getplasticcut(){
 
 const vector<vector<int>> setting::getPlasticRange() {
     // Getting the right Parameter
-    if(settingnumber < runinfo::plasticrange.size()) {
+    if(settingnumber < (int)runinfo::plasticrange.size()) {
         return runinfo::plasticrange.at(settingnumber);
     }
     else{
@@ -220,7 +220,7 @@ const vector<vector<int>> setting::getPlasticRange() {
 
 const vector<uint> setting::getZrange() {
     // Getting the correct Z Range for the settings
-    if(settingnumber < runinfo::pidZrange.size()) {
+    if(settingnumber < (int)runinfo::pidZrange.size()) {
         return runinfo::pidZrange.at(settingnumber);
     }
     else{
@@ -232,7 +232,7 @@ const vector<uint> setting::getZrange() {
 
 const vector<std::string> setting::getreactions() {
     // Determine the reactions to calculate for the settings
-    if(settingnumber < runinfo::reactionmodes.size()) {
+    if(settingnumber < (int)runinfo::reactionmodes.size()) {
         return runinfo::reactionmodes.at(settingnumber);
     }
     else{
@@ -247,9 +247,9 @@ const std::array<double, 10> setting::getPIDincutvalue() {
     if(!setting::isemptyortrans())
         std::__throw_invalid_argument("Run in not empty or transmision run!\n");
 
-    if(istransmissionrun && settingnumber < nancytrans::incval.size())
+    if(istransmissionrun && settingnumber < (int)nancytrans::incval.size())
         return nancytrans::incval.at(settingnumber);
-    if(isemptyrun && settingnumber < nancyempty::incval.size())
+    if(isemptyrun && settingnumber < (int)nancyempty::incval.size())
         return nancyempty::incval.at(settingnumber);
 
     cout << "WARNING: No PIDincutvalues have been found using Empty Setting 0";
@@ -261,9 +261,9 @@ const std::array<double, 4> setting::getPIDoutcutvalue() {
     if(!setting::isemptyortrans())
         std::__throw_invalid_argument("Run in not empty or transmision run!\n");
 
-    if(istransmissionrun && settingnumber < nancytrans::targetval.size())
+    if(istransmissionrun && settingnumber < (int)nancytrans::targetval.size())
         return nancytrans::targetval.at(settingnumber);
-    if(isemptyrun && settingnumber < nancyempty::targetval.size())
+    if(isemptyrun && settingnumber < (int)nancyempty::targetval.size())
         return nancyempty::targetval.at(settingnumber);
 
     std::__throw_invalid_argument(Form("Empty or Transruns but Trans: %i and "

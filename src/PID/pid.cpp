@@ -19,8 +19,8 @@ using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
       std::stringstream, std::to_string, std::__throw_invalid_argument,
       std::min;
 
-void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
-                    const bool minosanalyse) {
+void PID::innerloop(treereader &tree, treereader &minostree,
+                    const vector<int> &range, bool minosanalyse) {
     /// Step 1: duplicate the data structure
     decltype(reactF5)          _reactF5(reactF5);
     decltype(minosresults)     _minosresults(minosresults);
@@ -53,7 +53,7 @@ void PID::innerloop(treereader &tree, treereader &minostree, vector<uint> range,
     const std::array<int, 4> ppacangledistance{650,945,700,500}; // in mm
 
     /// 2. Do the event loop
-    for(uint eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
+    for(int eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
         /// Don't take sorted out events
         progress.increaseevent();
         if(!goodevents.at(eventcounter).at(0)) continue;
@@ -296,11 +296,11 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     //Making threads
     vector<thread> th;
     th.reserve(threads); // Make space for $threads Threads
-    for(uint i=0; i<threads;i++){
-        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
-                               (uint)((i+1)*goodevents.size()/threads-1)};
+    for(int i=0; i<threads;i++){
+        vector<int> ranges = {(int)(i*goodevents.size()/threads),
+                               (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&PID::innerloop, this, std::ref(tree.at(i)),
-                               std::ref(minostree.at(i)), ranges,
+                               std::ref(minostree.at(i)), ref(ranges),
                                setting::getminos()));
     }
 

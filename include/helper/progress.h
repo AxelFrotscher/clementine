@@ -28,7 +28,7 @@ public:
     void draw();
     void increaseevent(){if(worker) currevt[threadpos]++;};
     static void reset();
-    static const bool ongoing(){return ongoinganalysis;};
+    static bool ongoing(){return ongoinganalysis;};
 
 private:
     static void initstatics();
@@ -38,7 +38,7 @@ private:
     inline static std::vector <int> lastevent; // progress on last draw() call
     inline static long int lasttime; // in milliseconds
 
-    inline static int barwidth = 100;
+    inline static unsigned long barwidth = 100;
     static const int displaythreads = 6;
     inline static std::atomic<int> currentthreads;  // current working (displayed) threads
     inline static std::mutex currevtmutex;

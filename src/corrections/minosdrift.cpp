@@ -41,7 +41,7 @@ void minosdrift::make_drift(const std::vector<std::string> &input) {
 
     ///Generate strings to write
     vector<string> resultio;
-    for(int i=0; i<input.size(); i++){
+    for(unsigned long i=0; i<input.size(); i++){
         resultio.push_back(input.at(i).substr(34,9) + " " +
                            to_string(driftresults.at(i).at(0)) + " " +
                            to_string(driftresults.at(i).at(1)) + " " +
@@ -74,7 +74,7 @@ void minosdrift::make_drift(const std::vector<std::string> &input) {
         std::stringstream ss(i);
         string temp;
         ss >> temp; // get the runnumber
-        for(int j=0; j<minosfiles.size(); j++){ // loop over all generated results to see matchs
+        for(unsigned long j=0; j<minosfiles.size(); j++){ // loop over all generated results to see matchs
             if(minosfiles.at(j).find(temp) != string::npos){
                 i = resultio.at(j);   // if it matches replace results, and delete them from vector
                 cout << "Replacing Run: " << minosfiles.at(j).substr(13,9) << endl;

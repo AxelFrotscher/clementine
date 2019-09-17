@@ -10,7 +10,7 @@
 
 using std::vector, std::cout, std::endl, std::atomic, std::string, std::thread;
 
-void targetcut::innerloop(treereader &tree, vector<uint> range) {
+void targetcut::innerloop(treereader &tree, const vector<int> &range) {
     /// Step 1: Cloning histograms
     decltype(tarhist) _tarhist(tarhist);
 
@@ -84,7 +84,7 @@ void targetcut::innerloop(treereader &tree, vector<uint> range) {
 
     // Step 3: rejoining histograms
     unitemutex.lock();
-    for(uint i=0; i<tarhist.size();i++)  tarhist.at(i).Add(&_tarhist.at(i));
+    for(ulong i=0; i<tarhist.size();i++)  tarhist.at(i).Add(&_tarhist.at(i));
     unitemutex.unlock();
     progressbar::reset();
 }
@@ -115,11 +115,11 @@ void targetcut::analyse(const vector<string> &input, TFile *output) {
 
     progressbar finishcondition;
     vector<thread> th;
-    for(uint i=0; i<threads; i++){
-        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
-                              (uint)((i+1)*goodevents.size()/threads-1)};
+    for(int i=0; i<threads; i++){
+        vector<int> ranges = {(int)(i*goodevents.size()/threads),
+                              (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&targetcut::innerloop, this, std::ref(tree.at(i)),
-                               ranges));
+                               ref(ranges)));
     }
 
     for (auto &i: th) i.detach();

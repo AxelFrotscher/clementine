@@ -32,7 +32,7 @@ vector<string> getlist(const char *instring){
     return file_list;
 }
 
-int main(int argc, char**argv){
+int main(){
     // Make ROOT Thread-aware
     ROOT::EnableThreadSafety();
     // Do not store TObject's in ROOT static class

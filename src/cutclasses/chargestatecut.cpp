@@ -6,11 +6,10 @@
 #include "libconstant.h"
 #include "zdssetting.h"
 #include <thread>
-#include <numeric>
 
 using std::vector, std::string, std::thread, std::atomic;
 
-void ccsc::innerloop(treereader &tree, std::vector<uint> range) {
+void ccsc::innerloop(treereader &tree, const std::vector<int> &range) {
     // precious tight inner loop
     // Cloning histograms
     decltype(cschist) _cschist(cschist);
@@ -40,7 +39,7 @@ void ccsc::innerloop(treereader &tree, std::vector<uint> range) {
 
     // Step 3: rejoin the data
     unitemutex.lock();
-    for(uint i=0; i<_cschist.size();i++) cschist.at(i).Add(&_cschist.at(i));
+    for(unsigned long i=0; i<_cschist.size();i++) cschist.at(i).Add(&_cschist.at(i));
     unitemutex.unlock();
     progressbar::reset();
 }
@@ -72,18 +71,18 @@ void ccsc::analyse(const std::vector<std::string> &input, TFile* output){
     //if(set.isemptyortrans()){ // Cut after F7 not sensible for empty/trans runs
     //    cout << "Empty or trans run. Not doing CCSC cut." << endl; return;
     //}
-    for(auto &i: tree) mycut.push_back(setting::getbrhocut());
+    for([[gnu::unused]] auto &i: tree) mycut.push_back(setting::getbrhocut());
 
     int cutpre = 0;
     for(auto &i:goodevents) cutpre += i.at(1);
 
     progressbar finishcondition;
     vector<thread> th;
-    for(uint i=0; i<threads; i++){
-        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
-                               (uint)((i+1)*goodevents.size()/threads-1)};
+    for(int i=0; i<threads; i++){
+        vector<int> ranges = {(int)(i*goodevents.size()/threads),
+                               (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&ccsc::innerloop, this, std::ref(tree.at(i)),
-                               ranges));
+                               ref(ranges)));
     }
 
     for (auto &t: th) t.detach();

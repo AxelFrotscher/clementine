@@ -12,7 +12,7 @@
 
 using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
-void higherorder::innerloop(treereader &tree, vector<uint> range) {
+void higherorder::innerloop(treereader &tree, const vector<int> &range) {
     // Step 1: Cloning histograms
     decltype(culpritdiag) _culpritdiag(culpritdiag);
 
@@ -47,7 +47,7 @@ void higherorder::innerloop(treereader &tree, vector<uint> range) {
             fillvals.at(1).at(8) = fillvals.at(1).at(7) - tree.F11A * p1.F11linF11A;
 
             // Fill pre and post events (post only when gevts[i][1] ok is)
-            for (uint ii = 0; ii < (beam.size()-1+goodevents.at(i).at(1)); ii++){
+            for (ulong ii = 0; ii < (beam.size()-1+goodevents.at(i).at(1)); ii++){
                 if ((pow(1./cutval.at(ii).at(2)*(tree.BigRIPSBeam_aoq[beam.at(ii)] -
                                                  cutval.at(ii).at(0)), 2) +
                      pow(1./cutval.at(ii).at(3)*(tree.BigRIPSBeam_zet[beam.at(ii)] -
@@ -57,8 +57,8 @@ void higherorder::innerloop(treereader &tree, vector<uint> range) {
                     fillvals.at(ii).at(4) = tree.BigRIPSBeam_beta[beam.at(ii)];
                     fillvals.at(ii).at(5) = tree.BigRIPSBeam_aoq[beam.at(ii)];
 
-                    for (uint k = 0; k < _culpritdiag.at(0).size(); k++) {
-                        for (uint j = 0; j <= corrcount; j++) {
+                    for (ulong k = 0; k < _culpritdiag.at(0).size(); k++) {
+                        for (int j = 0; j <= corrcount; j++) {
                             _culpritdiag.at(ii).at(k).at(j).Fill(
                                 fillvals.at(ii).at(5+j), fillvals.at(ii).at(k));
                         }
@@ -71,9 +71,9 @@ void higherorder::innerloop(treereader &tree, vector<uint> range) {
     // Step 3 rejoining the histogram
     unitemutex.lock();
     //printf("Thread %i now rejoining higherorder 2D Histograms...\n", threadno);
-    for(uint i=0; i<culpritdiag.size();i++){
-        for(uint j=0; j<culpritdiag.at(0).size();j++){
-            for(uint k=0; k<culpritdiag.at(0).at(0).size();k++){
+    for(ulong i=0; i<culpritdiag.size();i++){
+        for(ulong j=0; j<culpritdiag.at(0).size();j++){
+            for(ulong k=0; k<culpritdiag.at(0).at(0).size();k++){
                 culpritdiag.at(i).at(j).at(k).Add(&_culpritdiag.at(i).at(j).at(k));
             }
         }
@@ -83,7 +83,7 @@ void higherorder::innerloop(treereader &tree, vector<uint> range) {
     progressbar::reset();
 }
 
-void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
+void higherorder::analyse(const std::vector<std::string> &input, TFile *output) {
 
     vector<treereader> tree;
     tree.reserve(threads); // MUST stay as reallocation will call d'tor
@@ -101,13 +101,13 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
     p1 = setting::getHOparameters();
 
     // Initialize all the diagrams
-    for(uint i=0; i<arrname.size();i++){ // Loop F7, F11
+    for(ulong i=0; i<arrname.size();i++){ // Loop F7, F11
         culpritdiag.emplace_back();
 
-        for(uint j=0; j<arrname.at(0).size();j++){ // Loop F3X,F5X,...
+        for(ulong j=0; j<arrname.at(0).size();j++){ // Loop F3X,F5X,...
             culpritdiag.back().emplace_back();
 
-            for(uint k=0;k<=corrcount; k++){ // Loop Correction number
+            for(int k=0;k<=corrcount; k++){ // Loop Correction number
                 string arr = arrname.at(i).at(j) + to_string(k); // Generate array name
                 string arrn = arrtitle.at(i).at(j) + " Corr: " + to_string(k);
                 double ymax = 150;
@@ -129,11 +129,11 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
     printf("Successfully generated Histograms for higher order...\n");
 
     vector<thread> th;
-    for(uint i=0; i<threads; i++){
-        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
-                              (uint)((i+1)*goodevents.size()/threads-1)};
+    for(int i=0; i<threads; i++){
+        vector<int> ranges = {(int)(i*goodevents.size()/threads),
+                              (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&higherorder::innerloop, this,
-                               std::ref(tree.at(i)), ranges));
+                               std::ref(tree.at(i)), ref(ranges)));
     }
 
     for(auto &i: th) i.detach();
@@ -151,7 +151,7 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
         for(auto &elem2: elem){
             projections.back().emplace_back();
 
-            for(uint i_corr=0; i_corr<=corrcount;i_corr++){
+            for(int i_corr=0; i_corr<=corrcount;i_corr++){
                 projections.back().back().push_back(elem2.at(i_corr).ProfileY());
                 projections.back().back().back()->Fit(&corrlinfit, "Q");
             }
@@ -161,13 +161,13 @@ void higherorder::analyse(const std::vector<std::string> input, TFile *output) {
     // Generate root file structure and then write out all histograms
     for (auto &i_fold: folders) for(auto &j: i_fold) output->mkdir(j.c_str());
 
-    for(uint i=0; i<projections.size();i++){  // Pre, Post
-        for(uint k=0; k<projections.at(0).at(0).size(); k++){ // Corr 0,1,2,
+    for(ulong i=0; i<projections.size();i++){  // Pre, Post
+        for(ulong k=0; k<projections.at(0).at(0).size(); k++){ // Corr 0,1,2,
 
             string tempfolder = folders.at(i).at(k) + "/Profiles";
             output->mkdir(tempfolder.c_str());
 
-            for(uint j=0; j<projections.at(0).size();j++){ // F3X, F5X, ...
+            for(ulong j=0; j<projections.at(0).size();j++){ // F3X, F5X, ...
                 output->cd(tempfolder.c_str());
                 projections.at(i).at(j).at(k)->Write();
 

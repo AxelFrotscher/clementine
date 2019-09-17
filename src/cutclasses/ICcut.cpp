@@ -5,12 +5,11 @@
 #include "cutclasses/ICcut.h"
 #include <thread>
 #include "progress.h"
-#include <numeric>
 #include "zdssetting.h"
 
 using std::vector, std::atomic, std::string, std::thread, std::to_string;
 
-void iccut::innerloop(treereader &tree, vector<uint> range) {
+void iccut::innerloop(treereader &tree, const vector<int> &range) {
     ///Step 1: Cloning histograms
     decltype(comparediag) _comparediag(comparediag);
 
@@ -45,7 +44,7 @@ void iccut::innerloop(treereader &tree, vector<uint> range) {
 
             if((tree.BigRIPSIC_fADC[0][0] <0) ||
                (tree.BigRIPSIC_fADC[1][0] <0)) continue;
-            for(uint j=0; j<(numchannel-1); j++){
+            for(int j=0; j<(numchannel-1); j++){
                 if(tree.BigRIPSIC_fADC[0][j] >0)
                     _comparediag.at(j).at(0).Fill(
                             tree.BigRIPSIC_fADC[0][0],
@@ -61,8 +60,8 @@ void iccut::innerloop(treereader &tree, vector<uint> range) {
 
     //Step 3: rejoin data histograms
     unitemutex.lock();
-    for(uint i=0; i<comparediag.size(); i++){
-        for(uint j=0;j<comparediag.at(0).size();j++){
+    for(unsigned long i=0; i<comparediag.size(); i++){
+        for(unsigned long j=0; j<comparediag.at(0).size();j++){
             comparediag.at(i).at(j).Add(&_comparediag.at(i).at(j));
         }
     }
@@ -108,11 +107,11 @@ void iccut::analyse(const std::vector<std::string> &input, TFile *output) {
 
     progressbar finishcondition;
     vector<thread> th;
-    for(uint i=0; i<threads; i++){
-        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
-                               (uint)((i+1)*goodevents.size()/threads-1)};
+    for(int i=0; i<threads; i++){
+        vector<int> ranges = {(int)(i*goodevents.size()/threads),
+                               (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&iccut::innerloop, this, std::ref(tree.at(i)),
-                               ranges));
+                               ref(ranges)));
     }
 
     for (auto &i: th) i.detach();

@@ -40,9 +40,9 @@ TMinosPass minosana::analyze() {
         }
     }
 
-    for (int i = 0; i < Xpadnew.size(); i++) {
-        fitdata.add(Xpadnew[i], Ypadnew[i], -1E4, -1E4, Qpadnew[i],
-                    clusternbr[i], clusterpads[i], 0);
+    for (unsigned long i = 0; i < Xpadnew.size(); i++) {
+        fitdata.add(Xpadnew[i], Ypadnew[i], -1E4, -1E4,
+                    Qpadnew[i], clusternbr[i], clusterpads[i], 0);
         Zpadnew.push_back(-1E4);
     }
 
@@ -55,14 +55,14 @@ TMinosPass minosana::analyze() {
 
     /// MINOS 3: Fitting the taken pads for Qmax and Ttrig information /
     //padsleft -= Xpadnew.size();
-    for (int i = 0; i < minoscalibvalues.size(); i++) {
+    for (unsigned long i = 0; i < minoscalibvalues.size(); i++) {
 
         double x_mm = minostrackxy.at(i).at(0);
         double y_mm = minostrackxy.at(i).at(1);
         bool fitbool = false;
         int indexfill = 0;
 
-        for (int j = 0; j < Xpadnew.size(); j++) {
+        for (unsigned long j = 0; j < Xpadnew.size(); j++) {
             if (abs(Xpadnew[j] - x_mm) < 0.01 && abs(Ypadnew[j] - y_mm) < 0.01) {
                 fitbool = true;
                 indexfill = j;
@@ -74,7 +74,7 @@ TMinosPass minosana::analyze() {
 
         // if so, we read Q(t), and fill vectors w/ t&Q info after fitting E(t)
         TH1F hfit(Form("hfit%i",threadno), Form("hfit%i",threadno), 512, 0, 512);
-        for (int k = 0; k < minoscalibvalues.at(i).size(); k++) {
+        for (unsigned long k = 0; k < minoscalibvalues.at(i).size(); k++) {
             if (minoscalibvalues.at(i).at(k) >= 0)
                 hfit.SetBinContent(hfit.FindBin(minostime.at(i).at(k)),
                                             minoscalibvalues.at(i).at(k) + 250);
@@ -148,13 +148,13 @@ TMinosPass minosana::analyze() {
 
     /// 4: MINOS Filtering the tracks off possible noise with Hough3D //
 
-    int padsleft2 = Xpadnew.size();
+    unsigned long padsleft2 = Xpadnew.size();
     vector<double> xin, yin, zin, qin, xout, yout, zout, qout;
     int cluster_temp = 0, array_final = 0;
 
     vector<TGraph> grxz(trackNbr+1), gryz(trackNbr+1);
 
-    for (int i = 0; i < padsleft2; i++) {
+    for (unsigned long i = 0; i < padsleft2; i++) {
         // if-Loop executed only at the End
         if(cluster_temp == clusternbr[i] && i==(Xpadnew.size()-1) &&
            clusterpads[i]>=10 && clusterringbool[i] == true &&
@@ -173,7 +173,7 @@ TMinosPass minosana::analyze() {
             vector<int> ringtouch(18, 0);
             Hough_filter(xin, yin, zin, qin, xout, yout, zout, qout);
 
-            for (int k = 0; k < xout.size(); k++) {
+            for (unsigned long k = 0; k < xout.size(); k++) {
                 zmax = max(zmax, zout[k]);
                 ringtouch.at(max(0, int((sqrt(pow(xout[k], 2.) +
                                            pow(yout[k], 2.)) - 45.2) / 2.1)))++;
@@ -185,11 +185,11 @@ TMinosPass minosana::analyze() {
             if (xout.size() > 10 && ringsum >= 15) {
                 trackNbr_FINAL++;
                 //cluster1 = cluster_temp; delete if no use
-                for (int l = 0; l < xout.size(); l++) {
+                for (unsigned long l = 0; l < xout.size(); l++) {
                     dataresult.add(xout[l], yout[l], zout[l],
                                    qout[l], trackNbr_FINAL, xout.size(), zmax);
                     array_final++;
-                    if(trackNbr_FINAL > grxz.size()) continue;
+                    if(trackNbr_FINAL > (int)grxz.size()) continue;
                     grxz.at(trackNbr_FINAL-1).
                      SetPoint(grxz.at(trackNbr_FINAL-1).GetN(),zout[l],xout[l]);
                     gryz.at(trackNbr_FINAL-1).
@@ -227,7 +227,7 @@ TMinosPass minosana::analyze() {
     vector<int> fitStatus(2);
 
     int iflag, nvpar, nparx;
-    double amin, edm, errdef, chi2res1, chi2res2;
+    double amin, edm, errdef; //, chi2res1, chi2res2;
     arglist.at(0) = 3;
     // Get fit for xz-yz plane, for the reconstruction
     FindStart(pStart_1, chi1, fitStatus, grxz.at(0), gryz.at(0));
@@ -242,7 +242,7 @@ TMinosPass minosana::analyze() {
 
             sum = 0;
             double qtot =0;
-            for(int i=0; i<tmr.x_mm.size(); i++){
+            for(unsigned long i=0; i<tmr.x_mm.size(); i++){
                 if(tmr.n_Cluster.at(i) == mode){
                     double d = distancelinepoint(tmr.x_mm.at(i), tmr.y_mm.at(i),
                                                  tmr.z_mm.at(i), par);
@@ -279,7 +279,7 @@ TMinosPass minosana::analyze() {
     };
     minimize(pStart_1);
 
-    for (int i = 0; i < parFit_1.size(); i++)
+    for (unsigned long i = 0; i < parFit_1.size(); i++)
         min.GetParameter(i, parFit_1.at(i), err_1.at(i));
     double temp[4][4];
     min.mnemat(&temp[0][0], 4);
@@ -293,7 +293,7 @@ TMinosPass minosana::analyze() {
         min.mnemat(&temp[0][0], 4);
         covxy.at(1) = temp[1][3]; // entry i=0, j=2
 
-        for (int i = 0; i < parFit_2.size(); i++)
+        for (unsigned long i = 0; i < parFit_2.size(); i++)
             min.GetParameter(i, parFit_2.at(i), err_2.at(i));
     }
     if(trackNbr_FINAL > 2){
@@ -303,7 +303,7 @@ TMinosPass minosana::analyze() {
         min.mnemat(&temp[0][0], 4);
         covxy.at(2) = temp[1][3]; // entry i=0, j=2
 
-        for (int i = 0; i < parFit_3.size(); i++)
+        for (unsigned long i = 0; i < parFit_3.size(); i++)
             min.GetParameter(i, parFit_3.at(i), err_3.at(i));
     }
     else parFit_3 = {0,0,0,0};
@@ -350,7 +350,7 @@ TMinosPass minosana::analyze() {
                  thetaerror(parFit_3r, err_3, covxy.at(2)) };
 
     // Only calculate angles for real tracks
-    while(trackNbr_FINAL < theta.size()){
+    while(trackNbr_FINAL < (int)theta.size()){
         theta.pop_back();
         thetaerr.pop_back();
     }
@@ -369,7 +369,7 @@ TMinosPass minosana::analyze() {
     }
 
     // Transform from negative angles to positive angles
-    for(auto &i:phi2d) if(i < 0) i = 360 + i;
+    for(auto &i:phi2d) if(i < 0) i += 360;
     sort(phi2d.begin(), phi2d.end());
 
     vector<double> phi2dc = {};
@@ -417,7 +417,7 @@ TMinosPass minosana::analyze() {
 
     for(int i=1; i<=trackNbr_FINAL; i++){
         chargeweight.push_back(0);
-        for(int j=0; j<tmr.n_Cluster.size(); j++){
+        for(unsigned long j=0; j<tmr.n_Cluster.size(); j++){
             if(i == tmr.n_Cluster.at(j)) chargeweight.back() +=
                                          tmr.Chargemax.at(j);
         }
@@ -458,7 +458,7 @@ TMinosPass minosana::analyze() {
             phierror(parFit_3r, err_3, covxy.at(2))
     };
     // Delete all errors not related to a real track
-    while(trackNbr_FINAL < phiE.size()) phiE.pop_back();
+    while(trackNbr_FINAL < (int)phiE.size()) phiE.pop_back();
 
     return TMinosPass(r_vertex, theta, lambda, trackNbr, trackNbr_FINAL,
                       z_vertex, phi2dc, chargeweight, verticedist, phiE, thetaerr);
@@ -643,7 +643,7 @@ void minosana::Hough_filter(vector<double> &x, vector<double> &y,
     double bint_xy = 2., bint_xz = 2., bint_yz = 2.,
            binr_xy = 3., binr_xz = 3., binr_yz = 3.;
     int nt = nt_xy,nr = nr_xy;
-    double PI = TMath::Pi();
+    //double PI = TMath::Pi();
 
     double rho_xy, rho_xz, rho_yz;
     double theta_xy, theta_xz, theta_yz;
@@ -912,7 +912,7 @@ void minosana::debug(){
                 Form("t%iEvt%lu",threadno,minossingleevent.size()),
                 Form("Thread %i, Event %lu",threadno,minossingleevent.size()),
                 100,-100,100,100,-100,100);
-        for(int i=0; i<Xpadnew.size();i++) minossingleevent.back().Fill(
+        for(unsigned long i=0; i<Xpadnew.size();i++) minossingleevent.back().Fill(
                                     Xpadnew.at(i),Ypadnew.at(i));
         minossingleevent.back().GetXaxis()->SetTitle("X [mm]");
         minossingleevent.back().GetYaxis()->SetTitle("Y [mm]");

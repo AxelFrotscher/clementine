@@ -11,7 +11,7 @@
 
 using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
-void plasticcut::innerloop(treereader &tree, vector<uint> range) {
+void plasticcut::innerloop(treereader &tree, const vector<int> &range) {
     /// Step 1: cloning histograms
     decltype(qcorr)    _qcorr(qcorr);
     decltype(qcorr2D)  _qcorr2D(qcorr2D);
@@ -36,7 +36,7 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
             tree.BigRIPSPlastic_fTLRaw[1]-tree.BigRIPSPlastic_fTRRaw[1],
             TMath::Log(tree.BigRIPSPlastic_fQLRaw[1]/
                        (double)tree.BigRIPSPlastic_fQRRaw[1]))){
-            for(uint j=0; j<numplastic; j++){              // plastic loop
+            for(int j=0; j<numplastic; j++){              // plastic loop
                 if((tree.BigRIPSPlastic_fQLRaw[j] >0 )&&
                    (tree.BigRIPSPlastic_fQRRaw[j] >0)){   // 0 charge veto
                     _qcorr2D.at(2*j).Fill(tree.BigRIPSPlastic_fQLRaw[j],
@@ -68,7 +68,7 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
             for(auto &k:goodevents.at(i)) k.exchange(false);
         }
         else{ // Test F7 and F11, no because we want cross sections
-            for(uint j=0; j<numplastic; j++){              // plastic loop
+            for(int j=0; j<numplastic; j++){              // plastic loop
                 if(!(tree.BigRIPSPlastic_fTLRaw[j] >0 && // 0 time veto
                      tree.BigRIPSPlastic_fTRRaw[j] >0) ) continue;
                 _qcorr2D.at(2*j+1).Fill(tree.BigRIPSPlastic_fQLRaw[j],
@@ -93,10 +93,10 @@ void plasticcut::innerloop(treereader &tree, vector<uint> range) {
 
     // Step 3 reuniting the diagrams
     unitemutex.lock();
-    for(uint i=0; i<_qcorr.size(); i++) qcorr.at(i).Add(&_qcorr.at(i));
-    for(uint i=0; i<_qxF11.size(); i++) qxF11.at(i).Add(&_qxF11.at(i));
-    for(uint i=0; i<_qcorr2D.size(); i++) qcorr2D.at(i).Add(&_qcorr2D.at(i));
-    for(uint i=0; i<_tqcorr2D.size(); i++) tqcorr2D.at(i).Add(&_tqcorr2D.at(i));
+    for(ulong i=0; i<_qcorr.size(); i++) qcorr.at(i).Add(&_qcorr.at(i));
+    for(ulong i=0; i<_qxF11.size(); i++) qxF11.at(i).Add(&_qxF11.at(i));
+    for(ulong i=0; i<_qcorr2D.size(); i++) qcorr2D.at(i).Add(&_qcorr2D.at(i));
+    for(ulong i=0; i<_tqcorr2D.size(); i++) tqcorr2D.at(i).Add(&_tqcorr2D.at(i));
     unitemutex.unlock();
 
     progressbar::reset();
@@ -118,7 +118,7 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
 
     // Generating the histograms:
     tree.at(0).getevent(0);
-    for(uint i=0; i<numplastic; i++){
+    for(int i=0; i<numplastic; i++){
         arrayname.push_back(vector<string>{
             "f7pltrigQ."  + to_string(tree.at(0).BigRIPSPlastic_fpl[i]),
             "PlasticQ2D." + to_string(tree.at(0).BigRIPSPlastic_fpl[i]),
@@ -183,11 +183,11 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
 
     progressbar finishcondition;
     vector<thread> th;
-    for(uint i=0; i<threads; i++){
-        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
-                               (uint)((i+1)*goodevents.size()/threads-1)};
+    for(int i=0; i<threads; i++){
+        vector<int> ranges = {(int)(i*goodevents.size()/threads),
+                               (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&plasticcut::innerloop, this,
-                               std::ref(tree.at(i)), ranges));
+                               std::ref(tree.at(i)), ref(ranges)));
     }
 
     for (auto &i: th) i.detach();

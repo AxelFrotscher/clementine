@@ -32,7 +32,7 @@ public:
     static const std::vector<std::vector<int>> getPlasticRange();
     static const std::vector<uint> getZrange();
     static const std::vector<std::string> getreactions();
-    static const bool isemptyortrans(){return isemptyrun || istransmissionrun;}
+    static bool isemptyortrans(){return isemptyrun || istransmissionrun;}
     static const std::array<double, 10> getPIDincutvalue();
     static const std::array<double, 4> getPIDoutcutvalue();
     static const std::string getmodename();
@@ -41,9 +41,9 @@ public:
     std::vector<uint> transmissionrun;
     std::vector<uint> emptyrun;
     uint analysedfile = 0;
-    static const int getsetnumber(){return settingnumber;};
+    static int getsetnumber(){return settingnumber;};
     static void setminos(bool minosbool){minos = minosbool;};
-    static const bool getminos(){return minos;};
+    static bool getminos(){return minos;};
     static const std::vector<double> geticlimits();
 
 private:

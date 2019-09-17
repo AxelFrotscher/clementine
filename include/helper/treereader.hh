@@ -405,7 +405,7 @@ public :
    explicit treereader(TTree *tree=nullptr);
    explicit treereader(const std::vector<std::string> &input);
    virtual ~treereader();
-   virtual Int_t    Cut(Long64_t entry);
+   virtual Int_t    Cut();
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);

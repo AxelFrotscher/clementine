@@ -356,7 +356,7 @@ void treereader::Show(Long64_t entry)
     if (!fChain) return;
     fChain->Show(entry);
 }
-Int_t treereader::Cut(Long64_t entry)
+Int_t treereader::Cut()
 {
 // This function may be called from Loop.
 // returns  1 if entry is accepted.

@@ -3,7 +3,7 @@
 //
 
 #include "progress.h"
-#include <stdlib.h>
+#include <cstdlib>
 #include <chrono>
 #include <thread>
 #include <iostream>
@@ -20,15 +20,15 @@ void progressbar::draw(){
     /// Worker Instances must not draw anything
     if(worker && (currentthreads>1)) return;
 
-    vector<int> pos; // position for each bar
+    vector<unsigned long> pos; // position for each bar
 
-    for(uint i=0; i<currevt.size(); i++){ // Loop over each bar
+    for(ulong i=0; i<currevt.size(); i++){ // Loop over each bar
         pos.push_back((int)(barwidth*(float)currevt.at(i)/totevent.at(i)));
         if(currevt.at(i) == 0) continue; // Do not display empty threads
 
         stringstream stream;
         stream << "[";
-        for(int j=0; j<barwidth; j++){
+        for(unsigned long j=0; j<barwidth; j++){
             // determine output for each bar
             if(j<pos.at(i))        stream << "=";
             else if (j==pos.at(i)) stream << ">";

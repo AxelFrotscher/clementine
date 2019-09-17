@@ -8,7 +8,7 @@
 
 using std::vector, std::__throw_invalid_argument;
 
-const bool closeness(const vector<double> &d, double sigma){
+bool closeness(const vector<double> &d, double sigma){
     // Standard deviation for vector d
     double sum = accumulate(d.begin(),d.end(),0.0);
     double mean = sum /d.size();
@@ -32,7 +32,7 @@ double constfit(double *x, double *par){
     return par[0];
 }
 
-const double slope(const vector<double> &x, const vector<double> &y){
+double slope(const vector<double> &x, const vector<double> &y){
     // Simple linear regression (explicit)
     if(x.size() != y.size())
         __throw_invalid_argument("Argument number mismatch!\n");

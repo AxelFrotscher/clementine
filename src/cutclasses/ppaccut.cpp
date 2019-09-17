@@ -10,7 +10,7 @@
 
 using std::vector, std::string, std::thread, std::atomic;
 
-void ppaccut::innerloop(treereader &tree, vector<uint> range) {
+void ppaccut::innerloop(treereader &tree, const vector<int> &range) {
     /// Step 1: cloning histograms
     decltype(effPPAC) _effPPAC(effPPAC);
     decltype(sumdiffppac) _sumdiffppac(sumdiffppac);
@@ -29,7 +29,7 @@ void ppaccut::innerloop(treereader &tree, vector<uint> range) {
 
         // Get Efficiency relative to the last Plastic
         if (tree.BigRIPSPlastic_fTime[pl11position] >0){
-            for(uint j=1; j<=numplane; j++){
+            for(int j=1; j<=numplane; j++){
                 if(tree.BigRIPSPPAC_fFiredX[j-1])
                     _effPPAC.at(0).SetBinContent(j, _effPPAC.at(0).GetBinContent(j)+1);
                 if(tree.BigRIPSPPAC_fFiredY[j-1])
@@ -39,7 +39,7 @@ void ppaccut::innerloop(treereader &tree, vector<uint> range) {
         }
 
         // Fill Sum and differences of time signals to check
-        for(uint j=0; j<numplane;j++){
+        for(int j=0; j<numplane;j++){
             _sumdiffppac.at(0).at(0).Fill(j,tree.BigRIPSPPAC_fTSumX[j]);
             _sumdiffppac.at(0).at(1).Fill(j,tree.BigRIPSPPAC_fTDiffX[j]);
             _sumdiffppac.at(1).at(0).Fill(j,tree.BigRIPSPPAC_fTSumY[j]);
@@ -51,8 +51,8 @@ void ppaccut::innerloop(treereader &tree, vector<uint> range) {
         bool temp = true;
 
         // Make empty and trans runs only go over points to F7
-        for(uint k =0; k<(ppacplane.size()); k++){
-            for(uint j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
+        for(unsigned long k =0; k<(ppacplane.size()); k++){
+            for(unsigned int j=0; j<4; j++){ // Loop over all 4 PPAC's per Focal Plane
                 int cpl = ppacplane.at(k).at(j);
                 temptruth.at(j) =
                     (tree.BigRIPSPPAC_fTSumX[cpl] > ppacrange.at(k).at(j).at(0) &&
@@ -145,11 +145,11 @@ void ppaccut::analyse(const std::vector<std::string> &input, TFile* output){
 
     progressbar finishcondition;
     vector<thread> th;
-    for(uint i=0; i<threads; i++){
-        vector<uint> ranges = {(uint)(i*goodevents.size()/threads),
-                               (uint)((i+1)*goodevents.size()/threads-1)};
+    for(int i=0; i<threads; i++){
+        vector<int> ranges = {(int)(i*goodevents.size()/threads),
+                               (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&ppaccut::innerloop, this, std::ref(tree.at(i)),
-                               ranges));
+                               ref(ranges)));
     }
 
     for (auto &i: th) i.detach();

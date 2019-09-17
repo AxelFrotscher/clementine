@@ -254,8 +254,8 @@ void generatetree(const string &infile, const string &output) {
         "F11PPAC-1A","F11PPAC-1B","F11PPAC-2A","F11PPAC-2B"};
 
     // Progress Bar setup
-    int neve = 0; // counting variable
-    uint totevents = 5000000; //50000
+    unsigned int neve = 0; // counting variable
+    unsigned int totevents = 5000000; //50000
     const int downscale = 1000; // every n-th event
 
     progressbar progress(totevents, 0);
@@ -320,10 +320,10 @@ void generatetree(const string &infile, const string &output) {
 
         // Manual filling of the trigger
         auto rawevent = (TArtRawEventObject *)sman->FindDataContainer("RawEvent");
-        for(uint i=0; i<rawevent->GetNumSeg(); i++){
+        for(int i=0; i<rawevent->GetNumSeg(); i++){
             auto seg = rawevent->GetSegment(i);
             if(seg->GetFP()==63 && seg->GetDetector()==10){
-                for(uint j=0; j<seg->GetNumData();j++){
+                for(int j=0; j<seg->GetNumData();j++){
                     EventInfo_FBIT = seg->GetData(j)->GetVal();
                 }
             }
@@ -396,13 +396,13 @@ void generatetree(const string &infile, const string &output) {
         if(trackNbr <1 || trackNbr > 4) continue;
 
         /// Fill minos tpcdrift histogram
-        for(int i=0; i<minoscalibvalues.size(); i++){ /// Loop over all pads
+        for(unsigned long i=0; i<minoscalibvalues.size(); i++){ /// Loop over all pads
 
             double x_mm = minostrackxy.at(i).at(0);
             double y_mm = minostrackxy.at(i).at(1);
             bool fitbool = false;
 
-            for (int j = 0; j < Xpadnew.size(); j++) {
+            for (unsigned long j = 0; j < Xpadnew.size(); j++) {
                 if (abs(Xpadnew[j] - x_mm) < 0.01 && abs(Ypadnew[j] - y_mm) < 0.01) {
                     fitbool = true;
                     break;
@@ -414,7 +414,7 @@ void generatetree(const string &infile, const string &output) {
             /// Generate Q(t) diagram
             //cout << "Pad NO: " << i <<  " Fitbool: " << fitbool << endl;
             TH1F hfit("hfit","hfit", 512, 0, 512);
-            for(int j=0; j<minoscalibvalues.at(i).size(); j++){
+            for(unsigned long j=0; j<minoscalibvalues.at(i).size(); j++){
                 if(minoscalibvalues.at(i).at(j) >0)
                     hfit.SetBinContent(hfit.FindBin(minostime.at(i).at(j)),
                             minoscalibvalues.at(i).at(j)+250);

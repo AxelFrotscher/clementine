@@ -159,20 +159,19 @@ private:
     void debug();
     static vector<double> rotatesp(double &rot, vector<double> &initialvector);
 
-    vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
-
     double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0;
-
-
+    
     int filled =0 ;
     double Tshaping;
     double TimeBinElec = 0;
     double DelayTrigger;
     double VDrift = 0;
-    int threadno=0;
-    vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostrackxy;
+    vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostime;
+    vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
+    
+    int threadno=0;
     vector<TH2C> &minossingleevent;
     vector<double> theta{0,0,0};
     vector<double> thetaerr{0,0,0};

@@ -12,7 +12,7 @@ using std::vector, std::mutex, std::string, std::atomic;
 
 class ccsc{
 public:
-    void innerloop(treereader &tree, vector<uint> range);
+    void innerloop(treereader &tree, const vector<int> &range);
     void analyse(const vector<string> &input, TFile* output);
     ccsc(const vector<string> &input,
          vector<vector<atomic<bool>>> &goodevents_,
