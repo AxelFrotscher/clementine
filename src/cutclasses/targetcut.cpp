@@ -10,13 +10,13 @@
 
 using std::vector, std::cout, std::endl, std::atomic, std::string, std::thread;
 
-void targetcut::innerloop(treereader &tree, const vector<int> &range) {
+void targetcut::innerloop(treereader &tree, vector<int> range) {
     /// Step 1: Cloning histograms
     decltype(tarhist) _tarhist(tarhist);
 
     /// Step 2: preparing variables
     const uint threadno = range.at(0)/(range.at(1)-range.at(0));
-
+    
     progressbar progress(range.at(1)-range.at(0), threadno);
 
     vector<vector<double>> slopex(2,vector<double>(0)); //0:x,y 1:val, z
@@ -119,7 +119,7 @@ void targetcut::analyse(const vector<string> &input, TFile *output) {
         vector<int> ranges = {(int)(i*goodevents.size()/threads),
                               (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&targetcut::innerloop, this, std::ref(tree.at(i)),
-                               ref(ranges)));
+                               ranges));
     }
 
     for (auto &i: th) i.detach();

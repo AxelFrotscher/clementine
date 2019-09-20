@@ -101,27 +101,22 @@ struct TMinosResult{
 };
 
 struct TMinosPass{
-    double r_vertex;                 // distance between reaction vertex and beam
-    vector<double> thetaz;           // beam angles for each track
-    vector<double> lambda;           // interangles between tracks
-    double trackNbr;                 // number of tracks pre-3D-hough
-    double trackNbr_final;           // final number of tracks
-    double z_vertex;                 // z-position of vertex
-    vector<double> phi2d;         // projected angles to x-y plane
-    vector<double> chargeweight;     // mean charge per track (pre length)
-    vector<double> vertexdist;       // distacne between the 3 vertices
-    vector<double> phi2dE;        // projected angles error
-    vector<double> thetaerr;         // theta error
+    double r_vertex = 0;            // distance between reaction vertex and beam
+    double x_vertex = 0;            // x-position of vertex
+    double y_vertex = 0;            // y-position of vertex
+    double z_vertex = 0;            // z-position of vertex
+    vector<double> theta{};         // beam angles for each track
+    vector<double> lambda{};        // interangles between tracks
+    int trackNbr = 0;               // number of tracks pre-3D-hough
+    int trackNbr_final = 0;         // final number of tracks
 
-    TMinosPass(double r_vertex_, vector<double> &thetaz_,
-               vector<double> &lambda_, double trackNbr_, double trackNbr_Final,
-               double z_vertex_, vector<double> &phi2d_,
-               vector<double> &chargeweight_, vector<double> &vertexdist_,
-               vector<double> &phi2dE_, vector<double> &thetaerr_):
-            r_vertex(r_vertex_), thetaz(thetaz_), lambda(lambda_),
-            trackNbr(trackNbr_), trackNbr_final(trackNbr_Final),
-            z_vertex(z_vertex_), phi2d(phi2d_), chargeweight(chargeweight_),
-            vertexdist(vertexdist_), phi2dE(phi2dE_), thetaerr(thetaerr_){}
+    vector<double> phi2d{};         // projected angles to x-y plane
+    vector<double> chargeweight{};  // mean charge per track (pre length)
+    vector<double> vertexdist{};    // distacne between the 3 vertices
+    vector<double> phi2dE{};        // projected angles error
+    vector<double> thetaerr{};      // theta error
+
+    TMinosPass() = default;
 };
 
 class minosana{
@@ -158,14 +153,12 @@ private:
     static double distancelineline(vector<double> &l1, vector<double> &l2);
     void debug();
     static vector<double> rotatesp(double &rot, vector<double> &initialvector);
-
-    double z_vertex =0, x_vertex=0, y_vertex =0, r_vertex =0;
     
-    int filled =0 ;
+    int filled;
     double Tshaping;
-    double TimeBinElec = 0;
+    double TimeBinElec;
     double DelayTrigger;
-    double VDrift = 0;
+    double VDrift;
     vector<vector<double>> minostrackxy;
     vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostime;
@@ -173,13 +166,8 @@ private:
     
     int threadno=0;
     vector<TH2C> &minossingleevent;
-    vector<double> theta{0,0,0};
-    vector<double> thetaerr{0,0,0};
-    vector<double> chargeweight;
-    vector<double> lambda={};
     TMinosClust fitdata;
     TMinosResult dataresult;
-    //inline static std::mutex minos5;
 };
 
 // Ugly part outside of the class, because member-functions are trickier than

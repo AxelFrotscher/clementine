@@ -7,65 +7,57 @@
 #include <TMinuit.h>
 #include <Math/Vector3D.h>
 #include "minos.h"
-#include <numeric>
 #include "TCanvas.h"
 #include "TMinuitMinimizer.h"
 #include "Math/Functor.h"
 #include "Minuit2/Minuit2Minimizer.h"
 
-using std::vector, std::cerr, std::cout, std::endl, std::min, std::max,
-      std::accumulate, std::placeholders::_1,std::placeholders::_2,
-      std::placeholders::_3, std::placeholders::_4, std::placeholders::_5;
+using std::vector, std::cerr, std::cout, std::endl, std::min, std::max;
 
 TMinosPass minosana::analyze() {
     /// MINOS 2. Modify with hough-transformation
-    //int padsleft = Xpad.size();
     vector<bool> clusterringbool;
     vector<int> clusternbr, clusterpads;
-    int trackNbr = 0, trackNbr_FINAL = 0;
-    vector<double> eV = {}; // empty vector for unfilled data
+    
+    TMinosPass MR;
 
-    if (filled) {
-        for (int iteration = 0; (Xpad.size() > 9 && iteration < 20); iteration++) {
-            int filter_result = Obertelli_filter(Xpad, Ypad, Qpad, Xpadnew,
-                                                 Ypadnew, Qpadnew,
-                                                 clusterringbool);
+    if(!filled) return MR;  // return if no TPC has been hit
 
-            vector<int> temp1(filter_result, iteration);
-            vector<int> temp2(filter_result, filter_result);
-            clusternbr.insert(clusternbr.end(), temp1.begin(), temp1.end());
-            clusterpads.insert(clusterpads.end(), temp2.begin(), temp2.end());
+    for (int iteration = 0; (Xpad.size() > 9 && iteration < 20); iteration++) {
+        const int filter_result = Obertelli_filter(
+                Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew,
+                clusterringbool);
 
-            if (filter_result > 10 && clusterringbool.back()) trackNbr++;
-        }
+        const vector<int> temp1(filter_result, iteration);
+        const vector<int> temp2(filter_result, filter_result);
+        clusternbr.insert(clusternbr.end(), temp1.begin(), temp1.end());
+        clusterpads.insert(clusterpads.end(), temp2.begin(), temp2.end());
+
+        if (filter_result > 10 && clusterringbool.back()) MR.trackNbr++;
     }
-
+    
+    /// Bonus for Tracknumber between 1 and 4
+    if(MR.trackNbr < 1 || MR.trackNbr > 4) return MR;
+    
     for (unsigned long i = 0; i < Xpadnew.size(); i++) {
         fitdata.add(Xpadnew[i], Ypadnew[i], -1E4, -1E4,
                     Qpadnew[i], clusternbr[i], clusterpads[i], 0);
         Zpadnew.push_back(-1E4);
     }
 
-    if(trackNbr <1 || trackNbr > 4)
-        return TMinosPass(r_vertex, theta, lambda, trackNbr, trackNbr_FINAL,
-                          z_vertex, eV, eV, eV, eV, eV);
-    
-    /// Bonus for Tracknumber between 1 and 4
-    if (!filled) cerr << "Trackno.:" << trackNbr << " but no evts." << endl;
-
     /// MINOS 3: Fitting the taken pads for Qmax and Ttrig information /
     //padsleft -= Xpadnew.size();
     for (unsigned long i = 0; i < minoscalibvalues.size(); i++) {
 
-        double x_mm = minostrackxy.at(i).at(0);
-        double y_mm = minostrackxy.at(i).at(1);
+        const double x_mm = minostrackxy.at(i).at(0);
+        const double y_mm = minostrackxy.at(i).at(1);
         bool fitbool = false;
         int indexfill = 0;
 
         for (unsigned long j = 0; j < Xpadnew.size(); j++) {
             if (abs(Xpadnew[j] - x_mm) < 0.01 && abs(Ypadnew[j] - y_mm) < 0.01) {
                 fitbool = true;
-                indexfill = j;
+                indexfill = (int)j;
                 break;
             }
         }
@@ -73,7 +65,8 @@ TMinosPass minosana::analyze() {
         if (!fitbool) continue;
 
         // if so, we read Q(t), and fill vectors w/ t&Q info after fitting E(t)
-        TH1F hfit(Form("hfit%i",threadno), Form("hfit%i",threadno), 512, 0, 512);
+        TH1F hfit(Form("hfit%i",threadno), Form("hfit%i",threadno),
+                  512, 0, 512);
         for (unsigned long k = 0; k < minoscalibvalues.at(i).size(); k++) {
             if (minoscalibvalues.at(i).at(k) >= 0)
                 hfit.SetBinContent(hfit.FindBin(minostime.at(i).at(k)),
@@ -83,8 +76,8 @@ TMinosPass minosana::analyze() {
         if (hfit.GetSumOfWeights() == 0) continue;
 
         hfit.GetXaxis()->SetRange(0, 510);
-        double hfit_max = hfit.GetMaximum();
-        double hfit_max_T = hfit.GetMaximumBin();
+        const double hfit_max = hfit.GetMaximum();
+        const double hfit_max_T = hfit.GetMaximumBin();
 
         // Find T_min and T_max limits for non-0 signals
         double T_min = hfit.FindLastBinAbove(250);
@@ -113,7 +106,7 @@ TMinosPass minosana::analyze() {
         fit_function.SetParLimits(2, 0, 512);
 
         // --> parameter n (no store no draw) crucial for multithread <--
-        int fit2DStatus = hfit.Fit(&fit_function, "QN", "", T_min, T_max);
+        const int fit2DStatus = hfit.Fit(&fit_function, "QN", "", T_min, T_max);
 
         double fit_function_max = 0, fit_function_Tpad = 0, Chi2 = 0;
 
@@ -152,7 +145,7 @@ TMinosPass minosana::analyze() {
     vector<double> xin, yin, zin, qin, xout, yout, zout, qout;
     int cluster_temp = 0, array_final = 0;
 
-    vector<TGraph> grxz(trackNbr+1), gryz(trackNbr+1);
+    vector<TGraph> grxz(MR.trackNbr + 1), gryz(MR.trackNbr + 1);
 
     for (unsigned long i = 0; i < padsleft2; i++) {
         // if-Loop executed only at the End
@@ -183,17 +176,17 @@ TMinosPass minosana::analyze() {
 
             // Decide whether we have a track, and add to 2D-plane TGraphs
             if (xout.size() > 10 && ringsum >= 15) {
-                trackNbr_FINAL++;
+                MR.trackNbr_final++;
                 //cluster1 = cluster_temp; delete if no use
                 for (unsigned long l = 0; l < xout.size(); l++) {
                     dataresult.add(xout[l], yout[l], zout[l],
-                                   qout[l], trackNbr_FINAL, xout.size(), zmax);
+                                   qout[l], MR.trackNbr_final, xout.size(), zmax);
                     array_final++;
-                    if(trackNbr_FINAL > (int)grxz.size()) continue;
-                    grxz.at(trackNbr_FINAL-1).
-                     SetPoint(grxz.at(trackNbr_FINAL-1).GetN(),zout[l],xout[l]);
-                    gryz.at(trackNbr_FINAL-1).
-                     SetPoint(gryz.at(trackNbr_FINAL-1).GetN(),zout[l],yout[l]);
+                    if(MR.trackNbr_final > (int)grxz.size()) continue;
+                    grxz.at(MR.trackNbr_final - 1).
+                     SetPoint(grxz.at(MR.trackNbr_final - 1).GetN(), zout[l], xout[l]);
+                    gryz.at(MR.trackNbr_final - 1).
+                     SetPoint(gryz.at(MR.trackNbr_final - 1).GetN(), zout[l], yout[l]);
                 }
             }
 
@@ -212,13 +205,7 @@ TMinosPass minosana::analyze() {
         //else continue;
     } // end of loop on pads
 
-    if(trackNbr_FINAL == 0 ||  trackNbr_FINAL > 3){
-        return TMinosPass(r_vertex, theta, lambda, trackNbr, trackNbr_FINAL,
-                          z_vertex, eV, eV, eV, eV, eV);
-    }
-
-  // Look at some events
-  if(trackNbr_FINAL ==2) debug();
+    if(MR.trackNbr_final == 0 || MR.trackNbr_final > 3) return MR;
 
     /// 5. Fitting filtered tracks in 3D (weight by charge, TMinuit) //
     vector<double> pStart_1{0,1,0,1}, pStart_2{0,1,0,1},pStart_3{0,1,0,1},
@@ -253,8 +240,7 @@ TMinosPass minosana::analyze() {
             sum /=qtot;
         };
     };
-
-    //minos5.lock();
+    
     TMinuit min(4);
     min.SetPrintLevel(-1);
     min.SetFCN(funcmin(1));
@@ -285,7 +271,7 @@ TMinosPass minosana::analyze() {
     min.mnemat(&temp[0][0], 4);
     covxy.at(0) = temp[1][3]; // entry i=0, j=2
 
-    if (trackNbr_FINAL == 1) parFit_2 = {0, 0, 0, 0};
+    if (MR.trackNbr_final == 1) parFit_2 = {0, 0, 0, 0};
     else {
         FindStart(pStart_2, chi2, fitStatus, grxz.at(1), gryz.at(1));
         min.SetFCN(funcmin(2));
@@ -296,7 +282,7 @@ TMinosPass minosana::analyze() {
         for (unsigned long i = 0; i < parFit_2.size(); i++)
             min.GetParameter(i, parFit_2.at(i), err_2.at(i));
     }
-    if(trackNbr_FINAL > 2){
+    if(MR.trackNbr_final > 2){
         FindStart(pStart_3, chi3, fitStatus, grxz.at(2), gryz.at(2));
         min.SetFCN(funcmin(3));
         minimize(pStart_3);
@@ -308,12 +294,6 @@ TMinosPass minosana::analyze() {
     }
     else parFit_3 = {0,0,0,0};
 
-    //minos5.unlock();
-    //tmr = {}; // reset out-of-class data structure
-
-    //chi2res1 = (chi1.at(0) + chi1.at(1)) / grxz.at(0).GetN();
-    //if(grxz.size() > 1) chi2res2 = (chi2.at(0) + chi2.at(1)) / grxz.at(1).GetN();
-
     //Rotate from MINOS to beamline for all tracks
     double rot = 30*TMath::Pi()/180;
     vector<double> parFit_1r = rotatesp(rot, parFit_1);
@@ -321,9 +301,9 @@ TMinosPass minosana::analyze() {
     vector<double> parFit_3r = rotatesp(rot, parFit_3);
 
     /// 6. Get x,y,z reaction vertex from fitted parameters and further variables
-    vertex(parFit_1r, parFit_2r, x_vertex, y_vertex, z_vertex);
-
-    r_vertex = sqrt(pow(x_vertex, 2) + pow(y_vertex, 2));
+    vertex(parFit_1r, parFit_2r, MR.x_vertex, MR.y_vertex, MR.z_vertex);
+    
+    MR.r_vertex = sqrt(pow(MR.x_vertex, 2) + pow(MR.y_vertex, 2));
 
     // cos theta = v1*v2/(|v1|*|v2|), v1 = (0,0,1)^T, v2 = (m1,m3,1)^T
     auto cthet = [](vector<double> a){
@@ -342,51 +322,54 @@ TMinosPass minosana::analyze() {
                                                    sqrt(1-1/(norm))),2.) +
                                  2*pf[1]*pf[3]*covxy/(pow(norm,3)*(1-1/norm)));
     };
-
-    theta = {cthet(parFit_1r), cthet(parFit_2r), cthet(parFit_3r)};
-
-    thetaerr = { thetaerror(parFit_1r, err_1, covxy.at(0)),
-                 thetaerror(parFit_2r, err_2, covxy.at(1)),
-                 thetaerror(parFit_3r, err_3, covxy.at(2)) };
+    
+    MR.theta = {cthet(parFit_1r), cthet(parFit_2r), cthet(parFit_3r)};
+    
+    MR.thetaerr = {thetaerror(parFit_1r, err_1, covxy.at(0)),
+                   thetaerror(parFit_2r, err_2, covxy.at(1)),
+                   thetaerror(parFit_3r, err_3, covxy.at(2))};
 
     // Only calculate angles for real tracks
-    while(trackNbr_FINAL < (int)theta.size()){
-        theta.pop_back();
-        thetaerr.pop_back();
+    while(MR.trackNbr_final < (int)MR.theta.size()){
+        MR.theta.pop_back();
+        MR.thetaerr.pop_back();
     }
-    sort(theta.begin(), theta.end()); // Sort angles
+    sort(MR.theta.begin(), MR.theta.end()); // Sort angles
 
   // angles in xy-plane for all tracks
-    vector<double> phi2d{
+    vector<double> phi2d_unsorted{
         atan2(parFit_1r.at(3), parFit_1r.at(1))*180/TMath::Pi()};
     
-    if(trackNbr_FINAL > 1){
-        phi2d.push_back(atan2(parFit_2r.at(3),
-                                 parFit_2r.at(1))*180/TMath::Pi());
-        if(trackNbr_FINAL > 2)  // Add one angle for each additional track
-            phi2d.push_back(atan2(parFit_3r.at(3),
-                                     parFit_3r.at(1))*180/TMath::Pi());
+    if(MR.trackNbr_final > 1){
+        phi2d_unsorted.push_back(atan2(parFit_2r.at(3),
+                                       parFit_2r.at(1)) * 180 / TMath::Pi());
+        if(MR.trackNbr_final > 2)  // Add one angle for each additional track
+            phi2d_unsorted.push_back(atan2(parFit_3r.at(3),
+                                           parFit_3r.at(1)) * 180 / TMath::Pi());
     }
 
     // Transform from negative angles to positive angles
-    for(auto &i:phi2d) if(i < 0) i += 360;
-    sort(phi2d.begin(), phi2d.end());
-
-    vector<double> phi2dc = {};
+    for(auto &i:phi2d_unsorted) if(i < 0) i += 360;
+    sort(phi2d_unsorted.begin(), phi2d_unsorted.end());
     
-    if(trackNbr_FINAL == 2){
-        phi2dc = {phi2d.at(1) - phi2d.at(0),
-                  phi2d.at(0) + 360 - phi2d.at(1)};
+    if(MR.trackNbr_final == 2){
+        MR.phi2d = {phi2d_unsorted.at(1) - phi2d_unsorted.at(0),
+                    phi2d_unsorted.at(0) + 360 - phi2d_unsorted.at(1)};
     }
-    else if(trackNbr_FINAL == 3){
-        phi2dc = {phi2d.at(2) - phi2d.at(1),
-                  phi2d.at(1) - phi2d.at(0),
-                  phi2d.at(0) + 360 - phi2d.at(2)};
+    else if(MR.trackNbr_final == 3){
+        MR.phi2d = {phi2d_unsorted.at(2) - phi2d_unsorted.at(1),
+                    phi2d_unsorted.at(1) - phi2d_unsorted.at(0),
+                    phi2d_unsorted.at(0) + 360 - phi2d_unsorted.at(2)};
     }
 
     // Delete largest angle
-    if(!phi2dc.empty()) phi2dc.erase(std::max_element(phi2dc.begin(), phi2dc.end()));
-    sort(phi2dc.begin(), phi2dc.end());
+    if(!MR.phi2d.empty())
+        MR.phi2d.erase(std::max_element(MR.phi2d.begin(), MR.phi2d.end()));
+    sort(MR.phi2d.begin(), MR.phi2d.end());
+    
+    // Look at some events
+    if(MR.trackNbr_final == 2 && MR.phi2d.at(0) < 150 && MR.phi2d.at(0) > 140 )
+        debug();
 
     auto lambdainter = [](auto p1, auto p2){
         /// This method calculates the relative angles between two protons
@@ -398,11 +381,11 @@ TMinosPass minosana::analyze() {
     };
 
     // Calculate all interangles between the protons
-    if(trackNbr_FINAL > 1){
-        lambda.push_back(lambdainter(parFit_1r, parFit_2r));
-        if(trackNbr_FINAL > 2){
-            lambda.push_back(lambdainter(parFit_1r, parFit_3r));
-            lambda.push_back(lambdainter(parFit_3r, parFit_2r));
+    if(MR.trackNbr_final > 1){
+        MR.lambda.push_back(lambdainter(parFit_1r, parFit_2r));
+        if(MR.trackNbr_final > 2){
+            MR.lambda.push_back(lambdainter(parFit_1r, parFit_3r));
+            MR.lambda.push_back(lambdainter(parFit_3r, parFit_2r));
         }
     }
 
@@ -415,10 +398,10 @@ TMinosPass minosana::analyze() {
           (pow(pf[0],2)+pow(pf[2],2)-pow(radin,2))/(pow(pf[1],2)+pow(pf[3],2)));
     };
 
-    for(int i=1; i<=trackNbr_FINAL; i++){
-        chargeweight.push_back(0);
+    for(int i=1; i <= MR.trackNbr_final; i++){
+        MR.chargeweight.push_back(0);
         for(unsigned long j=0; j<tmr.n_Cluster.size(); j++){
-            if(i == tmr.n_Cluster.at(j)) chargeweight.back() +=
+            if(i == tmr.n_Cluster.at(j)) MR.chargeweight.back() +=
                                          tmr.Chargemax.at(j);
         }
         /// Get length of track
@@ -431,16 +414,15 @@ TMinosPass minosana::analyze() {
         else if(i==3){dt = abs(param(parFit_3r,radin)-param(parFit_3r,radout));
                       dt *= sqrt(1 + pow(parFit_3r[1],2)+ pow(parFit_3r[3],2));}
 
-        if(dt > 0) chargeweight.back() /= dt;
+        if(dt > 0) MR.chargeweight.back() /= dt;
     }
-
-    vector<double> verticedist;
-    if(trackNbr_FINAL == 2)
-        verticedist.push_back(distancelineline(parFit_1r, parFit_2r));
-    else if(trackNbr_FINAL == 3){
-        verticedist.push_back(distancelineline(parFit_1r, parFit_2r));
-        verticedist.push_back(distancelineline(parFit_1r, parFit_3r));
-        verticedist.push_back(distancelineline(parFit_2r, parFit_3r));
+    
+    if(MR.trackNbr_final == 2)
+        MR.vertexdist = {distancelineline(parFit_1r, parFit_2r)};
+    else if(MR.trackNbr_final == 3){
+        MR.vertexdist = {distancelineline(parFit_1r, parFit_2r),
+                         distancelineline(parFit_1r, parFit_3r),
+                         distancelineline(parFit_2r, parFit_3r)};
     }
 
     // Estimate the angular uncertainty in lambda
@@ -451,146 +433,133 @@ TMinosPass minosana::analyze() {
         return 180./TMath::Pi()/(pow(pf[1],2)+ pow(pf[3],2))*sqrt(
                 pow(pf[1]*err[3],2) + pow(-pf[3]*err[1],2) - 2*pf[1]*pf[3]*covxy);
     };
-
-    vector<double> phiE{
+    
+    MR.phi2dE = {
             phierror(parFit_1r, err_1, covxy.at(0)),
             phierror(parFit_2r, err_2, covxy.at(1)),
             phierror(parFit_3r, err_3, covxy.at(2))
     };
     // Delete all errors not related to a real track
-    while(trackNbr_FINAL < (int)phiE.size()) phiE.pop_back();
-
-    return TMinosPass(r_vertex, theta, lambda, trackNbr, trackNbr_FINAL,
-                      z_vertex, phi2dc, chargeweight, verticedist, phiE, thetaerr);
+    while(MR.trackNbr_final < (int)MR.phi2dE.size()) MR.phi2dE.pop_back();
+    
+    return MR;
 }
 
 int minosana::Obertelli_filter(vector<double> &x, vector<double> &y,
                                vector<double> &q, vector<double> &x_out,
                                vector<double> &y_out, vector<double> &q_out,
                                vector<bool> &ringbool){
-    double bint1 = 2., bint2 = 2.;
-    int maxt = 360, mint = 0;
-    int nt1 = (maxt-mint)/bint1, nt2 = (maxt-mint)/bint1;
+    assert(x.size() == y.size() && x.size() == q.size());
+    
+    constexpr double binwidth_theta_1 = 2., binwidth_theta_2 = 2.;
+    constexpr int theta_max = 360, theta_min = 0;
+    constexpr int n_bin_theta1 = (theta_max - theta_min) / binwidth_theta_1,
+                  n_bin_theta2 = (theta_max - theta_min) / binwidth_theta_2;
 
-    double PI = TMath::Pi();
-    double Rint = 45.2, Rext = 45.2 + 18*2.1;
-    int filter_result = 0;
+    const double PI = TMath::Pi();
+    constexpr double radius_internal = 45.2,
+                     radius_external = 45.2 + 18 * 2.1;
 
-    TH2F hp_xy("hp_xy", "hp_xy", nt1, mint, maxt, nt2, mint, maxt);
-    TH2F hpDiag_xy("hpDiag_xy", "hpDiag_xy", nt1, mint, maxt, nt2, mint, maxt);
-//	TH2F *hc_xy = new TH2F("hc_xy","Track in xy plane",100,-85,85,100,-85,85);
+    TH2F hp_xy("hp_xy", "hp_xy", n_bin_theta1, theta_min, theta_max,
+               n_bin_theta2, theta_min, theta_max);
+    TH2F hpDiag_xy("hpDiag_xy", "hpDiag_xy", n_bin_theta1, theta_min,
+                   theta_max, n_bin_theta2, theta_min, theta_max);
+/*	TH2F *hc_xy = new TH2F("hc_xy","Track in xy plane",100,-85,85,100,-85,85);
 //	TH2F *hcnew_xy = new TH2F("hcnew_xy","Cluster in xy plane AFTER Obertelli"
 //                                        "transform",100,-85,85,100,-85,85);
-
-    double max_xy;
-//	TF1* line_xy = new TF1("line_xy","[0] + [1]*x",-85,85);
-
-    vector<double> xTemp, yTemp, qTemp;
-
-    double theta1, theta2 = 0, xt1, yt1, xt2, yt2, line0, line1, delta, AA, BB,
-           CC, maxtheta1 = 0., maxtheta2=0., xmax1, ymax1, xmax2, ymax2,
-           par0, par1, r_mm;
-    int ringsum = 0;
-    bool maxfound = false;
-
-    for(unsigned int i=0;i<x.size();i++){
-        xTemp.push_back(x.at(i));
-        yTemp.push_back(y.at(i));
-        qTemp.push_back(q.at(i));
-
+//	TF1* line_xy = new TF1("line_xy","[0] + [1]*x",-85,85); */
+    for(unsigned long i=0; i<x.size(); i++){
         //Fill coordinate space histograms for plots
-//		hc_xy->Fill(x->at(i),y->at(i),q->at(i));
+        //hc_xy->Fill(x->at(i),y->at(i),q->at(i));
 
         //Loop of indices
-        for(int j=0; j<nt1; j++){
-            theta1 = (j+0.5)*bint1 + mint;
-            xt1 = Rint * TMath::Cos(theta1*PI/180.);
-            yt1 = Rint * TMath::Sin(theta1*PI/180.);
-            line1 = (yt1 - y.at(i))/(xt1 - x.at(i));
-            line0 = yt1 - xt1 * line1;
-            AA = 1 + line1*line1;
-            BB = 2*line0*line1;
-            CC = line0*line0 - Rext*Rext;
+        for(int j=0; j < n_bin_theta1; j++){
+            const double
+                theta1 = (j+0.5)*binwidth_theta_1 + theta_min,
+                xt1 = radius_internal * TMath::Cos(theta1 * PI / 180.),
+                yt1 = radius_internal * TMath::Sin(theta1 * PI / 180.),
+                line1 = (yt1 - y.at(i))/(xt1 - x.at(i)),
+                line0 = yt1 - xt1 * line1,
+                AA = 1 + line1 * line1,
+                BB = 2 * line0 * line1,
+                CC = line0 * line0 - radius_external * radius_external,
+                delta = BB * BB - 4 * AA * CC;
+            
+            if(delta < 0) continue;  // Skip negative determinant(?)
+            
+            double xt2 = -(BB + sqrt(delta))/(2 * AA),
+                   yt2 = line0 + line1*xt2,
+                   theta2 = 0;
+            if(xt2 <= 0)	      theta2 = 180 - asin(yt2 / radius_external) * 180 / PI;
+            else{
+                if     (yt2 >  0) theta2 = asin(yt2 / radius_external) * 180 / PI;
+                else if(yt2 <= 0) theta2 = 360 + asin(yt2 / radius_external) * 180 / PI;
+            }
 
-            delta = BB*BB - 4*AA*CC;
-            if(delta >= 0){
-                xt2 = -(BB + sqrt(delta))/(2*AA);
-                yt2 = line0 + line1*xt2;
-                if(xt2 <= 0)	        theta2 = 180 - asin(yt2/Rext)*180/PI;
-                else{
-                    if     (yt2 >  0)   theta2 = asin(yt2/Rext)*180/PI;
-                    else if(yt2 <= 0)	theta2 = 360 + asin(yt2/Rext)*180/PI;
+            if((xt1*x.at(i) + yt1*y.at(i))>=0 &&
+               (xt2*x.at(i) + yt2*y.at(i))>=0 && (xt1*xt2+yt1*yt2)>=0){
+                hp_xy.Fill(theta1,theta2);
+                if(abs(theta1-theta2) <= 10) hpDiag_xy.Fill(theta1,theta2);
+            }
+            else{
+                if(delta == 0) continue;
+
+                xt2 = (-BB + sqrt(delta))/(2 * AA);
+                yt2 = line0 + line1 * xt2;
+                if(xt2 <= 0)	      theta2 = 180 - asin(yt2 / radius_external) * 180 / PI;
+                else if(xt2 > 0){
+                    if(yt2 > 0)	      theta2 = asin(yt2 / radius_external) * 180 / PI;
+                    else if(yt2 <=0 ) theta2 = 360 + asin(yt2 / radius_external) * 180 / PI;
                 }
 
-                //if(yt2>0){theta2 = 180./PI*acos(xt2/Rext);}
-                //else{theta2=360. - 180./PI*acos(xt2/Rext);}
-
-                if((xt1*x.at(i) + yt1*y.at(i))>=0 &&
-                   (xt2*x.at(i) + yt2*y.at(i))>=0 && (xt1*xt2+yt1*yt2)>=0){
-                    hp_xy.Fill(theta1,theta2);
+                if((xt1*x.at(i) + yt1*y.at(i)) >= 0 &&
+                   (xt2*x.at(i) + yt2*y.at(i)) >= 0 && (xt1*xt2+yt1*yt2) >= 0){
+                    hp_xy.Fill(theta1, theta2);
                     if(abs(theta1-theta2) <= 10) hpDiag_xy.Fill(theta1,theta2);
                 }
-                else{
-                    if(delta != 0){
-                        xt2 = (-BB + sqrt(delta))/(2*AA);
-                        yt2 = line0 + line1*xt2;
-                        if(xt2 <= 0)	      theta2 = 180 - asin(yt2/Rext)*180/PI;
-                        else if(xt2 > 0){
-                            if(yt2 > 0)	      theta2 = asin(yt2/Rext)*180/PI;
-                            else if(yt2 <=0 ) theta2 = 360 + asin(yt2/Rext)*180/PI;
-                        }
-                        //if(yt2>0){theta2 = 180./PI*acos(xt2/Rext);}
-                        //else{theta2=360. - 180./PI*acos(xt2/Rext);}
-                        if( (xt1*x.at(i) + yt1*y.at(i)) >= 0 &&
-                            (xt2*x.at(i) + yt2*y.at(i)) >= 0 &&
-                            (xt1*xt2+yt1*yt2) >= 0){
-                            hp_xy.Fill(theta1,theta2);
-                            if(abs(theta1-theta2) <= 10) hpDiag_xy.Fill(theta1,theta2);
-                        }
-                    }
-                }
             }
         }
     }
-    x.clear();
-    y.clear();
-    q.clear();
-
+    
+    double max_xy;
     if(hpDiag_xy.GetMaximum() >= 10) max_xy = hpDiag_xy.GetMaximum();
-//		cout << "Max taken in diag... withh value=" << max_xy << endl;
     else max_xy = hp_xy.GetMaximum();
-
-    for(int ii=0; ii<nt1; ii++){
-        if(maxfound) break;
-        for(int jj=0; jj<nt2; jj++){
+    
+    double maxtheta1 = 0., maxtheta2=0.;
+    for(int ii=0; ii < n_bin_theta1; ii++){
+        for(int jj=0; jj < n_bin_theta2; jj++){
             if(hp_xy.GetBinContent(ii+1, jj+1) == max_xy){
-                maxtheta1 = (ii+0.5)*bint1 + mint;
-                maxtheta2 = (jj+0.5)*bint2 + mint;
-                maxfound = true;
+                maxtheta1 = (ii+0.5)*binwidth_theta_1 + theta_min;
+                maxtheta2 = (jj+0.5)*binwidth_theta_2 + theta_min;
+                break;
                 //cout << "xy: theta max are " << maxtheta1 << " , " << maxtheta2 << endl;
-
             }
-            if(maxfound) break;
         }
     }
 
-    xmax1 = Rint * TMath::Cos(maxtheta1*PI/180.);
-    ymax1 = Rint * TMath::Sin(maxtheta1*PI/180.);
-    xmax2 = Rext * TMath::Cos(maxtheta2*PI/180.);
-    ymax2 = Rext * TMath::Sin(maxtheta2*PI/180.);
+    const double xmax1 = radius_internal * TMath::Cos(maxtheta1 * PI / 180.),
+                 ymax1 = radius_internal * TMath::Sin(maxtheta1 * PI / 180.),
+                 xmax2 = radius_external * TMath::Cos(maxtheta2 * PI / 180.),
+                 ymax2 = radius_external * TMath::Sin(maxtheta2 * PI / 180.);
 
     // xy PEAK
-    par1 = (ymax2-ymax1)/(xmax2-xmax1);
-    par0 = (ymax1 - xmax1*par1);
+    const double par1 = (ymax2-ymax1)/(xmax2-xmax1),
+                 par0 = (ymax1 - xmax1*par1);
 
     /*cout<<"xmax1 "<<xmax1<<" ymax1 "<<ymax1<<" xmax2 "<<xmax2<<" ymax2 "<<ymax2<<endl;
     line_xy->SetParameter(0,par0);
     line_xy->SetParameter(1,par1);
     hc_xy->GetListOfFunctions()->Add(line_xy);
 	line_xy->SetLineWidth(1);*/
-
+    
+    const vector<double> xTemp(x), yTemp(y), qTemp(q);
+    for(auto *i:{&x, &y, &q}) i->clear();
+    
+    int ringsum = 0,        // hits within the first 5 rings
+        filter_result = 0;  // Number of valid pads hit
+    
     //Selection of x,y points IN the maxmean+/-1 found in Obertelli transform of xy plane
-    for(unsigned int i=0; i<xTemp.size(); i++){
+    for(unsigned long i=0; i<xTemp.size(); i++){
         if( (abs(par1*xTemp[i]-yTemp[i]+par0)/sqrt(1+par1*par1))<= 6 &&
             ((xmax1*xTemp[i] + ymax1*yTemp[i]) >= 0) &&
             ((xmax2*xTemp[i] + ymax2*yTemp[i]) >= 0) &&
@@ -601,7 +570,7 @@ int minosana::Obertelli_filter(vector<double> &x, vector<double> &y,
             y_out.push_back(yTemp[i]);
             q_out.push_back(qTemp[i]);
             filter_result++;
-            r_mm = sqrt(xTemp[i]*xTemp[i]+yTemp[i]*yTemp[i]);
+            const double r_mm = sqrt(xTemp[i]*xTemp[i]+yTemp[i]*yTemp[i]);
             if(r_mm < (45.2+5*2.1)) ringsum++;
         }
         else{
@@ -638,20 +607,13 @@ void minosana::Hough_filter(vector<double> &x, vector<double> &y,
                             vector<double> &z, vector<double> &q,
                             vector<double> &x_out, vector<double> &y_out,
                             vector<double> &z_out, vector<double> &q_out) {
-    int nt_xy = 180, nt_xz = 180, nt_yz = 180,
-        nr_xy = 45,  nr_xz = 300, nr_yz = 300;
-    double bint_xy = 2., bint_xz = 2., bint_yz = 2.,
-           binr_xy = 3., binr_xz = 3., binr_yz = 3.;
-    int nt = nt_xy,nr = nr_xy;
-    //double PI = TMath::Pi();
-
-    double rho_xy, rho_xz, rho_yz;
-    double theta_xy, theta_xz, theta_yz;
-
+    constexpr int nt_xy = 180, nt_xz = 180, nt_yz = 180,
+            nr_xy = 45,  nr_xz = 300, nr_yz = 300;
+    
     TH2F hp_xy("hp_xy", "hp_xy", nt_xy, 0, 180, nr_xy, -1*nr_xy, nr_xy);
     TH2F hp_xz("hp_xz", "hp_xz", nt_xz, 0, 180, nr_xz, -1*nr_xz, nr_xz);
     TH2F hp_yz("hp_yz", "hp_yz", nt_yz, 0, 180, nr_yz, -1*nr_yz, nr_yz);
-
+    
     /*TH2F *hc_xy = new TH2F("hc_xy","Track in xy plane",100,-85,85,100,-85,85);
     TH2F *hc_xz = new TH2F("hc_xz","Track in xz plane",250,-50,450,100,-85,85);
     TH2F *hc_yz = new TH2F("hc_yz","Track in yz plane",250,-50,450,100,-85,85);
@@ -660,184 +622,114 @@ void minosana::Hough_filter(vector<double> &x, vector<double> &y,
    	TH2F *hcnew_xz = new TH2F("hcnew_xz","Track in xz plane AFTER Hough transform",250,-50,450,100,-85,85);
    	TH2F *hcnew_yz = new TH2F("hcnew_yz","Track in yz plane AFTER Hough transform",250,-50,450,100,-85,85);
 
-    	int npeaks_xy, npeaks_xz, npeaks_yz; */
+    int npeaks_xy, npeaks_xz, npeaks_yz;
 
-    vector<double> thetapeaks_xy, rpeaks_xy, thetapeaks_xz, rpeaks_xz,
-                   thetapeaks_yz, rpeaks_yz;
-    double max_xy, max_xz, max_yz, rmean_xy=0, thetamean_xy=0, rmean_xz=0,
-           thetamean_xz=0, rmean_yz=0, thetamean_yz=0;
-    /*TF1* line_xy = new TF1("line_xy","[0] + [1]*x",-85,85);
+    TF1* line_xy = new TF1("line_xy","[0] + [1]*x",-85,85);
     TF1* line_xz = new TF1("line_xz","[0] + [1]*x",-50,450);
     TF1* line_yz = new TF1("line_yz","[0] + [1]*x",-50,450);*/
-
-    double r0_xy, r0_xz, r0_yz, rmin_xy, rmin_xz, rmin_yz,
-            rmax_xy, rmax_xz, rmax_yz,
-            tmin, tmax,
-            rinf, rsup;
-
-    if(nt<nt_xz)nt=nt_xz;
-    if(nr<nr_xz)nr=nr_xz;
-    if(nt<nt_yz)nt=nt_yz;
-    if(nr<nr_yz)nr=nr_yz;
-
-    //cout<<"In filter !!!"<< endl << "size: "<<x.size()<<endl;
-
+    
+    constexpr int nt = std::max(nt_xy, std::max(nt_xz, nt_yz));
+    //constexpr int nr = std::max(nr_xy, std::max(nr_xz, nr_yz));
+    
     auto radius = [](auto &x, auto &y, auto &thet){
         return x * TMath::Cos(thet*TMath::Pi()/180.) +
                y * TMath::Sin(thet*TMath::Pi()/180.);
     };
-
-    for(unsigned int i=0; i < x.size(); i++){
+    
+    for(unsigned long i=0; i < x.size(); i++){
         //Fill coordinate space histograms for plots
         /*hc_xy.Fill(x.at(i),y.at(i),q.at(i));
         hc_xz.Fill(z.at(i),x.at(i),q.at(i));
         hc_yz.Fill(z.at(i),y.at(i),q.at(i));*/
-
+        
         //Loop of indices and fill Histograms
         for(int j=0; j < nt; j++){
             //xy
-            theta_xy = j * 180./nt_xy;
-            rho_xy = radius(x.at(i), y.at(i), theta_xy);
-
+            const double theta_xy = j * 180./nt_xy,
+                    rho_xy = radius(x.at(i), y.at(i), theta_xy);
+            
             if(abs(theta_xy) < 180. && abs(rho_xy) < nr_xy){
-                //if(i%40==0) cout<<"i="<<i<<" xy "<<rho_xy<<" "<<theta_xy<<endl;
                 hp_xy.Fill(theta_xy, rho_xy);
             }
-
+            
             //xz
-            theta_xz = j * 180./nt_xz;
-            rho_xz = radius(z.at(i), x.at(i), theta_xz);
-
+            const double theta_xz = j * 180./nt_xz,
+                    rho_xz = radius(z.at(i), x.at(i), theta_xz);
+            
             if(abs(theta_xz) < 180. && abs(rho_xz) < nr_xz){
-                //if(i%40==0) cout<<"i="<<i<<" xz "<<rho_xz<<" "<<theta_xz<<endl;
                 hp_xz.Fill(theta_xz, rho_xz);
             }
-
+            
             //yz
-            theta_yz = j * 180./nt_yz;
-            rho_yz = radius(z.at(i), y.at(i), theta_yz);
-
+            const double theta_yz = j * 180./nt_yz,
+                    rho_yz = radius(z.at(i), y.at(i), theta_yz);
+            
             if(abs(theta_yz) < 180. && abs(rho_yz) < nr_yz) {
-                //if(i%40==0) cout<<"i="<<i<<" yz "<<rho_yz<<" "<<theta_yz<<endl;
                 hp_yz.Fill(theta_yz, rho_yz);
             }
         }
     }
-
-    max_xy = hp_xy.GetMaximum();
-    max_xz = hp_xz.GetMaximum();
-    max_yz = hp_yz.GetMaximum();
-
-    for(int ii=0; ii<nt; ii++){
-        for(int jj=0; jj<nr; jj++){
-            if(hp_xy.GetBinContent(ii+1, jj+1) == max_xy && jj<nr_xy){
-                thetapeaks_xy.push_back((ii+0.5) * nt_xy/nt);
-                rpeaks_xy.push_back((jj+0.5) * 2 - nr_xy);
-                rmean_xy     += rpeaks_xy.back();
-                thetamean_xy += thetapeaks_xy.back();
-                // cout << "xy: " << thetapeaks_xy.back() << " , "
-                //      << rpeaks_xy.back() << endl;
-            }
-            if(hp_xz.GetBinContent(ii+1, jj+1) == max_xz){
-                thetapeaks_xz.push_back((ii+0.5) * nt_xz/nt);
-                rpeaks_xz.push_back((jj+0.5)*2 - nr_xz);
-                rmean_xz     += rpeaks_xz.back();
-                thetamean_xz += thetapeaks_xz.back();
-                // cout << "xz: " << thetapeaks_xz.back() << " , "
-                //      << rpeaks_xz.back() << endl;
-            }
-            if(hp_yz.GetBinContent(ii+1, jj+1) == max_yz){
-                thetapeaks_yz.push_back((ii+0.5)*nt_yz/nt);
-                rpeaks_yz.push_back((jj+0.5)*2 - nr_yz);
-                rmean_yz     += rpeaks_yz.back();
-                thetamean_yz += thetapeaks_yz.back();
-                // cout << "yz: " << thetapeaks_yz.back() << " , "
-                //      << rpeaks_yz.back() << endl;
-            }
-        }
-    }
-
-    /*cout << "Number of max found :::     IN xy = " << rpeaks_xy.size()
-         << " ,     IN xz = " << rpeaks_xz.size() << " ,     IN yz = "
-         << rpeaks_yz.size() << endl;
-
-    // xy PEAK
-    rmean_xy = rmean_xy / rpeaks_xy.size();
-    thetamean_xy = thetamean_xy / thetapeaks_xy.size();
-    line_xy.SetParameter(0,rmean_xy / (TMath::Sin(thetamean_xy*PI/180)));
-    line_xy.SetParameter(1,( -(TMath::Cos(thetamean_xy*PI/180)) /
-                               (TMath::Sin(thetamean_xy*PI/180)) ));
-    hc_xy.GetListOfFunctions()->Add(line_xy);
-
-    // xz PEAK
-    rmean_xz = rmean_xz / rpeaks_xz.size();
-    thetamean_xz = thetamean_xz / thetapeaks_xz.size();
-    line_xz.SetParameter(0,rmean_xz / (TMath::Sin(thetamean_xz*PI/180)));
-    line_xz.SetParameter(1,( -(TMath::Cos(thetamean_xz*PI/180)) /
-                                 (TMath::Sin(thetamean_xz*PI/180)) ));
-    hc_xz.GetListOfFunctions()->Add(line_xz);
-
-    // yz PEAK
-    rmean_yz = rmean_yz / rpeaks_yz.size();
-    thetamean_yz = thetamean_yz / thetapeaks_yz.size();
-    line_yz.SetParameter(0,rmean_yz / (TMath::Sin(thetamean_yz*PI/180)));
-    line_yz.SetParameter(1,( -(TMath::Cos(thetamean_yz*PI/180)) /
-                               (TMath::Sin(thetamean_yz*PI/180)) ));
-    hc_yz.GetListOfFunctions()->Add(line_yz); */
-
-    rmean_xy = rpeaks_xy[0];
-    thetamean_xy = thetapeaks_xy[0];
-    rmean_xz = rpeaks_xz[0];
-    thetamean_xz = thetapeaks_xz[0];
-    rmean_yz = rpeaks_yz[0];
-    thetamean_yz = thetapeaks_yz[0];
-
-    /*line_xy.SetLineWidth(1);
-    line_xz.SetLineWidth(1);
-    line_yz.SetLineWidth(1);*/
-
+    
+    int locmaxx, locmaxy, locmaxz;
+    hp_xy.GetMaximumBin(locmaxx, locmaxy, locmaxz);
+    
+    if(locmaxy > nr_xy) cerr << "ERRRRRR... locmaxy: " << locmaxy << " nr_xy: " << nr_xy << endl;
+    const double rmean_xy =     (locmaxy + 0.5) * 2 - nr_xy;
+    const double thetamean_xy = (locmaxx + 0.5) * nt_xy/nt;
+    
+    hp_xz.GetMaximumBin(locmaxx, locmaxy, locmaxz);
+    const double rmean_xz =     (locmaxy + 0.5) * 2 - nr_xz;
+    const double thetamean_xz = (locmaxx + 0.5) * nt_xz/nt;
+    
+    hp_yz.GetMaximumBin(locmaxx, locmaxy, locmaxz);
+    const double rmean_yz =     (locmaxy + 0.5) * 2 - nr_yz;
+    const double thetamean_yz = (locmaxx + 0.5) * nt_yz/nt;
+    
     // Selection of x,y,z points COMMON to the 3 maxmean+/-1 found in Hough
     // spaces for xy, xz and yz spaces
-    for(unsigned int i=0; i<x.size(); i++){
-        r0_xy = radius(x.at(i), y.at(i), thetamean_xy);
-
-        tmin = thetamean_xy - bint_xy;
-        tmax = thetamean_xy + bint_xy;
-        if((tmin) < 0)   tmin = tmin + 180.;
-        if((tmax) > 180) tmax = tmax - 180.;
-        rmin_xy = radius(x.at(i), y.at(i), tmin);
-        rmax_xy = radius(x.at(i), y.at(i), tmax);
-
-        rinf = min( rmean_xy - binr_xy, rmean_xy + binr_xy);
-        rsup = max( rmean_xy - binr_xy, rmean_xy + binr_xy);
+    constexpr double bint_xy = 2., bint_xz = 2., bint_yz = 2.,
+            binr_xy = 3., binr_xz = 3., binr_yz = 3.;
+    
+    for(unsigned long i=0; i<x.size(); i++){
+        const double r0_xy = radius(x.at(i), y.at(i), thetamean_xy);
+        
+        double tmin = thetamean_xy - bint_xy;
+        double tmax = thetamean_xy + bint_xy;
+        if(tmin < 0)   tmin += 180.;
+        if(tmax > 180) tmax -= 180.;
+        const double rmin_xy = radius(x.at(i), y.at(i), tmin);
+        const double rmax_xy = radius(x.at(i), y.at(i), tmax);
+        
+        double rinf = min( rmean_xy - binr_xy, rmean_xy + binr_xy);
+        double rsup = max( rmean_xy - binr_xy, rmean_xy + binr_xy);
         if((r0_xy >= rinf || rmin_xy >= rinf || rmax_xy >= rinf) &&
            (r0_xy <= rsup || rmin_xy <= rsup || rmax_xy <= rsup)){
-            r0_xz = radius(z.at(i), x.at(i), thetamean_xz);
-
+            const double r0_xz = radius(z.at(i), x.at(i), thetamean_xz);
+            
             tmin = thetamean_xz - bint_xz;
             tmax = thetamean_xz + bint_xz;
-            if((tmin) < 0)   tmin = tmin + 180.;
-            if((tmax) > 180) tmax = tmax - 180.;
-            rmin_xz = radius(z.at(i), x.at(i), tmin);
-            rmax_xz = radius(z.at(i), x.at(i), tmax);
-
+            if((tmin) < 0)   tmin += 180.;
+            if((tmax) > 180) tmax -= 180.;
+            const double rmin_xz = radius(z.at(i), x.at(i), tmin);
+            const double rmax_xz = radius(z.at(i), x.at(i), tmax);
+            
             rinf = min( rmean_xz - binr_xz, rmean_xz + binr_xz);
             rsup = max( rmean_xz - binr_xz, rmean_xz + binr_xz);
-
+            
             if((r0_xz >= rinf || rmin_xz >= rinf || rmax_xz >= rinf) &&
                (r0_xz <= rsup || rmin_xz <= rsup || rmax_xz <= rsup)){
-                r0_yz = radius(z.at(i), y.at(i), thetamean_yz);
-
+                const double r0_yz = radius(z.at(i), y.at(i), thetamean_yz);
+                
                 tmin = thetamean_yz - bint_yz;
                 tmax = thetamean_yz + bint_yz;
-                if((tmin) < 0)   tmin = tmin + 180.;
-                if((tmax) > 180) tmax = tmax - 180.;
-                rmin_yz = radius(z.at(i), y.at(i), tmin);
-                rmax_yz = radius(z.at(i), y.at(i), tmax);
-
+                if((tmin) < 0)   tmin += 180.;
+                if((tmax) > 180) tmax -= 180.;
+                const double rmin_yz = radius(z.at(i), y.at(i), tmin);
+                const double rmax_yz = radius(z.at(i), y.at(i), tmax);
+                
                 rinf = min( rmean_yz - binr_yz, rmean_yz + binr_yz);
                 rsup = max( rmean_yz - binr_yz, rmean_yz + binr_yz);
-
+                
                 if((r0_yz >= rinf || rmin_yz >= rinf || rmax_yz >= rinf) &&
                    (r0_yz <= rsup || rmin_yz <= rsup || rmax_yz <= rsup)){
                     // cout << "Taken points= " << x->at(i) << " , " << y->at(i)
@@ -854,7 +746,6 @@ void minosana::Hough_filter(vector<double> &x, vector<double> &y,
         }
     }
     /*
-
      c1->Divide(3,3);
      // Coordinate space
      c1->cd(1);
@@ -880,8 +771,7 @@ void minosana::Hough_filter(vector<double> &x, vector<double> &y,
      c1->cd(9);
      hcnew_yz->Draw("colz");
 
-     c1->Update();
-     */
+     c1->Update();*/
 }
 
 void minosana::FindStart(vector<double> &pStart, vector<double> &chi,
@@ -979,9 +869,7 @@ void minosana::vertex(const vector<double> &p, const vector<double> &pp,
 
 double minosana::distancelineline(vector<double> &l1, vector<double> &l2){
     /// Calculates the distance between two lines
-
-    // vector:
-    // (x_0, m_x, y_0, m_y)^T
+    // vector:  (x_0, m_x, y_0, m_y)^T
 
     assert(l1.size() == 4 && l2.size() == 4);
 

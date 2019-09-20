@@ -9,7 +9,7 @@
 
 using std::vector, std::atomic, std::string, std::thread, std::to_string;
 
-void iccut::innerloop(treereader &tree, const vector<int> &range) {
+void iccut::innerloop(treereader &tree, vector<int> range) {
     ///Step 1: Cloning histograms
     decltype(comparediag) _comparediag(comparediag);
 
@@ -111,7 +111,7 @@ void iccut::analyse(const std::vector<std::string> &input, TFile *output) {
         vector<int> ranges = {(int)(i*goodevents.size()/threads),
                                (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&iccut::innerloop, this, std::ref(tree.at(i)),
-                               ref(ranges)));
+                               ranges));
     }
 
     for (auto &i: th) i.detach();

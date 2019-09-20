@@ -11,7 +11,7 @@
 
 using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
-void plasticcut::innerloop(treereader &tree, const vector<int> &range) {
+void plasticcut::innerloop(treereader &tree, vector<int> range) {
     /// Step 1: cloning histograms
     decltype(qcorr)    _qcorr(qcorr);
     decltype(qcorr2D)  _qcorr2D(qcorr2D);
@@ -187,7 +187,7 @@ void plasticcut::analyse(const vector<string> &input, TFile *output) {
         vector<int> ranges = {(int)(i*goodevents.size()/threads),
                                (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&plasticcut::innerloop, this,
-                               std::ref(tree.at(i)), ref(ranges)));
+                               std::ref(tree.at(i)), ranges));
     }
 
     for (auto &i: th) i.detach();

@@ -10,7 +10,7 @@
 
 using std::vector, std::string, std::thread, std::atomic;
 
-void ppaccut::innerloop(treereader &tree, const vector<int> &range) {
+void ppaccut::innerloop(treereader &tree, vector<int> range) {
     /// Step 1: cloning histograms
     decltype(effPPAC) _effPPAC(effPPAC);
     decltype(sumdiffppac) _sumdiffppac(sumdiffppac);
@@ -149,7 +149,7 @@ void ppaccut::analyse(const std::vector<std::string> &input, TFile* output){
         vector<int> ranges = {(int)(i*goodevents.size()/threads),
                                (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&ppaccut::innerloop, this, std::ref(tree.at(i)),
-                               ref(ranges)));
+                               ranges));
     }
 
     for (auto &i: th) i.detach();

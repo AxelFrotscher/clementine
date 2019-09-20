@@ -12,7 +12,7 @@
 class PID {
 public:
     void innerloop(treereader &tree, treereader &minostree,
-                   const std::vector<int> &range, bool minosanalyse);
+                   std::vector<int> range, bool minosanalyse);
     void analyse(const std::vector<std::string> &input, TFile* output);
     void offctrans();
     void crosssection();

@@ -12,7 +12,7 @@
 
 using std::vector, std::atomic, std::string, std::to_string, std::thread;
 
-void higherorder::innerloop(treereader &tree, const vector<int> &range) {
+void higherorder::innerloop(treereader &tree, vector<int> range) {
     // Step 1: Cloning histograms
     decltype(culpritdiag) _culpritdiag(culpritdiag);
 
@@ -133,7 +133,7 @@ void higherorder::analyse(const std::vector<std::string> &input, TFile *output) 
         vector<int> ranges = {(int)(i*goodevents.size()/threads),
                               (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&higherorder::innerloop, this,
-                               std::ref(tree.at(i)), ref(ranges)));
+                               std::ref(tree.at(i)), ranges));
     }
 
     for(auto &i: th) i.detach();

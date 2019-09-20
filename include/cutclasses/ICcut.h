@@ -8,7 +8,7 @@
 
 class iccut{
 public:
-    void innerloop(treereader &tree, const std::vector<int> &range);
+    void innerloop(treereader &tree, std::vector<int> range);
     void analyse(const std::vector<std::string> &input, TFile* output);
     iccut(const std::vector<std::string> &input, std::vector<std::vector<std::atomic<bool>>>
             &goodevents_, TFile* output):goodevents(goodevents_){

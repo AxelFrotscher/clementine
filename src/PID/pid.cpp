@@ -20,7 +20,7 @@ using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
       std::min;
 
 void PID::innerloop(treereader &tree, treereader &minostree,
-                    const vector<int> &range, bool minosanalyse) {
+                    vector<int> range, bool minosanalyse) {
     /// Step 1: duplicate the data structure
     decltype(reactF5)          _reactF5(reactF5);
     decltype(minosresults)     _minosresults(minosresults);
@@ -175,11 +175,11 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                 _minos1dresults.at(2).Fill(minres.vertexdist[0]);
 
                 // Get all theta angles as 1d
-                for(auto &i: minres.thetaz) _minos1dresults.at(4).Fill(i);
+                for(auto &i: minres.theta) _minos1dresults.at(4).Fill(i);
                 for(auto &i: minres.thetaerr) _minos1dresults.at(6).Fill(i);
 
                 // Theta correlation plot:
-                _minosresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1]);
+                _minosresults.at(0).Fill(minres.theta[0], minres.theta[1]);
                 // Charge-plot (useless, no resolution)
                 _minosresults.at(3).Fill(minres.chargeweight[0],
                                          minres.chargeweight[1]);
@@ -196,13 +196,13 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                 _minos1dresults.at(2).Fill(i);
 
               // Get all theta angles as 1d
-              for(auto &i: minres.thetaz)   _minos1dresults.at(4).Fill(i);
+              for(auto &i: minres.theta)   _minos1dresults.at(4).Fill(i);
               for(auto &i: minres.thetaerr) _minos1dresults.at(6).Fill(i);
 
                 _minosresults.at(2).Fill(minres.phi2d.at(0),
                                          minres.phi2d.at(1));
-                _minos3dresults.at(0).Fill(minres.thetaz[0], minres.thetaz[1],
-                                           minres.thetaz[2]);
+                _minos3dresults.at(0).Fill(minres.theta[0], minres.theta[1],
+                                           minres.theta[2]);
                 for(auto &i: minres.lambda) _minos1dresults.at(5).Fill(i);
     
                 // projected angle plot
@@ -300,7 +300,7 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
         vector<int> ranges = {(int)(i*goodevents.size()/threads),
                                (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&PID::innerloop, this, std::ref(tree.at(i)),
-                               std::ref(minostree.at(i)), ref(ranges),
+                               std::ref(minostree.at(i)), ranges,
                                setting::getminos()));
     }
 

@@ -7,15 +7,16 @@
 #include "zdssetting.h"
 #include <thread>
 
-using std::vector, std::string, std::thread, std::atomic;
+using std::vector, std::string, std::thread, std::atomic, std::endl;
 
-void ccsc::innerloop(treereader &tree, const std::vector<int> &range) {
+void ccsc::innerloop(treereader &tree, std::vector<int> range) {
     // precious tight inner loop
     // Cloning histograms
     decltype(cschist) _cschist(cschist);
 
     // Step 2: Preparing variables
     const uint threadno = range.at(0)/(range.at(1)-range.at(0));
+    
     double brhoratio = 0;
 
     progressbar progress(range.at(1)-range.at(0), threadno);
@@ -82,7 +83,7 @@ void ccsc::analyse(const std::vector<std::string> &input, TFile* output){
         vector<int> ranges = {(int)(i*goodevents.size()/threads),
                                (int)((i+1)*goodevents.size()/threads-1)};
         th.emplace_back(thread(&ccsc::innerloop, this, std::ref(tree.at(i)),
-                               ref(ranges)));
+                               ranges));
     }
 
     for (auto &t: th) t.detach();
