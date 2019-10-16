@@ -10,6 +10,7 @@
 #include <sstream>
 #include <cmath>
 #include <TString.h>
+#include "sys/ioctl.h"
 
 using std::stringstream, std::string, std::max, std::to_string, std::cout,
       std::vector, std::chrono::duration_cast, std::chrono::steady_clock,
@@ -22,7 +23,13 @@ void progressbar::draw(){
 
     vector<unsigned long> pos; // position for each bar
 
-    for(ulong i=0; i<currevt.size(); i++){ // Loop over each bar
+    //Get size of current terminal window
+    struct winsize size;
+    ioctl(0, TIOCGWINSZ, (char *)&size);
+    
+    for(unsigned long i=0; i<size.ws_col/(barwidth+3); i++){
+        // Loop over each fully visible bar
+        if(i >= currevt.size()) continue;
         pos.push_back((int)(barwidth*(float)currevt.at(i)/totevent.at(i)));
         if(currevt.at(i) == 0) continue; // Do not display empty threads
 

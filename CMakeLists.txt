@@ -1,16 +1,16 @@
 #Set Project Name
-cmake_minimum_required(VERSION 3.6 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(clementine)
 
 set(CMAKE_CXX_STANDARD 17)
-set(ROOTSYS "/ldas-ikda/soft/src/cern/root/install/6.16.00/")
-message(STATUS "ROOT: ${ROOTSYS}")
+#set(ROOTSYS "/ldas-ikda/soft/src/cern/root/install/6.16.00/")
+#message(STATUS "ROOT: ${ROOTSYS}")
 #Find ROOT installation
 
 list(APPEND CMAKE_PREFIX_PATH ${ROOTSYS})
 
 #Locate ROOT package
-find_package(ROOT REQUIRED COMPONENTS  RIO Net)
+find_package(ROOT 6.18 REQUIRED COMPONENTS  RIO Net)
 include(${ROOT_USE_FILE}) # Enables CLion to find root headers
 
 #Define useful functions

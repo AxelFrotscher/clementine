@@ -14,15 +14,13 @@
 #include "TFile.h"
 #include "TGraph.h"
 #include "TMath.h"
-#include "TMinuit.h"
 #include "TVectorD.h"
 #include "minos.h"
 #include "progress.h"
 #include "zdssetting.h"
 #include <Math/Vector3D.h>
 #include <TF1.h>
-#include <TH2F.h>
-#include <csignal>
+#include "TH1.h"
 #include <filesystem>
 #include <iostream>
 

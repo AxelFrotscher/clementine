@@ -124,7 +124,7 @@ void iccut::analyse(const std::vector<std::string> &input, TFile *output) {
         cutafter.at(1) += i.at(1);
     }
 
-    printf("\nIC Cut out %i F1-7 Events (%f %%) %i F1-11 Events (%f %%) \n",
+    printf("\nIC Cut out %i F1-7 Events (%.2f %%) %i F1-11 Events (%.2f %%) \n",
            cutpre.at(0)-cutafter.at(0), 100*(cutpre.at(0)-cutafter.at(0))/(double)goodevents.size(),
            cutpre.at(1)-cutafter.at(1), 100*(cutpre.at(1)-cutafter.at(1))/(double)goodevents.size());
 

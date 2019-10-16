@@ -3,6 +3,7 @@
 //
 
 #include <TF1.h>
+#include "TH1.h"
 #include <TGraph.h>
 #include <TMinuit.h>
 #include <Math/Vector3D.h>
@@ -16,13 +17,12 @@ using std::vector, std::cerr, std::cout, std::endl, std::min, std::max;
 
 TMinosPass minosana::analyze() {
     /// MINOS 2. Modify with hough-transformation
+    TMinosPass MR;
+    if(!filled) return MR;  // return if no TPC has been hit
+    
     vector<bool> clusterringbool;
     vector<int> clusternbr, clusterpads;
     
-    TMinosPass MR;
-
-    if(!filled) return MR;  // return if no TPC has been hit
-
     for (int iteration = 0; (Xpad.size() > 9 && iteration < 20); iteration++) {
         const int filter_result = Obertelli_filter(
                 Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew,

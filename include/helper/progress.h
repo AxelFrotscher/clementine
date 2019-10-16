@@ -39,12 +39,12 @@ private:
     inline static long int lasttime; // in milliseconds
 
     inline static unsigned long barwidth = 100;
-    static const int displaythreads = 6;
+    static const int displaythreads = 25;
     inline static std::atomic<int> currentthreads;  // current working (displayed) threads
     inline static std::mutex currevtmutex;
     bool worker = true ; // Defines a thread to be displayed
     inline static std::vector<uint> totevent;  // number of object to be calculated
-    uint threadpos = 0;  // thread position
+    unsigned int threadpos = 0;  // thread position
 
     inline static std::atomic<int> finishercount;  // number of finished threads
     inline static std::atomic<bool> ongoinganalysis; // switch for status of analysis

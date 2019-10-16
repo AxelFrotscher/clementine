@@ -188,6 +188,11 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                 
                 // projected angle plot
                 _minos1dresults.at(7).Fill(minres.phi2d.at(0));
+                
+                // test phi-width with verte position
+                _minosresults.at(4).Fill(minres.phi2d.at(0), minres.z_vertex);
+                _minosresults.at(5).Fill(minres.phi2d.at(0),
+                        sqrt(pow(minres.y_vertex,2)+ pow(minres.x_vertex,2)));
             }
 
             if(reaction.find("P3P") != string::npos &&
@@ -196,7 +201,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                 _minos1dresults.at(2).Fill(i);
 
               // Get all theta angles as 1d
-              for(auto &i: minres.theta)   _minos1dresults.at(4).Fill(i);
+              for(auto &i: minres.theta)    _minos1dresults.at(4).Fill(i);
               for(auto &i: minres.thetaerr) _minos1dresults.at(6).Fill(i);
 
                 _minosresults.at(2).Fill(minres.phi2d.at(0),
@@ -207,40 +212,46 @@ void PID::innerloop(treereader &tree, treereader &minostree,
     
                 // projected angle plot
                 _minos1dresults.at(7).Fill(minres.phi2d.at(0));
+    
+                // test phi-width with verte position
+                _minosresults.at(4).Fill(minres.phi2d.at(0), minres.z_vertex);
+                _minosresults.at(5).Fill(minres.phi2d.at(0),
+                                         sqrt(pow(minres.y_vertex,2)+ pow(minres.x_vertex,2)));
             }
 
             // Get Phi Errors
             for(auto &i: minres.phi2dE) _minos1dresults.at(3).Fill(i);
         }
     }
-
+    
     /// Step 3: rejoining data structure
     unitemutex.lock();
-    for(ulong i=0;i<reactF5.size();i++) reactF5.at(i).Add(&_reactF5.at(i));
-
-    for(ulong i=0;i<minosresults.size();i++)
+    for (unsigned long i = 0; i < reactF5.size(); i++)
+        reactF5.at(i).Add(&_reactF5.at(i));
+    
+    for (unsigned long i = 0; i < minosresults.size(); i++)
         minosresults.at(i).Add(&_minosresults.at(i));
-
-    for(ulong i=0; i<minos1dresults.size(); i++)
+    
+    for (unsigned long i = 0; i < minos1dresults.size(); i++)
         minos1dresults.at(i).Add(&_minos1dresults.at(i));
-
-    for(ulong i=0; i<minos3dresults.size(); i++)
+    
+    for (unsigned long i = 0; i < minos3dresults.size(); i++)
         minos3dresults.at(i).Add(&_minos3dresults.at(i));
-
-    for(ulong i=0;i<reactPPAC.size();i++){
-        for(ulong j=0; j<reactPPAC.at(0).size(); j++){
+    
+    for (unsigned long i = 0; i < reactPPAC.size(); i++) {
+        for (unsigned long j = 0; j < reactPPAC.at(0).size(); j++) {
             reactPPAC.at(i).at(j).Add(&_reactPPAC.at(i).at(j));
         }
     }
-
-    for(ulong i=0; i<PIDplot.size(); i++){
-        for(ulong j=0; j<PIDplot.at(0).size(); j++){
+    
+    for (unsigned long i = 0; i < PIDplot.size(); i++) {
+        for (unsigned long j = 0; j < PIDplot.at(0).size(); j++) {
             PIDplot.at(i).at(j).Add(&_PIDplot.at(i).at(j));
         }
     }
     minossingleevent.insert(minossingleevent.end(), _minossingleevent.begin(),
                             _minossingleevent.end());
-
+    
     unitemutex.unlock();
     progressbar::reset();
 }
@@ -840,7 +851,9 @@ void PID::histogramsetup() {
         {{"theta", "#theta correlation", 90, 0, 90, 90, 0, 90},
          {"tracknbr", "Track No. vs. Final Track No.", 10,-0.5,9.5,10,-0.5,9.5},
          {"phi", "Two smaller 2d angles for p,3p", 60, 0, 120, 90, 0, 180},
-         {"minoscharge", "Charge deposition of protons",150,0,1500,150,0,1500}};
+         {"minoscharge", "Charge deposition of protons",150,0,1500,150,0,1500},
+         {"phivertexz", "Phismall vs. vertex position z", 90,0,180,80,-40,120},
+         {"phivertexr", "Phismall vs. vertex position r", 90,0,180,50,0,50}};
 
     minosresults.at(0).GetXaxis()->SetTitle("#theta_{1} #circ");
     minosresults.at(0).GetYaxis()->SetTitle("#theta_{2} / #circ");
@@ -850,7 +863,12 @@ void PID::histogramsetup() {
     minosresults.at(2).GetYaxis()->SetTitle("#phi_{m} / #circ");
     minosresults.at(3).GetXaxis()->SetTitle("Q_{1}/l_{TPC} AU");
     minosresults.at(3).GetYaxis()->SetTitle("Q_{2}/l_{TPC} AU");
-
+    minosresults.at(4).GetXaxis()->SetTitle("#phi_{s} / #circ");
+    minosresults.at(4).GetYaxis()->SetTitle("z_{vertex} / mm");
+    minosresults.at(5).GetXaxis()->SetTitle("#phi_{s} / #circ");
+    minosresults.at(5).GetYaxis()->SetTitle("r_{vertex} / mm");
+    
+    
     for(auto &i: minosresults) i.SetOption("colz");
 
     minos1dresults =
