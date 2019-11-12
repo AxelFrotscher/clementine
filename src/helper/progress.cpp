@@ -26,6 +26,7 @@ void progressbar::draw(){
     //Get size of current terminal window
     struct winsize size;
     ioctl(0, TIOCGWINSZ, (char *)&size);
+    if(size.ws_col == 0 ) size.ws_col = 80; // Backup
     
     for(unsigned long i=0; i<size.ws_col/(barwidth+3); i++){
         // Loop over each fully visible bar

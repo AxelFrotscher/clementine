@@ -3,11 +3,11 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(clementine)
 
 set(CMAKE_CXX_STANDARD 17)
-#set(ROOTSYS "/ldas-ikda/soft/src/cern/root/install/6.16.00/")
-#message(STATUS "ROOT: ${ROOTSYS}")
+
 #Find ROOT installation
 
 list(APPEND CMAKE_PREFIX_PATH ${ROOTSYS})
+message(STATUS "ROOT: ${ROOTSYS}")
 
 #Locate ROOT package
 find_package(ROOT 6.18 REQUIRED COMPONENTS  RIO Net)

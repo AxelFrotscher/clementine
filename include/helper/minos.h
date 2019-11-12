@@ -119,6 +119,19 @@ struct TMinosPass{
     TMinosPass() = default;
 };
 
+struct minos_internal{  // MInos iNTernal values
+    std::array<double, 4> pStart{0,1,0,1};   // start parameters for the 2D fit
+    std::array<double, 4> parFit;   // fitted parameters for the 2D fit
+    std::array<double, 4> parFit_r;   // fitted parameters for the 2D fit
+    std::array<double, 4> err;      // uncertainties on all parameters
+    std::array<double, 2> chi2;     // chi² for the fit
+    double covxy;                   // covariance of slope Ax and Ay
+    std::array<int, 2> fitStatus;   // goodness of the fit
+    std::array<double, 10> arglist;
+    
+    minos_internal() = default;
+};
+
 class minosana{
 public:
     minosana(int filled_, double TShaping_, double TimeBinElec_,
@@ -133,7 +146,6 @@ public:
              minostrackxy(*minostrackxy_), minoscalibvalues(*minoscalibvalues_),
              minostime(*minostime_), Xpad(*xpad_), Ypad(*ypad_),Qpad(*qpad_),
              threadno(threadno_), minossingleevent(minossingleevent_){
-
     }
     TMinosResult getTMinosResult(){return dataresult;}
     TMinosPass analyze();
@@ -146,13 +158,14 @@ private:
     static void Hough_filter(vector<double> &x,vector<double> &y,vector<double> &z,
                       vector<double> &q,vector<double> &x_out,vector<double> &y_out,
                       vector<double> &z_out,vector<double> &q_out);
-    void FindStart(vector<double> &pStart, vector<double> &chi, vector<int> &fitstatus,
-                             TGraph &grxz, TGraph &gryz);
-    static void vertex(const vector<double> &p, const vector<double> &pp, double &xv,
-                          double &yv, double &zv);
-    static double distancelineline(vector<double> &l1, vector<double> &l2);
+    void FindStart(minos_internal &mi_nt, TGraph &grxz, TGraph &gryz);
+    static void vertex(const std::array<double, 4> &p, const std::array<double, 4> &pp,
+                       double &xv, double &yv, double &zv);
+    static double distancelineline(const std::array<double,4> &l1,
+                                   const std::array<double,4> &l2);
     void debug();
-    static vector<double> rotatesp(double &rot, vector<double> &initialvector);
+    static std::array<double, 4> rotatesp(const double &rot,
+                                   const std::array<double,4> &initialvector);
     
     int filled;
     double Tshaping;
@@ -163,6 +176,8 @@ private:
     vector<vector<double>> minoscalibvalues;
     vector<vector<double>> minostime;
     vector<double> Xpad, Ypad, Qpad, Xpadnew,Ypadnew, Qpadnew, Zpadnew;
+    
+    vector<minos_internal> mint;
     
     int threadno=0;
     vector<TH2C> &minossingleevent;

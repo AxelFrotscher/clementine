@@ -205,20 +205,12 @@ TMinosPass minosana::analyze() {
         //else continue;
     } // end of loop on pads
 
-    if(MR.trackNbr_final == 0 || MR.trackNbr_final > 3) return MR;
+    if(MR.trackNbr_final == 0 || MR.trackNbr_final > 4) return MR;
 
     /// 5. Fitting filtered tracks in 3D (weight by charge, TMinuit) //
-    vector<double> pStart_1{0,1,0,1}, pStart_2{0,1,0,1},pStart_3{0,1,0,1},
-                   parFit_1(4), err_1(4), parFit_2(4), parFit_3(4), err_2(4),
-                   err_3(4), chi1(2), chi2(2), chi3(2), arglist(10),covxy(3);
-    vector<int> fitStatus(2);
-
     int iflag, nvpar, nparx;
-    double amin, edm, errdef; //, chi2res1, chi2res2;
-    arglist.at(0) = 3;
-    // Get fit for xz-yz plane, for the reconstruction
-    FindStart(pStart_1, chi1, fitStatus, grxz.at(0), gryz.at(0));
-
+    double amin, edm, errdef;
+    
     auto funcmin = [this](const int mod){
         /// Wrapper for minimization function, sets track number to mod
         mode = mod;
@@ -226,7 +218,7 @@ TMinosPass minosana::analyze() {
         return [](int &, double *, double &sum, double *par, int){
             /// Minimization: calculates sum of distances between data points
             /// and regression
-
+            
             sum = 0;
             double qtot =0;
             for(unsigned long i=0; i<tmr.x_mm.size(); i++){
@@ -241,78 +233,65 @@ TMinosPass minosana::analyze() {
         };
     };
     
-    TMinuit min(4);
+    TMinuit min(4);      // Initializing the minuit-fit
     min.SetPrintLevel(-1);
-    min.SetFCN(funcmin(1));
+    
     // Set starting values and step sizes for parameters
-    auto minimize = [&min, &iflag, &arglist, &amin, &edm, &errdef, &nvpar, &nparx]
-            (vector<double> a){
+    auto minimize = [&min, &iflag, &amin, &edm, &errdef, &nvpar, &nparx]
+            (minos_internal &mi_nt){
         /// Set all parameters for 3D-minimization
-        assert(a.size() == 4);
-
-        min.mnparm(0, "x0", a.at(0), 0.1, -500, 500, iflag);
-        min.mnparm(1, "Ax", a.at(1), 0.1, -10, 10, iflag);
-        min.mnparm(2, "y0", a.at(2), 0.1, -500, 500, iflag);
-        min.mnparm(3, "Ay", a.at(3), 0.1, -10, 10, iflag);
-
-        arglist.at(0) = 100; // Number of function calls
-        arglist.at(1) = 1E-6;// tolerance
-
-        min.mnexcm("MIGRAD", arglist.data(), 2, iflag);
-
+        
+        min.mnparm(0, "x0", mi_nt.pStart.at(0), 0.1, -500, 500, iflag);
+        min.mnparm(1, "Ax", mi_nt.pStart.at(1), 0.1, -10, 10, iflag);
+        min.mnparm(2, "y0", mi_nt.pStart.at(2), 0.1, -500, 500, iflag);
+        min.mnparm(3, "Ay", mi_nt.pStart.at(3), 0.1, -10, 10, iflag);
+        
+        mi_nt.arglist.at(0) = 100; // Number of function calls
+        mi_nt.arglist.at(1) = 1E-6;// tolerance
+        
+        min.mnexcm("MIGRAD", mi_nt.arglist.data(), 2, iflag);
+        
         // get current status of minimization
         min.mnstat(amin, edm, errdef, nvpar, nparx, iflag);
     };
-    minimize(pStart_1);
-
-    for (unsigned long i = 0; i < parFit_1.size(); i++)
-        min.GetParameter(i, parFit_1.at(i), err_1.at(i));
-    double temp[4][4];
-    min.mnemat(&temp[0][0], 4);
-    covxy.at(0) = temp[1][3]; // entry i=0, j=2
-
-    if (MR.trackNbr_final == 1) parFit_2 = {0, 0, 0, 0};
-    else {
-        FindStart(pStart_2, chi2, fitStatus, grxz.at(1), gryz.at(1));
-        min.SetFCN(funcmin(2));
-        minimize(pStart_2);
+    
+    mint.reserve(MR.trackNbr_final);
+    for(int i=0; i<MR.trackNbr_final; i++){
+        // Now each track is analysed
+        mint.emplace_back();
+        FindStart(mint.back(), grxz.at(i), gryz.at(i));
+        mint.back().arglist.at(0) = 3;   // DEPRECATED
+    
+        min.SetFCN(funcmin(i+1));
+        minimize(mint.back());
+        
+        for(unsigned long j=0; j<mint.back().parFit.size(); j++){
+            min.GetParameter(j, mint.back().parFit.at(j), mint.back().err.at(j));
+        }
+    
+        double temp[4][4];
         min.mnemat(&temp[0][0], 4);
-        covxy.at(1) = temp[1][3]; // entry i=0, j=2
-
-        for (unsigned long i = 0; i < parFit_2.size(); i++)
-            min.GetParameter(i, parFit_2.at(i), err_2.at(i));
+        mint.back().covxy = temp[1][3]; // entry i=0, j=2
     }
-    if(MR.trackNbr_final > 2){
-        FindStart(pStart_3, chi3, fitStatus, grxz.at(2), gryz.at(2));
-        min.SetFCN(funcmin(3));
-        minimize(pStart_3);
-        min.mnemat(&temp[0][0], 4);
-        covxy.at(2) = temp[1][3]; // entry i=0, j=2
-
-        for (unsigned long i = 0; i < parFit_3.size(); i++)
-            min.GetParameter(i, parFit_3.at(i), err_3.at(i));
-    }
-    else parFit_3 = {0,0,0,0};
-
+    
     //Rotate from MINOS to beamline for all tracks
-    double rot = 30*TMath::Pi()/180;
-    vector<double> parFit_1r = rotatesp(rot, parFit_1);
-    vector<double> parFit_2r = rotatesp(rot, parFit_2);
-    vector<double> parFit_3r = rotatesp(rot, parFit_3);
+    const double rot = 30*TMath::Pi()/180;
+    for(auto &i:mint) i.parFit_r = rotatesp(rot, i.parFit);
 
     /// 6. Get x,y,z reaction vertex from fitted parameters and further variables
-    vertex(parFit_1r, parFit_2r, MR.x_vertex, MR.y_vertex, MR.z_vertex);
+    if(MR.trackNbr_final > 1)
+        vertex(mint.at(0).parFit_r, mint.at(1).parFit_r, MR.x_vertex,
+               MR.y_vertex, MR.z_vertex);
     
     MR.r_vertex = sqrt(pow(MR.x_vertex, 2) + pow(MR.y_vertex, 2));
 
     // cos theta = v1*v2/(|v1|*|v2|), v1 = (0,0,1)^T, v2 = (m1,m3,1)^T
-    auto cthet = [](vector<double> a){
-        assert(a.size() == 4);
+    auto cthet = [](auto a){
         return acos(1/pow(1 + pow(a[1],2) + pow(a[3],2),.5)) *
                180./TMath::Pi();
     };
 
-    auto thetaerror = [](vector<double> pf, vector<double> err, double covxy){
+    auto thetaerror = [](auto pf, auto err, const double covxy){
         /// Calculates the Gaussian error of the theta angle for each track
         assert(pf.size() == 4);
         double norm = pf[1]*pf[1]+pf[3]*pf[3]+1;
@@ -323,43 +302,25 @@ TMinosPass minosana::analyze() {
                                  2*pf[1]*pf[3]*covxy/(pow(norm,3)*(1-1/norm)));
     };
     
-    MR.theta = {cthet(parFit_1r), cthet(parFit_2r), cthet(parFit_3r)};
-    
-    MR.thetaerr = {thetaerror(parFit_1r, err_1, covxy.at(0)),
-                   thetaerror(parFit_2r, err_2, covxy.at(1)),
-                   thetaerror(parFit_3r, err_3, covxy.at(2))};
-
-    // Only calculate angles for real tracks
-    while(MR.trackNbr_final < (int)MR.theta.size()){
-        MR.theta.pop_back();
-        MR.thetaerr.pop_back();
+    for(auto &i: mint){
+        MR.theta.push_back(cthet(i.parFit_r));
+        MR.thetaerr.push_back(thetaerror(i.parFit_r, i.err, i.covxy));
     }
+    
     sort(MR.theta.begin(), MR.theta.end()); // Sort angles
-
-  // angles in xy-plane for all tracks
-    vector<double> phi2d_unsorted{
-        atan2(parFit_1r.at(3), parFit_1r.at(1))*180/TMath::Pi()};
     
-    if(MR.trackNbr_final > 1){
-        phi2d_unsorted.push_back(atan2(parFit_2r.at(3),
-                                       parFit_2r.at(1)) * 180 / TMath::Pi());
-        if(MR.trackNbr_final > 2)  // Add one angle for each additional track
-            phi2d_unsorted.push_back(atan2(parFit_3r.at(3),
-                                           parFit_3r.at(1)) * 180 / TMath::Pi());
-    }
-
+    // angles in xy-plane for all tracks
+    vector<double> phi2d_unsorted;
+    for(auto &i:mint) phi2d_unsorted.push_back(
+            atan2(i.parFit_r[3], i.parFit_r[1])*180/TMath::Pi());
+    
     // Transform from negative angles to positive angles
     for(auto &i:phi2d_unsorted) if(i < 0) i += 360;
     sort(phi2d_unsorted.begin(), phi2d_unsorted.end());
     
-    if(MR.trackNbr_final == 2){
-        MR.phi2d = {phi2d_unsorted.at(1) - phi2d_unsorted.at(0),
-                    phi2d_unsorted.at(0) + 360 - phi2d_unsorted.at(1)};
-    }
-    else if(MR.trackNbr_final == 3){
-        MR.phi2d = {phi2d_unsorted.at(2) - phi2d_unsorted.at(1),
-                    phi2d_unsorted.at(1) - phi2d_unsorted.at(0),
-                    phi2d_unsorted.at(0) + 360 - phi2d_unsorted.at(2)};
+    for(int i = 0; i < MR.trackNbr_final; i++){
+        if(i) MR.phi2d.push_back(phi2d_unsorted.at(i) - phi2d_unsorted.at(i-1));
+        else MR.phi2d.push_back(phi2d_unsorted.at(0) + 360 - phi2d_unsorted.back());
     }
 
     // Delete largest angle
@@ -368,7 +329,7 @@ TMinosPass minosana::analyze() {
     sort(MR.phi2d.begin(), MR.phi2d.end());
     
     // Look at some events
-    if(MR.trackNbr_final == 2 && MR.phi2d.at(0) < 150 && MR.phi2d.at(0) > 140 )
+    if(MR.trackNbr_final == 2 && MR.phi2d.at(0) < 150 && MR.phi2d.at(0) > 140)
         debug();
 
     auto lambdainter = [](auto p1, auto p2){
@@ -380,22 +341,23 @@ TMinosPass minosana::analyze() {
                180. / TMath::Pi();
     };
 
-    // Calculate all interangles between the protons
-    if(MR.trackNbr_final > 1){
-        MR.lambda.push_back(lambdainter(parFit_1r, parFit_2r));
-        if(MR.trackNbr_final > 2){
-            MR.lambda.push_back(lambdainter(parFit_1r, parFit_3r));
-            MR.lambda.push_back(lambdainter(parFit_3r, parFit_2r));
+    for(unsigned long i=0; i < mint.size(); i++){
+        for(unsigned long j=i+1; j < mint.size(); j++){
+            MR.lambda.push_back(lambdainter(mint.at(i).parFit_r,
+                                            mint.at(j).parFit_r));
+            MR.vertexdist.push_back(distancelineline(mint.at(i).parFit_r,
+                                                     mint.at(j).parFit_r));
         }
     }
 
-    double radin = 40, radout = 95;
-    auto param = [](vector<double> pf, double radin){
+    const double radin = 40, radout = 95; // inner/outer radius in mm
+    auto param = [](auto pf, const double radius){
         /// This function calculates the t for which the track crosses the TPC border
         assert(pf.size() == 4);
         return -(pf[1]*pf[0]+pf[3]*pf[2])/(pow(pf[1],2)+pow(pf[3],2)) +
-               sqrt(pow((pf[1]*pf[0]+pf[3]*pf[2])/(pow(pf[1],2)+pow(pf[3],2)),2)-
-          (pow(pf[0],2)+pow(pf[2],2)-pow(radin,2))/(pow(pf[1],2)+pow(pf[3],2)));
+                sqrt(pow((pf[1]*pf[0]+pf[3]*pf[2])/(pow(pf[1],2) +
+                pow(pf[3],2)),2) - (pow(pf[0],2)+pow(pf[2],2)-pow(radius, 2)) /
+                (pow(pf[1], 2) + pow(pf[3], 2)));
     };
 
     for(int i=1; i <= MR.trackNbr_final; i++){
@@ -405,42 +367,24 @@ TMinosPass minosana::analyze() {
                                          tmr.Chargemax.at(j);
         }
         /// Get length of track
-        double dt = 0;
-
-        if     (i==1){dt = abs(param(parFit_1r,radin)-param(parFit_1r,radout));
-                      dt *= sqrt(1 + pow(parFit_1r[1],2)+ pow(parFit_1r[3],2));}
-        else if(i==2){dt = abs(param(parFit_2r,radin)-param(parFit_2r,radout));
-                      dt *= sqrt(1 + pow(parFit_2r[1],2)+ pow(parFit_2r[3],2));}
-        else if(i==3){dt = abs(param(parFit_3r,radin)-param(parFit_3r,radout));
-                      dt *= sqrt(1 + pow(parFit_3r[1],2)+ pow(parFit_3r[3],2));}
+        const double dt = abs(param(mint.at(i-1).parFit_r, radin) -
+                        param(mint.at(i-1).parFit_r, radout)) *
+                    sqrt(1 + pow(mint.at(i-1).parFit_r[1],2)
+                             + pow(mint.at(i-1).parFit_r[3],2));
 
         if(dt > 0) MR.chargeweight.back() /= dt;
     }
     
-    if(MR.trackNbr_final == 2)
-        MR.vertexdist = {distancelineline(parFit_1r, parFit_2r)};
-    else if(MR.trackNbr_final == 3){
-        MR.vertexdist = {distancelineline(parFit_1r, parFit_2r),
-                         distancelineline(parFit_1r, parFit_3r),
-                         distancelineline(parFit_2r, parFit_3r)};
-    }
-
     // Estimate the angular uncertainty in lambda
-    auto phierror = [](vector<double> pf, vector<double> err, double covxy){
+    auto phierror = [](auto pf, auto err, double covxy){
         /// Calculates the Gaussian error of the lambda angle for each track
         /// projection
-        assert(pf.size() == 4);
+        assert(pf.size() == 4 && err.size() == 4);
         return 180./TMath::Pi()/(pow(pf[1],2)+ pow(pf[3],2))*sqrt(
                 pow(pf[1]*err[3],2) + pow(-pf[3]*err[1],2) - 2*pf[1]*pf[3]*covxy);
     };
     
-    MR.phi2dE = {
-            phierror(parFit_1r, err_1, covxy.at(0)),
-            phierror(parFit_2r, err_2, covxy.at(1)),
-            phierror(parFit_3r, err_3, covxy.at(2))
-    };
-    // Delete all errors not related to a real track
-    while(MR.trackNbr_final < (int)MR.phi2dE.size()) MR.phi2dE.pop_back();
+    for(auto &i:mint) MR.phi2dE.push_back(phierror(i.parFit_r, i.err, i.covxy));
     
     return MR;
 }
@@ -774,8 +718,7 @@ void minosana::Hough_filter(vector<double> &x, vector<double> &y,
      c1->Update();*/
 }
 
-void minosana::FindStart(vector<double> &pStart, vector<double> &chi,
-                         vector<int> &fitstatus, TGraph &grxz, TGraph &gryz){
+void minosana::FindStart(minos_internal &mi_nt, TGraph &grxz, TGraph &gryz){
     /// This function performs an x-z plane (grxz) and y-z plane (gryz) 2d fit,
     /// to get the initial parameters (stored in &pStart)
 
@@ -783,15 +726,15 @@ void minosana::FindStart(vector<double> &pStart, vector<double> &chi,
                [](double *x, double *p){ return p[0]+p[1]*x[0];},
                -100,500,2);
     myfit1.SetParameters(0,10);
-    fitstatus = {0,0};
+    mi_nt.fitStatus = {0,0};
     grxz.Fit(&myfit1, "RQMN");
-    chi.at(0) = myfit1.GetChisquare();
-    pStart.at(0) = myfit1.GetParameter(0);
-    pStart.at(1) = myfit1.GetParameter(1);
+    mi_nt.chi2.at(0) = myfit1.GetChisquare();
+    mi_nt.pStart.at(0) = myfit1.GetParameter(0);
+    mi_nt.pStart.at(1) = myfit1.GetParameter(1);
     gryz.Fit(&myfit1, "RQMN");
-    chi.at(1) = myfit1.GetChisquare();
-    pStart.at(2) = myfit1.GetParameter(0);
-    pStart.at(3) = myfit1.GetParameter(1);
+    mi_nt.chi2.at(1) = myfit1.GetChisquare();
+    mi_nt.pStart.at(2) = myfit1.GetParameter(0);
+    mi_nt.pStart.at(3) = myfit1.GetParameter(1);
 }
 
 
@@ -810,11 +753,9 @@ void minosana::debug(){
     }
 }
 
-vector<double> minosana::rotatesp(double &rot, vector<double> &initialvector){
+std::array<double, 4> minosana::rotatesp(const double &rot, const std::array<double,4> &initialvector){
     /// This function can rotate the results slopes derived from the 2D planes
-    assert(initialvector.size() == 4);
-
-    return vector<double> {
+    return std::array<double, 4> {
             cos(rot)*initialvector.at(0)-sin(rot)*initialvector.at(2),
             cos(rot)*initialvector.at(1)-sin(rot)*initialvector.at(3),
             sin(rot)*initialvector.at(0)+cos(rot)*initialvector.at(2),
@@ -831,11 +772,10 @@ double distancelinepoint(double x, double y, double z, double *p){
     return ((xp-x0).Cross(u)).Mag2();
 }
 
-void minosana::vertex(const vector<double> &p, const vector<double> &pp,
+void minosana::vertex(const std::array<double, 4> &p, const std::array<double, 4> &pp,
                       double &xv, double &yv, double &zv){
     /// Calculates the vertex of two lines (p,pp) [closest distance]
     /// and stores x, y, and z in (xv, yv, zv)
-    assert(p.size() == 4 && pp.size() == 4);
 
     double alpha, beta, A, B, C;
     alpha = (pp.at(1)*(p.at(0)-pp.at(0))+pp.at(3)*(p.at(2)-pp.at(2)))/
@@ -867,21 +807,19 @@ void minosana::vertex(const vector<double> &p, const vector<double> &pp,
     zv = (z+zp)/2;
 }
 
-double minosana::distancelineline(vector<double> &l1, vector<double> &l2){
+double minosana::distancelineline(const std::array<double,4> &l1,
+                                  const std::array<double,4> &l2){
     /// Calculates the distance between two lines
     // vector:  (x_0, m_x, y_0, m_y)^T
-
-    assert(l1.size() == 4 && l2.size() == 4);
-
     // 1st: vector perpendicular to both
-    vector<double> n{
+    const vector<double> n{
       l1[3]-l2[3],
       l2[1]-l1[1],
       l1[1]*l2[3]-l1[3]*l2[1]};
-    double n_mag = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+    const double n_mag = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 
     // 2nd: construct offset of both vectors
-    vector<double> r{l1[0]-l2[0], l1[2]-l2[2], 0};
+    const vector<double> r{l1[0]-l2[0], l1[2]-l2[2], 0};
 
     return std::abs((n[0]*r[0]+n[1]*r[1]+n[2]*r[2])/n_mag);
 }

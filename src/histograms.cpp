@@ -12,11 +12,12 @@
 #include <numeric>
 #include "zdssetting.h"
 #include "TGraphErrors.h"
+#include <filesystem>
 
 using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_string,
       std::__throw_invalid_argument;
 
- void makehistograms(const vector<string> input) {
+ void makehistograms(vector<string> input) {
     /// Generating an outputfile that matches names with the input file
     /// Determine run type:
     TChain chain("tree");
@@ -39,33 +40,67 @@ using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_strin
     const bool minosbool = setting::getminos();
 
     /// lambda to generate expression
-    auto gentxt = [input, settingname, modename, minosbool](auto suffix){
-        if(minosbool){
-            return "/home/afrotscher/Clementine/build/output/"+ settingname +
-                   "_" + modename + "_MINOS_" + input.at(0).substr(34,9) +
-                   suffix;
+    auto gentxt = [input, settingname, modename, minosbool](auto suffix, bool plastic, bool cs){
+        if(!plastic){
+            if(minosbool && !cs){
+                return "/home/afrotscher/Clementine/build/output/"+ settingname +
+                       "/" + modename + "_MINOS_" + input.at(0).substr(34,9) +
+                       suffix;
+            }
+            else if(!cs) return "/home/afrotscher/Clementine/build/output/"+ settingname +
+                        "/" + modename + "_CS_" + input.at(0).substr(34,9) + suffix;
+            else{
+                if(minosbool){
+                    return "/home/afrotscher/Clementine/build/output/"+ settingname +
+                           "/" + modename + "_MINOS" + suffix;
+                }
+                else return "/home/afrotscher/Clementine/build/output/"+ settingname +
+                            "/" + modename + "_CS" + suffix;
+            }
         }
-        else return "/home/afrotscher/Clementine/build/output/"+ settingname +
-                    "_" + modename + "_CS_" + input.at(0).substr(34,9) + suffix;
+        else{
+            if(minosbool){
+                return "/d/d02-1/ag_ob/afrotscher/SEASTAR/MINOS/" +
+                       settingname + suffix;
+            }
+            else return "/d/d02-1/ag_ob/afrotscher/SEASTAR/CS/" +
+                        settingname + suffix;
+        }
     };
 
     /// Initialize ROOT and txt outputfile
-    auto outputfile = new TFile(gentxt(".root").c_str(), "RECREATE");
+    auto outputfile = new TFile(gentxt(".root", false, false).c_str(),
+                                "RECREATE");
     assert(outputfile->IsOpen());
-
-    txtwriter writetotxt(gentxt(".txt")); // Writer class
-
-     { /// Make everything go out of scope to prevent memory overflow
-         cout << "Making cuts..." << endl;
-         triggercut(input, goodevents);
-         ccsc(input, goodevents, outputfile);
-         targetcut(input, goodevents, outputfile);
-         ppaccut(input, goodevents, outputfile);
-         plasticcut(input, goodevents, outputfile);
-         iccut(input, goodevents, outputfile);
-         higherorder(input, goodevents, outputfile);
-     }
-
+    
+    txtwriter writetotxt(gentxt(".txt", false, true)); // Writer class
+    
+    bool skip_cuts = false;
+    if(std::filesystem::exists(gentxt(".root", true, false))){
+        cout << "Preanalysed file: " << endl << gentxt(".root", true, false) << endl
+             << "already exists. Skip? yes [1], no [0]" << endl;
+        if(!(std::cin >> skip_cuts)) __throw_invalid_argument("Not 0 or 1!");
+    }
+    
+    if(!skip_cuts) {
+        cout << "Making cuts..." << endl;
+        triggercut(input, goodevents);
+        ccsc(input, goodevents, outputfile);
+        targetcut(input, goodevents, outputfile);
+        ppaccut(input, goodevents, outputfile);
+        plasticcut(input, goodevents, outputfile);
+        iccut(input, goodevents, outputfile);
+        higherorder(input, goodevents, outputfile);
+    
+        // Write out file
+        writeroot(input, gentxt(".root", true, false), goodevents, minosbool);
+    }
+    outputfile->Close();
+    //Set new input on file we just generated
+    input = {gentxt(".root", true, false)};
+    auto csfile = new TFile(gentxt(".root", false, true).c_str(), "RECREATE");
+    assert(csfile->IsOpen());
+    
     /// Get Z vs. A/Q
     const vector<string> reactionmodes = setting::getreactions();
 
@@ -75,18 +110,18 @@ using std::cout, std::endl, std::string, std::vector, std::atomic, std::to_strin
     crosssection.SetTitle("Cross Sections Frotscher 2019");
 
     for(auto &i: reactionmodes){
-        PID(input,goodevents,outputfile,i, crosssection);
+        PID(input,csfile,i, crosssection);
     }
 
     TGraphErrors nancytcs = nancycs(setting::getsetnumber());
-    outputfile->cd();
+    csfile->cd();
     nancytcs.Write();
     crosssection.Write();
 
-    printf("Made PID histograms in %s\n", gentxt(".root").c_str());
+    printf("Made PID histograms in %s\n", gentxt(".root",false, true).c_str());
 
     if(!minosbool) writetotxt.writetofile();
-    outputfile->Close();
+    csfile->Close();
 }
 
 TGraphErrors nancycs(const int &setnumber){
@@ -133,4 +168,48 @@ TGraphErrors nancycs(const int &setnumber){
      temp.SetPoint(temp.GetN(), 50,0);
      temp.SetPoint(temp.GetN(), 120,0);
      return temp;
+ }
+ 
+void writeroot(const vector<string> &input, const string &out,
+               const vector<vector<atomic<bool>>> &goodevents, const bool minosbool){
+    /// Write all elements to a separate root file:
+    
+    cout << "Writing cut events to file: " << endl
+         << out << endl;
+    
+    auto inter_file = new TFile(out.c_str(), "RECREATE");
+    assert(inter_file->IsOpen());
+    
+    treereader tree(input);
+    tree.setloopkeysall();
+    TTree *inter_tree = tree.fChain->CloneTree(0);
+    progressbar progress(tree.fChain->GetEntries(), 0);
+    for(long long i=0; i<tree.fChain->GetEntries(); i++){
+        if(goodevents.at(i).at(0) && goodevents.at(i).at(1)){
+            tree.GetEntry(i);
+            tree.EventInfo_fUniqueID[0] = 1;
+            inter_tree->Fill();
+        }
+        progress.increaseevent();
+        if(!(i%5000)) progress.draw();
+    }
+    cout << "Done with F1-11 events." << endl;
+    if(!minosbool) { // For the cross section we need F1-7 events as well
+        progressbar::reset();
+        progressbar progress2(tree.fChain->GetEntries(), 0);
+        cout << "CS run. Starting with F1-7 events..." << endl;
+        for(long long i=0; i<tree.fChain->GetEntries(); i++){
+            if(goodevents.at(i).at(0) && !goodevents.at(i).at(1)){
+                tree.GetEntry(i);
+                tree.EventInfo_fUniqueID[0] = 0;
+                inter_tree->Fill();
+            }
+            progress2.increaseevent();
+            if(!(i%5000)) progress.draw();
+        }
+    }
+    //inter_file->Write();
+    inter_file->Close();
+    progressbar::reset();
+    cout << "... Done!" << endl;
  }

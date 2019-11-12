@@ -417,6 +417,7 @@ public :
     Long64_t NumEntries();
     void setloopkeys(std::vector<std::string> &Vals);
     bool getevent(int eventno);
+    void setloopkeysall();
 };
 
 #endif

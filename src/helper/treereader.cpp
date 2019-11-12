@@ -76,6 +76,14 @@ void treereader::setloopkeys(std::vector <std::string> &Vals){
     //Long64_t nentries = fChain->GetEntriesFast();
 }
 
+void treereader::setloopkeysall(){
+    // Set Branches we want to read
+    currenteventnum = 0; // reset event number on change of readout
+    if(!fChain) __throw_exception_again;
+    
+    fChain->SetBranchStatus("*",true);
+}
+
 Long64_t treereader::NumEntries(){
     return fChain->GetEntries();
 }

@@ -17,7 +17,7 @@
 
 using std::vector, std::string, std::atomic, std::thread, std::cout, std::endl,
       std::stringstream, std::to_string, std::__throw_invalid_argument,
-      std::min;
+      std::min, std::cerr;
 
 void PID::innerloop(treereader &tree, treereader &minostree,
                     vector<int> range, bool minosanalyse) {
@@ -56,7 +56,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
     for(int eventcounter=range.at(0); eventcounter<range.at(1); eventcounter++){
         /// Don't take sorted out events
         progress.increaseevent();
-        if(!goodevents.at(eventcounter).at(0)) continue;
+        //if(!goodevents.at(eventcounter).at(0)) continue;
 
         tree.getevent(eventcounter);
         const double beamaoqcorr = tree.BigRIPSBeam_aoq[0] + p1.F7absF5X0 -
@@ -86,7 +86,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
 
         // F7-F11 part
         if(closeness(valinc.at(2)) && closeness(valinc.at(3)) &&
-            goodevents.at(eventcounter).at(1)){
+            tree.EventInfo_fUniqueID[0]){
             _PIDplot.at(0).at(1).Fill(tree.BigRIPSBeam_aoq[4],
                     tree.BigRIPSBeam_zet[4]);
             _PIDplot.at(1).at(1).Fill(beamaoqcorr2,tree.BigRIPSBeam_zet[4]);
@@ -102,7 +102,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                 tree.BigRIPSBeam_zet[0]);
         _PIDplot.at(1).at(2).Fill(beamaoqcorr,tree.BigRIPSBeam_zet[0]);
 
-        if(goodevents.at(eventcounter).at(1)) { // F7-F11 part
+        if(tree.EventInfo_fUniqueID[0]) { // F7-F11 part
             _PIDplot.at(0).at(3).Fill(tree.BigRIPSBeam_aoq[4],
                     tree.BigRIPSBeam_zet[4]);
             _PIDplot.at(1).at(3).Fill(beamaoqcorr2, tree.BigRIPSBeam_zet[4]);
@@ -118,7 +118,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
         if(!((pow(1./targetval.at(2)*(beamaoqcorr2-targetval.at(0)),2) +
               pow(1./targetval.at(3)*(tree.BigRIPSBeam_zet[4]-
                                       targetval.at(1)),2))<1
-            && goodevents.at(eventcounter).at(1))) continue;
+            && tree.EventInfo_fUniqueID[0])) continue;
 
         // cut on energy(Brho) to avoid offcenter Transmission
         if(tree.BigRIPSRIPS_brho[1] < brho_max &&
@@ -169,6 +169,11 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                 _minos1dresults.at(0).Fill(minres.z_vertex);
             }
 
+            // We don't analyse events with mismatching vertex positions (>15mm)
+            // the && operator guarantees left-to-right evaluation
+            if(!minres.vertexdist.empty() && *std::max_element(minres.vertexdist.begin(),
+                                 minres.vertexdist.end()) > 15) continue;
+            
             // Get Vertex data
             if(reaction.find("P2P") != string::npos &&
                 minres.trackNbr_final == 2) { // P2P-mode && 2 Tracks
@@ -189,7 +194,7 @@ void PID::innerloop(treereader &tree, treereader &minostree,
                 // projected angle plot
                 _minos1dresults.at(7).Fill(minres.phi2d.at(0));
                 
-                // test phi-width with verte position
+                // test phi-width with vertex position
                 _minosresults.at(4).Fill(minres.phi2d.at(0), minres.z_vertex);
                 _minosresults.at(5).Fill(minres.phi2d.at(0),
                         sqrt(pow(minres.y_vertex,2)+ pow(minres.x_vertex,2)));
@@ -275,10 +280,11 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     }
 
     if(setting::getminos())
-        threads = std::min(25, std::max((int)sqrt(goodevents.size())/450,2));
+        threads = 15;
 
-    printf("Making PID with %i threads now...\n", threads);
-
+    //Reload higher order parameters:
+    p1 = setting::getHOparameters();
+    
     /// Make regular TChain for fast input
     vector<treereader> tree;
     tree.reserve(threads); // MUST stay as reallocation will call d'tor
@@ -286,7 +292,8 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
 
     vector<string> keys{"BigRIPSBeam.aoq", "BigRIPSBeam.zet", "F3X", "F3A",
                         "F5X", "F5A", "F9X", "F9A", "F11X", "F11A",
-                        "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho"};
+                        "BigRIPSPPAC.fX", "BigRIPSPPAC.fY", "BigRIPSRIPS.brho",
+                        "EventInfo.fUniqueID"};
     for(auto &i:tree) i.setloopkeys(keys);
 
     /// Make slow chain for
@@ -298,18 +305,22 @@ void PID::analyse(const std::vector <std::string> &input, TFile *output) {
     vector<string> minoskeys{"VDrift", "MinosClustX", "MinosClustY",
                              "MinosClustQ", "DelayTrig", "Trackamount",
                              "Minoscalibvalues", "TimeBinElec", "Tshaping",
-                             "minostrackxy", "minostime"};
+                             "minostrackxy", "minostime", "EventInfo.fUniqueID"};
     for(auto &i: minostree) i.setloopkeys(minoskeys);
 
     //Constructing all the histograms
     PID::histogramsetup();
 
     //Making threads
+    tree.at(0).GetEntry(0);
+    const int number_of_events = tree.at(0).fChain->GetEntriesFast();
+    cout << "Making PID with " << threads << " threads and "<< number_of_events
+         << " Entries now..." << endl;
     vector<thread> th;
     th.reserve(threads); // Make space for $threads Threads
     for(int i=0; i<threads;i++){
-        vector<int> ranges = {(int)(i*goodevents.size()/threads),
-                               (int)((i+1)*goodevents.size()/threads-1)};
+        vector<int> ranges = {(int)(i*number_of_events/threads),
+                               (int)((i+1)*number_of_events/threads-1)};
         th.emplace_back(thread(&PID::innerloop, this, std::ref(tree.at(i)),
                                std::ref(minostree.at(i)), ranges,
                                setting::getminos()));
@@ -508,14 +519,41 @@ void PID::crosssection() {
     if(reactF5.at(1).GetEntries() > 0)
         chargestatevictims *= reactionpid2.load()/reactF5.at(1).GetEntries();
 
+    // Write out raw (p,2p) events
+    if(reaction.find("P2P") != string::npos)
+        p2p_results.push_back({(int)reactionpid1,
+                               reactionpid2-chargestatevictims,
+                               reaction});
+    // Or get the number of estimated 2(p,2p) events
+    else if(reaction.find("P3P") != string::npos){
+        // Search if a corresponding P2P reaction has been stored already
+        auto iterator = std::find_if(p2p_results.cbegin(), p2p_results.cend(),
+                [this](const p2p_properties &vec){
+                    return reaction.find(vec.reaction.substr(0, vec.reaction.size()-3)) != string::npos;
+        });
+        if (iterator == p2p_results.end()) cerr << "NO P2P FOUND!" << endl << endl;
+        else{ twop2pvictims = 0.5*pow(iterator->reacted_particles,2.) * reactionpid1/
+                              pow(iterator->incoming_particles,2);
+        
+            twop2pvictimserror = twop2pvictims*(2/sqrt(iterator->reacted_particles) +
+                                                2/sqrt(iterator->incoming_particles) +
+                                                1/sqrt((double)reactionpid1) +
+                                                1/sqrt((double)reactionpid2));
+            //cout << "2P2P victims: " << twop2pvictims << endl;
+        }
+    }
+    const double reacted_particle = reactionpid2-chargestatevictims-twop2pvictims;
+    
     double crosssection = std::max(0.,
-                             1./numberdensity*(reactionpid2-chargestatevictims)/
+                             1./numberdensity*(reacted_particle)/
                              reactionpid1/tottransmission*
                              (1-rel_num_dens_crap/(1+rel_num_dens_crap)));
+    
     // 1% absolute error + 5% relative error
     double cserror = sqrt(
         pow(sqrt((double)reactionpid2)/(numberdensity*reactionpid1*tottransmission),2)+
         pow(sqrt(chargestatevictims)/(numberdensity*reactionpid1*tottransmission),2)+
+        pow(sqrt(twop2pvictimserror)/(numberdensity*reactionpid1*tottransmission),2)+
         pow(crosssection/sqrt((double)reactionpid1),2) +
         pow((tottransmissionerror + 0.02*tottransmission)*crosssection, 2) +
         pow(numberdensityerror*crosssection, 2)
@@ -530,20 +568,23 @@ void PID::crosssection() {
     stringout.precision(2);
     stringout << reaction << " \u03C3: " << std::scientific << 1E3*crosssection
               << " \u00b1 " << 1E3*cserror <<  "mb, CTS: " << std::defaultfloat
-              << (reactionpid2.load()-chargestatevictims) << " of "
+              << reacted_particle << " of "
               << reactionpid1.load()/1. << ", T = " << tottransmission << " B\u03F1 = "
               << reactionpid2.load()/reactF5.at(1).GetEntries() << " CSC: "
               << chargestatevictims;
+    if(reaction.find("P3P") != string::npos)
+        stringout << " 2(P2P): " << twop2pvictims;
+    
     if(setting::isemptyortrans())
         stringout
-            << " Ratio: " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
-            <<" \u00b1 "  << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()*
+            << " Ratio: " << 100.*reacted_particle/reactionpid1.load()
+            <<" \u00b1 "  << 100.*reacted_particle/reactionpid1.load()*
                 pow(1./reactionpid2+ 1./reactionpid1.load(),0.5) << " %";
     cout  << stringout.str() << endl;
 
     txtwriter::addline(stringout.str());
 
-    cout << "Ratio " << 100.*(reactionpid2-chargestatevictims)/reactionpid1.load()
+    cout << "Ratio " << 100.*reacted_particle/reactionpid1.load()
          << "% " << endl;
 
     // Add Cross Section to the TGraph;
@@ -868,16 +909,15 @@ void PID::histogramsetup() {
     minosresults.at(5).GetXaxis()->SetTitle("#phi_{s} / #circ");
     minosresults.at(5).GetYaxis()->SetTitle("r_{vertex} / mm");
     
-    
     for(auto &i: minosresults) i.SetOption("colz");
 
     minos1dresults =
         {{"zdistr", "Reaction distribution", 100,-70,130},
-         {"lambda2", "Reaction angle two tracks", 90, 0, 180},
+         {"lambda2", "Reaction angle two tracks", 180, 0, 180},
          {"vertexdistr", "Distance between proton tracks", 300, 0, 50},
          {"phiE", "Angular Error of tracks", 300,0, 15},
          {"theta", "#theta of all protons", 180,0, 180},
-         {"lambda3", "Reaction angle three tracks", 90, 0, 180},
+         {"lambda3", "Reaction angle three tracks", 180, 0, 180},
          {"thetaE", "#theta uncertainty of tracks", 300,0, 15},
          {"phismall", "Smallest #phi angle", 180,0,180}};
 

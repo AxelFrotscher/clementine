@@ -9,6 +9,18 @@
 #include <atomic>
 #include "TGraphErrors.h"
 
+struct p2p_properties{
+    int incoming_particles;
+    double reacted_particles;
+    std::string reaction;
+    
+    p2p_properties(int incoming, double reacted, std::string reaction_){
+        incoming_particles = incoming;
+        reacted_particles = reacted,
+        reaction = reaction_;
+    };
+};
+
 class PID {
 public:
     void innerloop(treereader &tree, treereader &minostree,
@@ -21,16 +33,14 @@ public:
     void brhoprojections();
     void chargestatecut();
 
-    PID(const std::vector<std::string> &input, std::vector<std::vector<std::atomic<bool>>>
-    &goodevents_, TFile* output, const std::string &reaction_, TGraphErrors &tcross_):
-    goodevents(goodevents_),reaction(reaction_), tcross(tcross_){
+    PID(const std::vector<std::string> &input, TFile* output,
+        const std::string &reaction_, TGraphErrors &tcross_):
+        reaction(reaction_), tcross(tcross_){
         analyse(input, output);
     };
 
 private:
-    std::vector<std::vector<std::atomic<bool>>> &goodevents;
-
-    int threads = std::min(25, std::max((int)sqrt(goodevents.size())/600,2));
+    int threads = 10;
     std::string reaction = "";
 
     std::vector<TH1F> reactF5;
@@ -52,6 +62,10 @@ private:
 
     //Charge state victim count
     double chargestatevictims = 0;
+    double twop2pvictims = 0;
+    double twop2pvictimserror = 0;
+    // Estimated counts to be due to 2 (p,2p) reactions taking place
+    inline static vector<p2p_properties> p2p_results;
 
     //std::vector<double> acceptancerange{-50,70}; // mm
     std::mutex unitemutex;
