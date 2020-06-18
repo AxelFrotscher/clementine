@@ -149,7 +149,8 @@ void generatetree(const string &infile, const string &output) {
             array = (TClonesArray *)sman->FindDataContainer(&i[0]);
             tree->Branch(array->GetName(), &array);
         }
-        printf("%s", array->GetName());
+        if(array) printf("%s", array->GetName());
+        else cout << "Empty array for: " << i << endl;
     }
 
     if(!fbitarray) __throw_bad_function_call();
@@ -207,7 +208,7 @@ void generatetree(const string &infile, const string &output) {
         ss >> trash >> DelayTrigger >> Stoptime >> VDrift;
         if(infile.find(trash) != string::npos){
             cout << endl << "Found parameters for MINOS file "<< trash  << "  "
-                 << infile << endl;
+                 << infile << " Vdrift: " << VDrift << endl;
             break;
         }
     }

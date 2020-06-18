@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <string>
+#include <array>
 
 class minosdrift{
 public:

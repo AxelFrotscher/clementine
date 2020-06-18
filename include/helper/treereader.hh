@@ -417,10 +417,11 @@ public :
     Long64_t NumEntries();
     void setloopkeys(std::vector<std::string> &Vals);
     bool getevent(int eventno);
-    void setloopkeysall();
+    void setloopkeys_cs();
+    void setloopkeys_minos();
+    
+    inline static bool PID_only = false;
+    inline static bool additional_minos = true;
 };
 
 #endif
-
-//#ifdef treereader_cxx
-//#endif // #ifdef treereader_cxx

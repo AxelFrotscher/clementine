@@ -51,21 +51,23 @@ namespace runinfo{
          // "111MoP2P", "110MoP3P","111MoP3P", "113MoP3P", "112TcP3P", "113TcP3P",
          // "114TcP3P"
         {"89SeP2P","90SeP2P","89SeP3P","90SeP3P"}, //  "88GeP0P", "89AsP0P"
-        {"94KrP2P","96KrP2P","97RbP2P","94KrP3P","96KrP3P","97RbP3P"},
+        {"97RbP2P","97RbP3P"}, // "94KrP2P","96KrP2P","94KrP3P","96KrP3P",
         // "93BrP2P","94BrP2P","95BrP2P","95KrP2P", "93BrP3P","94BrP3P","95BrP3P",
         // "95KrP3P",
         {"100SrP2P","101SrP2P","102SrP2P","102YP2P","103YP2P",
          "100SrP3P","101SrP3P","102SrP3P","102YP3P","103YP3P"},
-        {"68FeP2P", "68CoP2P", "69CoP2P", "70CoP2P", "70NiP2P", "71NiP2P",
-         "68FeP3P", "68CoP3P", "69CoP3P", "70CoP3P", "70NiP3P", "71NiP3P"}, //"66MnP2P", "67MnP2P", "67FeP2P",
-        {"75ZnP2P", "76ZnP2P", "74CuP2P", "75CuP2P", "72NiP2P", "74NiP2P",
-         "75ZnP3P", "76ZnP3P", "74CuP3P", "75CuP3P", "72NiP3P",
-         "74NiP3P"}, // "73NiP2P", "73NiP3P",
-        {//"82GeP2P", "83GeP2P",
-         "80GaP2P", "81GaP2P", "82GaP2P", "78ZnP2P", "79ZnP2P",
-         "80ZnP2P", //"82GeP3P", "83GeP3P",
-         "80GaP3P", "81GaP3P", "82GaP3P", "78ZnP3P",
-         "79ZnP3P", "80ZnP3P"}}; // test
+        { "68CoP2P", "69CoP2P", "70CoP2P", "70NiP2P",
+          "68CoP3P", "69CoP3P", "70CoP3P", "70NiP3P"},
+        //{"69CoP2P", "70NiP2P", "69CoP3P", "70NiP3P"},
+         //"66MnP2P", "67MnP2P", "67FeP2P", "68FeP2P", "71NiP2P", "68FeP3P", , "71NiP3P"
+        {"75ZnP2P", "76ZnP2P", "74CuP2P", "75CuP2P", "74NiP2P",
+         "75ZnP3P", "76ZnP3P", "74CuP3P", "75CuP3P", "74NiP3P"},
+         // "73NiP2P", "73NiP3P", "72NiP2P", "72NiP3P",
+        {"80GaP2P", "81GaP2P", "82GaP2P",  //
+         "80GaP3P", "81GaP3P", "82GaP3P"}};
+        //{"81GaP2P", "81GaP3P"}};
+        // "82GeP2P", "83GeP2P","82GeP3P", "83GeP3P", "78ZnP2P", "79ZnP2P",
+        // "80ZnP2P", , "78ZnP3P", "79ZnP3P", "80ZnP3P"
 }
 
 namespace nancy{

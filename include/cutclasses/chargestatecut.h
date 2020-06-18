@@ -12,6 +12,8 @@ using std::vector, std::mutex, std::string, std::atomic;
 
 class ccsc{
 public:
+    vector<vector<atomic<bool>>> &goodevents;
+    
     void innerloop(treereader &tree, vector<int> range);
     void analyse(const vector<string> &input, TFile* output);
     ccsc(const vector<string> &input,
@@ -21,7 +23,6 @@ public:
          analyse(input, output);
     };
 
-    vector<vector<atomic<bool>>> &goodevents;
 
 private:
     //const int threads = 7;

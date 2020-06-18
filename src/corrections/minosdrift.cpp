@@ -16,7 +16,7 @@ using std::string, std::vector, std::cout, std::endl, std::to_string;
 void minosdrift::make_drift(const std::vector<std::string> &input) {
     /// First get all associated root files
     auto convert = [](auto &i){
-        return "output/MINOS/" + i.substr(34,14);
+        return "../build/output/MINOS/" + i.substr(34,14);
     };
 
     vector<string> minosfiles;
@@ -28,10 +28,12 @@ void minosdrift::make_drift(const std::vector<std::string> &input) {
     driftresults.reserve(minosfiles.size());
 
     for(auto &i: minosfiles) driftresults.push_back(gettimeborders(i));
-
+    
     /// get mean start (only depending on electronics -> one value)
     double mean_t_start = 0;
-    for(auto &i: driftresults) mean_t_start += i.at(0)/driftresults.size();
+    for(auto &i: driftresults)
+        if(!std::isnan(i.at(0)) ) mean_t_start += i.at(0)/driftresults.size();
+        else mean_t_start += driftresults.at(0).at(0)/driftresults.size();
 
     /// Replace values with mean
     for(auto &i:driftresults){
@@ -41,7 +43,7 @@ void minosdrift::make_drift(const std::vector<std::string> &input) {
 
     ///Generate strings to write
     vector<string> resultio;
-    for(unsigned long i=0; i<input.size(); i++){
+    for(unsigned long i=0; i<driftresults.size(); i++){
         resultio.push_back(input.at(i).substr(34,9) + " " +
                            to_string(driftresults.at(i).at(0)) + " " +
                            to_string(driftresults.at(i).at(1)) + " " +
@@ -77,7 +79,7 @@ void minosdrift::make_drift(const std::vector<std::string> &input) {
         for(unsigned long j=0; j<minosfiles.size(); j++){ // loop over all generated results to see matchs
             if(minosfiles.at(j).find(temp) != string::npos){
                 i = resultio.at(j);   // if it matches replace results, and delete them from vector
-                cout << "Replacing Run: " << minosfiles.at(j).substr(13,9) << endl;
+                cout << "Replacing Run: " << minosfiles.at(j).substr(13+9,9) << endl;
                 resultio.erase(resultio.begin()+j);
                 minosfiles.erase(minosfiles.begin()+j);
                 break;
@@ -92,17 +94,19 @@ void minosdrift::make_drift(const std::vector<std::string> &input) {
     std::ofstream hi(filelocation.at(setting::getsetnumber()));
     for(auto &i: prestrings) hi << i << endl;
     hi.close();
-
-
 }
 
 vector<double> minosdrift::gettimeborders(const std::string &i) {
     /// Open an individual file to get the result.
 
     TFile tpctimefile(i.c_str());
-    assert(tpctimefile.IsOpen());
+    if(!tpctimefile.IsOpen()){
+        std::cerr << "File does not exist: " << i << endl;
+        return {std::numeric_limits<double_t>::quiet_NaN(),
+                std::numeric_limits<double_t>::quiet_NaN()};
+    }
 
-    auto tpctimehist = (TH1I*)tpctimefile.Get(i.substr(13,9).c_str());
+    auto tpctimehist = (TH1I*)tpctimefile.Get(i.substr(13+9,9).c_str());
     assert(tpctimehist);
 
     // WE derive the stupid histogram
@@ -115,7 +119,10 @@ vector<double> minosdrift::gettimeborders(const std::string &i) {
                                  tpctimehist->GetBinContent(i-2))/12.);
     }
     tpctimefile.Close();
-
+    
+    if(derived.GetMaximum() < 500) std::cerr << "Run " << i << " has only " << derived.GetMaximum
+    () << " Entries!" << endl;
+    
     /// Get maximum noise bin
     double maxnoise =0;
     for(int i=60; i<120; i++) maxnoise = std::max(maxnoise, derived.GetBinContent(i));
@@ -127,10 +134,19 @@ vector<double> minosdrift::gettimeborders(const std::string &i) {
         if(t_min < 1250 || t_min > 1450) t_min = 1370;
     }
 
+    if(setting::getsetname() == "70Fe"){
+        ///Set derived spectrum from 5,2mus to 7 mus to 0 for peak reduction
+        for(int j=500; j<700; j++) derived.SetBinContent(j,0);
+    }
+    
     double t_end = derived.GetBinCenter(derived.GetMinimumBin());
 
     if(setting::getsetname() == "78Ni"){
         if(t_end < 7700 || t_end > 8500) t_end = 8200;
+    }
+    
+    if(setting::getsetname() == "70Fe"){
+        if(t_end < 7700 || t_end > 8500) t_end = 8050;
     }
 
     TFile derivedfile(Form("output/MINOS/%s.root", setting::getsetname().c_str()),

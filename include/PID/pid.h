@@ -24,7 +24,7 @@ struct p2p_properties{
 class PID {
 public:
     void innerloop(treereader &tree, treereader &minostree,
-                   std::vector<int> range, bool minosanalyse);
+                   std::vector<int> range);
     void analyse(const std::vector<std::string> &input, TFile* output);
     void offctrans();
     void crosssection();

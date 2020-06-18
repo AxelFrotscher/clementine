@@ -68,9 +68,12 @@ TMinosPass minosana::analyze() {
         TH1F hfit(Form("hfit%i",threadno), Form("hfit%i",threadno),
                   512, 0, 512);
         for (unsigned long k = 0; k < minoscalibvalues.at(i).size(); k++) {
-            if (minoscalibvalues.at(i).at(k) >= 0)
+            if (minoscalibvalues.at(i).at(k) >= 0) {
                 hfit.SetBinContent(hfit.FindBin(minostime.at(i).at(k)),
-                                            minoscalibvalues.at(i).at(k) + 250);
+                                   minoscalibvalues.at(i).at(k) + 250);
+                hfit.SetBinError(hfit.FindBin(minostime.at(i).at(k)),
+                                 sqrt(minoscalibvalues.at(i).at(k)));
+            }
         }
         // Fitting the hfit histogram of last ch. if not empty
         if (hfit.GetSumOfWeights() == 0) continue;
@@ -80,8 +83,8 @@ TMinosPass minosana::analyze() {
         const double hfit_max_T = hfit.GetMaximumBin();
 
         // Find T_min and T_max limits for non-0 signals
-        double T_min = hfit.FindLastBinAbove(250);
-        double T_max = hfit.FindFirstBinAbove(0) - 1;
+        double T_max = hfit.FindLastBinAbove(250);     ///MAX AND MIN SWITCHED
+        double T_min = hfit.FindFirstBinAbove(0) - 1;
 
         // Take only 1.5*shaping time before max if other signals before
         if (hfit_max_T - 3.5 * (Tshaping / TimeBinElec) > T_min)
@@ -96,7 +99,7 @@ TMinosPass minosana::analyze() {
                 [](double *x, double *p){ /// Check for boundaries of x
             if(x[0] < p[1] || x[0] > 512) return 250.;
             else return p[0] * exp(-3.*(x[0]-p[1])/p[2])*sin((x[0]-p[1])/p[2]) *
-                        pow((x[0]-p[1])/p[2], 3) + 250;}, 0, 511, 3);
+                        pow((x[0]-p[1])/p[2], 3) + 250;}, T_min, T_max, 3);
 
         fit_function.SetParameters( hfit_max - 250,
                    hfit_max_T - Tshaping / TimeBinElec, Tshaping / TimeBinElec);
@@ -106,8 +109,10 @@ TMinosPass minosana::analyze() {
         fit_function.SetParLimits(2, 0, 512);
 
         // --> parameter n (no store no draw) crucial for multithread <--
-        const int fit2DStatus = hfit.Fit(&fit_function, "QN", "", T_min, T_max);
-
+        const int fit2DStatus = hfit.Fit(&fit_function, "RQN", "", T_min, T_max);
+        ///Write mismatched fits to file
+        
+        
         double fit_function_max = 0, fit_function_Tpad = 0, Chi2 = 0;
 
         if (!fit2DStatus) {
@@ -131,6 +136,11 @@ TMinosPass minosana::analyze() {
             z_mm = (t_pad * TimeBinElec - DelayTrigger) * VDrift;
             q_pad = fit_function_max - 250;
         }
+        /*if(z_mm <-300 || z_mm > 800)
+            cerr << "z-Value BS < -500! : " << z_mm << ". fit_f_max: "
+            << fit_function_max<< " fit_f_Tpad: " << fit_function_Tpad
+            << " Par2: " << fit_function.GetParameter(2) << " tmin: " << T_min
+            << " t_max:" << T_max <<endl;*/
 
         fitdata.replace(Xpadnew[indexfill], Ypadnew[indexfill],
                         t_pad * TimeBinElec, z_mm, q_pad, clusternbr[indexfill],
@@ -145,7 +155,7 @@ TMinosPass minosana::analyze() {
     vector<double> xin, yin, zin, qin, xout, yout, zout, qout;
     int cluster_temp = 0, array_final = 0;
 
-    vector<TGraph> grxz(MR.trackNbr + 1), gryz(MR.trackNbr + 1);
+    vector<TGraph> grxz(MR.trackNbr), gryz(MR.trackNbr);
 
     for (unsigned long i = 0; i < padsleft2; i++) {
         // if-Loop executed only at the End
@@ -177,16 +187,16 @@ TMinosPass minosana::analyze() {
             // Decide whether we have a track, and add to 2D-plane TGraphs
             if (xout.size() > 10 && ringsum >= 15) {
                 MR.trackNbr_final++;
-                //cluster1 = cluster_temp; delete if no use
+                //cluster1 = cluster_temp; delete if no use Z_out
                 for (unsigned long l = 0; l < xout.size(); l++) {
-                    dataresult.add(xout[l], yout[l], zout[l],
-                                   qout[l], MR.trackNbr_final, xout.size(), zmax);
+                    dataresult.add(xout.at(l), yout.at(l), zout.at(l),
+                                   qout.at(l), MR.trackNbr_final, xout.size(), zmax);
                     array_final++;
                     if(MR.trackNbr_final > (int)grxz.size()) continue;
                     grxz.at(MR.trackNbr_final - 1).
-                     SetPoint(grxz.at(MR.trackNbr_final - 1).GetN(), zout[l], xout[l]);
+                     SetPoint(grxz.at(MR.trackNbr_final - 1).GetN(), zout.at(l), xout.at(l));
                     gryz.at(MR.trackNbr_final - 1).
-                     SetPoint(gryz.at(MR.trackNbr_final - 1).GetN(), zout[l], yout[l]);
+                     SetPoint(gryz.at(MR.trackNbr_final - 1).GetN(), zout.at(l), yout.at(l));
                 }
             }
 
@@ -221,6 +231,7 @@ TMinosPass minosana::analyze() {
             
             sum = 0;
             double qtot =0;
+            
             for(unsigned long i=0; i<tmr.x_mm.size(); i++){
                 if(tmr.n_Cluster.at(i) == mode){
                     double d = distancelinepoint(tmr.x_mm.at(i), tmr.y_mm.at(i),
@@ -720,18 +731,20 @@ void minosana::Hough_filter(vector<double> &x, vector<double> &y,
 
 void minosana::FindStart(minos_internal &mi_nt, TGraph &grxz, TGraph &gryz){
     /// This function performs an x-z plane (grxz) and y-z plane (gryz) 2d fit,
-    /// to get the initial parameters (stored in &pStart)
-
+    /// to get the initial parameters (stored in &pStart
+    
     TF1 myfit1(Form("fit%i",threadno),
                [](double *x, double *p){ return p[0]+p[1]*x[0];},
                -100,500,2);
     myfit1.SetParameters(0,10);
     mi_nt.fitStatus = {0,0};
-    grxz.Fit(&myfit1, "RQMN");
+    if(!grxz.Fit(&myfit1, "RQMWN")){
+        cout << "Errour Errour!" << endl;
+    }
     mi_nt.chi2.at(0) = myfit1.GetChisquare();
     mi_nt.pStart.at(0) = myfit1.GetParameter(0);
     mi_nt.pStart.at(1) = myfit1.GetParameter(1);
-    gryz.Fit(&myfit1, "RQMN");
+    gryz.Fit(&myfit1, "RWQMN");
     mi_nt.chi2.at(1) = myfit1.GetChisquare();
     mi_nt.pStart.at(2) = myfit1.GetParameter(0);
     mi_nt.pStart.at(3) = myfit1.GetParameter(1);
@@ -812,14 +825,14 @@ double minosana::distancelineline(const std::array<double,4> &l1,
     /// Calculates the distance between two lines
     // vector:  (x_0, m_x, y_0, m_y)^T
     // 1st: vector perpendicular to both
-    const vector<double> n{
+    const std::array<double, 3> n{
       l1[3]-l2[3],
       l2[1]-l1[1],
       l1[1]*l2[3]-l1[3]*l2[1]};
     const double n_mag = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 
     // 2nd: construct offset of both vectors
-    const vector<double> r{l1[0]-l2[0], l1[2]-l2[2], 0};
+    const std::array<double, 3> r{l1[0]-l2[0], l1[2]-l2[2], 0};
 
     return std::abs((n[0]*r[0]+n[1]*r[1]+n[2]*r[2])/n_mag);
 }
